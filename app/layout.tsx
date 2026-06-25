@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   alternates: { canonical: SITE_URL },
   icons: {
     icon: { url: "/icon.svg", type: "image/svg+xml" },
-    apple: "/icon.svg",
+    apple: { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
   },
   openGraph: {
     title: "Charge — HPR ejection-charge calculator",
@@ -24,11 +24,20 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: "Fusion Space",
     type: "website",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Charge — HPR ejection-charge calculator",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Charge — HPR ejection-charge calculator",
     description: DESCRIPTION,
+    images: ["/og.png"],
   },
 };
 
