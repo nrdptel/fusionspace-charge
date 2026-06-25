@@ -388,7 +388,10 @@ function WellCard({
       )}
 
       {/* Result */}
-      <div className="mt-5 flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
+      <div
+        aria-live="polite"
+        className="mt-5 flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10"
+      >
         <div className="flex items-baseline gap-2">
           <span
             data-testid="mass"
