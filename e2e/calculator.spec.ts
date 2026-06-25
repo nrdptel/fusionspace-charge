@@ -84,11 +84,13 @@ test.describe("Charge calculator", () => {
 
   test("negative force inputs cannot under-size the charge", async ({ page }) => {
     await page.goto("/?mode=f&dep=s");
+    const friction = page.getByLabel("Friction / extra hold");
+    await expect(friction).toBeVisible(); // wait for force mode to apply before reading
     const mass = page.getByTestId("mass").first();
     const baseline = (await mass.textContent())!.trim();
     // A stray negative friction must be clamped to 0, not subtracted from the
     // required force (which would dangerously reduce the charge).
-    await page.getByLabel("Friction / extra hold").fill("-100");
+    await friction.fill("-100");
     await expect(mass).toHaveText(baseline);
   });
 

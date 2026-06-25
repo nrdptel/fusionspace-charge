@@ -142,6 +142,33 @@ export default function Methodology({
           the tested charge is the real answer, and the log below is where to keep it.
         </p>
       </Disclosure>
+
+      <Disclosure summary="Why there's no efficiency factor">
+        <p>
+          A fair question, since the method is a simplification: shouldn&apos;t there be an
+          efficiency or &ldquo;derating&rdquo; knob? Deliberately, no.
+        </p>
+        <p>
+          The constants already carry the real chemistry. R and T here come from black
+          powder&apos;s own combustion, not from an idealized pure gas — they&apos;re the
+          values the high-power community uses for exactly this calculation. A separate
+          efficiency multiplier on top would double-count and imply a precision the model
+          doesn&apos;t have.
+        </p>
+        <p>
+          And the real-world error runs one way. Heat lost to the bulkheads and airframe,
+          gas that leaks past seals and vent holes, and powder that doesn&apos;t fully burn
+          all push the same direction: real wells often need a little <em>more</em> than the
+          formula says, not less — and black powder gets less efficient at high altitude. So
+          the only thing a &ldquo;derate&rdquo; dial would invite is the one dangerous move,
+          trimming the charge down until it doesn&apos;t separate.
+        </p>
+        <p className="font-medium text-zinc-700 dark:text-zinc-300">
+          The honest levers are the ones already here, and they only add margin: pick your
+          target pressure (or a safety factor on the separation force), round up rather than
+          down, and let the ground test set the final number.
+        </p>
+      </Disclosure>
     </section>
   );
 }
