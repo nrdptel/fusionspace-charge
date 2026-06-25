@@ -82,6 +82,17 @@ test.describe("Charge calculator", () => {
     await expect(dia).toHaveValue("5.5");
   });
 
+  test("activating a saved rocket pre-fills the ground-test airframe", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Av-Bay 4");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    // Saving makes it the active rocket, which seeds the log's airframe field.
+    await expect(page.getByLabel("Well / airframe")).toHaveValue("Av-Bay 4");
+  });
+
   test("negative force inputs cannot under-size the charge", async ({ page }) => {
     await page.goto("/?mode=f&dep=s");
     const friction = page.getByLabel("Friction / extra hold");

@@ -45,7 +45,13 @@ function newId(): string {
   }
 }
 
-export default function GroundTestLog() {
+export default function GroundTestLog({
+  defaultLabel = "",
+}: {
+  /** The active saved rocket's name, used to pre-fill the airframe field so a
+   *  test is recorded against the airframe being sized. */
+  defaultLabel?: string;
+}) {
   const [entries, setEntries] = useState<TestEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -55,6 +61,12 @@ export default function GroundTestLog() {
   const [charge, setCharge] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>("clean");
   const [notes, setNotes] = useState("");
+
+  // When a saved rocket becomes active, default the airframe field to its name
+  // (still editable). Only fires on a real change, so it won't clobber typing.
+  useEffect(() => {
+    if (defaultLabel) setLabel(defaultLabel);
+  }, [defaultLabel]);
 
   useEffect(() => {
     try {

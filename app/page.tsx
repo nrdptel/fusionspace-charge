@@ -1,7 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Calculator from "@/components/Calculator";
-import GroundTestLog from "@/components/GroundTestLog";
+import ChargeApp from "@/components/ChargeApp";
 
 const JSON_LD = {
   "@context": "https://schema.org",
@@ -67,8 +66,7 @@ export default function Page() {
         </p>
       </div>
 
-      <Calculator />
-      <GroundTestLog />
+      <ChargeApp />
       <Footer />
     </main>
   );
