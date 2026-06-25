@@ -44,6 +44,23 @@ test.describe("Charge calculator", () => {
     expect(stored).toBe("dark");
   });
 
+  test("System mode follows the OS color scheme", async ({ page }) => {
+    // No explicit choice (System): the theme must come from the OS preference.
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+    const light = await page.evaluate(
+      () => getComputedStyle(document.body).backgroundColor,
+    );
+    await page.emulateMedia({ colorScheme: "dark" });
+    const dark = await page.evaluate(
+      () => getComputedStyle(document.body).backgroundColor,
+    );
+    expect(light).not.toBe(dark); // the background tracks the OS, not a fixed light
+    const html = page.locator("html");
+    await expect(html).not.toHaveClass(/\bdark\b/);
+    await expect(html).not.toHaveClass(/\blight\b/);
+  });
+
   test("logging a ground test adds an entry", async ({ page }) => {
     await page.goto("/");
     await page.getByLabel("Charge tested").fill("1.5");
