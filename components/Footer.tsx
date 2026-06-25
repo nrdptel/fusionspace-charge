@@ -1,3 +1,5 @@
+import { observancesForDate } from "@/lib/observances";
+
 const GITHUB_URL = "https://github.com/nrdptel/fusionspace-charge";
 
 function Dot() {
@@ -9,6 +11,7 @@ function Dot() {
 }
 
 export default function Footer() {
+  const observances = observancesForDate();
   return (
     <footer className="mt-20 border-t border-zinc-200 pt-6 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-28">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -70,6 +73,28 @@ export default function Footer() {
         your responsibility. Personal, non-commercial project — not affiliated with any
         rocketry vendor or manufacturer. Built for the hobby rocketry community.
       </p>
+      {observances.length > 0 && (
+        <div className="mt-5 space-y-1">
+          {observances.map((o) => (
+            <p key={o.id} className="text-zinc-500 dark:text-zinc-400">
+              <span aria-hidden="true">{o.emoji}</span> {o.message}
+              {o.href && (
+                <>
+                  {" "}
+                  <a
+                    href={o.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+                  >
+                    {o.hrefLabel ?? "Learn more"} →
+                  </a>
+                </>
+              )}
+            </p>
+          ))}
+        </div>
+      )}
     </footer>
   );
 }

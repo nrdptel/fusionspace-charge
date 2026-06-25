@@ -1,0 +1,22 @@
+name: Feature or method request
+description: Suggest a feature, a unit/mode, or a correction to the calculation
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas welcome — especially anything that makes the numbers clearer or more
+        trustworthy. If you're proposing a change to a constant or the formula,
+        please include a source so it can be verified.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: Describe the feature, unit, mode, or correction.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source (for method/constant changes)
+      description: A reference for any proposed change to the math or its constants.

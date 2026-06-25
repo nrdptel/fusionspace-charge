@@ -1,0 +1,9 @@
+# Cloudflare Pages response headers. Static export can't emit a next.config
+# headers() block, so the baseline security headers live here and apply to every
+# path: clickjacking, MIME sniffing, and referrer leakage. (No CSP — the inline
+# theme-init script would need a per-request nonce/hash, and a misconfigured CSP
+# failing closed is a worse risk than its marginal benefit on a static site.)
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

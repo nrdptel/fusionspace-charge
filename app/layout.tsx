@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { observancesForDate } from "@/lib/observances";
 import "./globals.css";
 
 const SITE_URL = "https://charge.fusionspace.co";
@@ -58,6 +59,13 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Thin accent rule(s) for the month's awareness observance(s). Fixed at build
+  // time on a static export; a monthly rebuild rolls it over (see the deploy
+  // workflow). Decorative, so aria-hidden — the footer carries the worded line.
+  const bars = observancesForDate()
+    .map((o) => o.bar)
+    .filter((b): b is NonNullable<typeof b> => Boolean(b));
+
   return (
     <html
       lang="en"
@@ -66,6 +74,15 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {bars.map((b, i) => (
+          <div
+            key={i}
+            aria-hidden
+            title={b.title}
+            className="h-1.5 w-full shrink-0"
+            style={{ background: b.background }}
+          />
+        ))}
         {children}
       </body>
     </html>

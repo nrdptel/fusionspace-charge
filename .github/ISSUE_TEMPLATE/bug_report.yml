@@ -1,0 +1,41 @@
+name: Bug report
+description: Something on the site is wrong or broken
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! A reminder up front: every result is a theoretical
+        starting estimate, not an authoritative figure — a charge that needs more
+        or less powder than the calculator suggests is expected, and is what
+        ground-testing is for, not a bug. Bugs are when the math, units, or UI are
+        actually wrong.
+  - type: input
+    id: where
+    attributes:
+      label: Where?
+      description: Which part of the calculator or page is affected? A share link is ideal.
+      placeholder: e.g. force mode, main well — or paste the URL
+  - type: textarea
+    id: what
+    attributes:
+      label: What's wrong?
+      description: What did you expect, and what did you actually see?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - A computed number looks wrong
+        - Unit conversion
+        - Shareable link / saved state
+        - Ground-test log
+        - Layout / dark mode / display
+        - Something else
+  - type: input
+    id: env
+    attributes:
+      label: Browser / device (optional)
+      placeholder: e.g. Chrome on Android, Safari on iPhone

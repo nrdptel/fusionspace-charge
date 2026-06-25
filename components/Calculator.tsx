@@ -390,7 +390,10 @@ function WellCard({
       {/* Result */}
       <div className="mt-5 flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
         <div className="flex items-baseline gap-2">
-          <span className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50">
+          <span
+            data-testid="mass"
+            className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50"
+          >
             {fmtMass(result.mass)}
           </span>
           <span className="text-lg text-zinc-500 dark:text-zinc-400">g</span>
