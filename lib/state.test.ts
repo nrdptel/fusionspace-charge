@@ -38,4 +38,11 @@ describe("URL state", () => {
     expect(s.diameter).toBe(6);
     expect(s.drogue).toEqual(DEFAULT_STATE.drogue);
   });
+
+  it("floors a sub-1 safety margin from a hand-edited link", () => {
+    // A margin in (0,1) would scale required force down and under-size the charge.
+    expect(decodeState("mode=f&mg=0.5").margin).toBe(1);
+    expect(decodeState("mode=f&mg=-3").margin).toBe(1);
+    expect(decodeState("mode=f&mg=2").margin).toBe(2);
+  });
 });

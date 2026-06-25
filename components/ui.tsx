@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 export interface Option<T extends string> {
   value: T;
@@ -81,6 +81,7 @@ export function NumberField({
 }) {
   const [text, setText] = useState(() => display(value));
   const last = useRef(value);
+  const unitId = useId();
 
   useEffect(() => {
     if (value !== last.current) {
@@ -102,6 +103,7 @@ export function NumberField({
           min={min}
           value={text}
           placeholder={placeholder}
+          aria-describedby={unit ? unitId : undefined}
           onChange={(e) => {
             const t = e.target.value;
             setText(t);
@@ -113,7 +115,10 @@ export function NumberField({
           className="w-full bg-transparent px-3 py-2 text-sm tabular-nums outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
         />
         {unit && (
-          <span className="shrink-0 px-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <span
+            id={unitId}
+            className="shrink-0 px-3 text-xs text-zinc-500 dark:text-zinc-400"
+          >
             {unit}
           </span>
         )}

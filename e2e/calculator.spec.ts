@@ -113,6 +113,12 @@ test.describe("Charge calculator", () => {
     await expect(page.getByLabel("Well / airframe")).toHaveValue("Av-Bay 4");
   });
 
+  test("a sub-1 margin in a shared link is floored to 1", async ({ page }) => {
+    await page.goto("/?mode=f&dep=s&mg=0.5");
+    // The dangerous value must be sanitized on load, not used to shrink the charge.
+    await expect(page.getByLabel("Safety margin")).toHaveValue("1");
+  });
+
   test("negative force inputs cannot under-size the charge", async ({ page }) => {
     await page.goto("/?mode=f&dep=s");
     const friction = page.getByLabel("Friction / extra hold");

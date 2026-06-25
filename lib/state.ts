@@ -110,7 +110,9 @@ export function decodeState(query: string): State {
     pressureUnit: pu === "kPa" ? "kPa" : "psi",
     forceUnit: fu === "N" ? "N" : "lbf",
     diameter: numOr("dia", DEFAULT_STATE.diameter),
-    margin: numOr("mg", DEFAULT_STATE.margin),
+    // Floor the safety margin at 1: a value in (0,1) from a hand-edited or shared
+    // link would otherwise under-size the charge.
+    margin: Math.max(1, numOr("mg", DEFAULT_STATE.margin)),
     drogue: well("d", DEFAULT_STATE.drogue),
     main: well("m", DEFAULT_STATE.main),
   };
