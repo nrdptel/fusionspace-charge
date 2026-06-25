@@ -27,6 +27,7 @@ import { sizeByForce, sizeByPressure, type WellResult } from "@/lib/charge";
 import { fmt, fmtMass, round } from "@/lib/format";
 import { NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
+import SavedRockets from "./SavedRockets";
 
 interface Computed {
   result: WellResult;
@@ -132,6 +133,10 @@ export default function Calculator() {
 
   return (
     <div className="mt-10 md:mt-14">
+      <div className="mb-5">
+        <SavedRockets current={state} onLoad={setState} />
+      </div>
+
       {/* Controls */}
       <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
         <div className="flex flex-wrap items-start gap-x-8 gap-y-5">
