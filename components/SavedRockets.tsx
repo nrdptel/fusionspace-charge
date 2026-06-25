@@ -25,9 +25,13 @@ function newId(): string {
 export default function SavedRockets({
   current,
   onLoad,
+  onActivate,
 }: {
   current: State;
   onLoad: (state: State) => void;
+  /** Notified with a rocket's name when it becomes active (saved or loaded), so
+   *  the ground-test log can default its airframe field to it. */
+  onActivate?: (name: string) => void;
 }) {
   const [rockets, setRockets] = useState<SavedRocket[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -62,6 +66,7 @@ export default function SavedRockets({
       state: JSON.parse(JSON.stringify(current)),
     };
     setRockets((r) => [...r, snapshot]);
+    onActivate?.(trimmed);
     setName("");
     setAdding(false);
   };
@@ -130,7 +135,10 @@ export default function SavedRockets({
             >
               <button
                 type="button"
-                onClick={() => onLoad(JSON.parse(JSON.stringify(r.state)))}
+                onClick={() => {
+                  onLoad(JSON.parse(JSON.stringify(r.state)));
+                  onActivate?.(r.name);
+                }}
                 title={`Load "${r.name}"`}
                 className="py-1 pl-3 pr-2 font-medium text-zinc-700 transition hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400"
               >

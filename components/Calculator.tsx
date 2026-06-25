@@ -60,7 +60,11 @@ function computeWell(s: State, w: WellInput): Computed {
   };
 }
 
-export default function Calculator() {
+export default function Calculator({
+  onActiveRocketChange,
+}: {
+  onActiveRocketChange?: (name: string) => void;
+}) {
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -140,7 +144,11 @@ export default function Calculator() {
   return (
     <div className="mt-10 md:mt-14">
       <div className="mb-5">
-        <SavedRockets current={state} onLoad={setState} />
+        <SavedRockets
+          current={state}
+          onLoad={setState}
+          onActivate={onActiveRocketChange}
+        />
       </div>
 
       {/* Controls */}
