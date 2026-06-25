@@ -68,6 +68,20 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText("1.5 g").first()).toBeVisible();
   });
 
+  test("saves and reloads a rocket setup", async ({ page }) => {
+    await page.goto("/");
+    const dia = page.getByLabel("Airframe inner diameter");
+    await dia.fill("5.5");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Test Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    // Change the value away, then load the saved setup back.
+    await dia.fill("3");
+    await expect(dia).toHaveValue("3");
+    await page.getByRole("button", { name: "Test Bird", exact: true }).click();
+    await expect(dia).toHaveValue("5.5");
+  });
+
   test("the header has a Ko-fi tip link", async ({ page }) => {
     await page.goto("/");
     const tip = page.getByRole("link", { name: "Tip" });
