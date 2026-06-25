@@ -82,6 +82,16 @@ test.describe("Charge calculator", () => {
     await expect(dia).toHaveValue("5.5");
   });
 
+  test("negative force inputs cannot under-size the charge", async ({ page }) => {
+    await page.goto("/?mode=f&dep=s");
+    const mass = page.getByTestId("mass").first();
+    const baseline = (await mass.textContent())!.trim();
+    // A stray negative friction must be clamped to 0, not subtracted from the
+    // required force (which would dangerously reduce the charge).
+    await page.getByLabel("Friction / extra hold").fill("-100");
+    await expect(mass).toHaveText(baseline);
+  });
+
   test("the header has a Ko-fi tip link", async ({ page }) => {
     await page.goto("/");
     const tip = page.getByRole("link", { name: "Tip" });
