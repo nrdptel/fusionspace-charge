@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Segmented } from "./ui";
 import { NumberField } from "./ui";
 
@@ -61,6 +61,7 @@ export default function GroundTestLog({
   const [charge, setCharge] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>("clean");
   const [notes, setNotes] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // When a saved rocket becomes active, default the airframe field to its name
   // (still editable). Only fires on a real change, so it won't clobber typing.
@@ -117,6 +118,56 @@ export default function GroundTestLog({
       await navigator.clipboard.writeText(text);
     } catch {
       /* clipboard blocked */
+    }
+  };
+
+  // Download the log as a JSON file so a season of test data survives a cleared
+  // cache or a move to another device (there's no server to hold it).
+  const exportJson = () => {
+    const data = {
+      tool: "charge",
+      type: "ground-test-log",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      entries,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "charge-ground-test-log.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  // Restore from an export, merging by id so importing on a second device
+  // combines logs rather than clobbering them.
+  const importJson = async (file: File) => {
+    try {
+      const data = JSON.parse(await file.text());
+      const incoming: unknown = Array.isArray(data) ? data : data?.entries;
+      if (!Array.isArray(incoming)) throw new Error("no entries");
+      const valid: TestEntry[] = incoming
+        .filter((x): x is Record<string, unknown> => !!x && typeof x === "object")
+        .map((x) => ({
+          id: typeof x.id === "string" ? x.id : newId(),
+          date: typeof x.date === "string" ? x.date : todayISO(),
+          label: typeof x.label === "string" && x.label ? x.label : "—",
+          charge: Number(x.charge) || 0,
+          outcome:
+            x.outcome === "partial" || x.outcome === "none" ? x.outcome : "clean",
+          notes: typeof x.notes === "string" ? x.notes : "",
+        }));
+      setEntries((cur) => {
+        const seen = new Set(cur.map((c) => c.id));
+        return [...valid.filter((v) => !seen.has(v.id)), ...cur];
+      });
+    } catch {
+      alert("Couldn't read that file — expected a Charge ground-test log export.");
     }
   };
 
@@ -258,7 +309,12 @@ export default function GroundTestLog({
               </li>
             ))}
           </ul>
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+        {entries.length > 0 && (
+          <>
             <button
               type="button"
               onClick={exportText}
@@ -266,6 +322,30 @@ export default function GroundTestLog({
             >
               Copy log as text
             </button>
+            <span aria-hidden className="text-zinc-300 dark:text-zinc-700">
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={exportJson}
+              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+            >
+              Export (.json)
+            </button>
+            <span aria-hidden className="text-zinc-300 dark:text-zinc-700">
+              ·
+            </span>
+          </>
+        )}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+        >
+          Import (.json)
+        </button>
+        {entries.length > 0 && (
+          <>
             <span aria-hidden className="text-zinc-300 dark:text-zinc-700">
               ·
             </span>
@@ -279,9 +359,20 @@ export default function GroundTestLog({
             >
               Clear all
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = ""; // allow re-importing the same file
+            if (file) importJson(file);
+          }}
+        />
+      </div>
     </section>
   );
 }

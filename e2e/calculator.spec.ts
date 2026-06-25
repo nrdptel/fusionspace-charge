@@ -82,6 +82,26 @@ test.describe("Charge calculator", () => {
     await expect(dia).toHaveValue("5.5");
   });
 
+  test("ground-test log exports and re-imports", async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Charge tested").fill("1.2");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText("1.2 g").first()).toBeVisible();
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Export (.json)" }).click(),
+    ]);
+    const file = await download.path();
+
+    page.on("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Clear all" }).click();
+    await expect(page.getByText("1.2 g")).toHaveCount(0);
+
+    await page.locator('input[type="file"]').setInputFiles(file);
+    await expect(page.getByText("1.2 g").first()).toBeVisible();
+  });
+
   test("activating a saved rocket pre-fills the ground-test airframe", async ({
     page,
   }) => {
