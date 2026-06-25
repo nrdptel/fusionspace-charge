@@ -35,19 +35,25 @@ interface Computed {
   requiredForceLbf: number;
 }
 
+// Clamp physical inputs to be non-negative. A stray minus sign — most dangerously a
+// negative friction or margin in force mode — would otherwise *reduce* the required
+// force and under-size the charge, the one error direction that matters for a pyro
+// tool. Negatives are treated as 0 (which surfaces as "—" rather than a low number).
+const nn = (x: number): number => (Number.isFinite(x) && x > 0 ? x : 0);
+
 function computeWell(s: State, w: WellInput): Computed {
-  const diameterIn = toInches(s.diameter, s.lengthUnit);
-  const lengthIn = toInches(w.length, s.lengthUnit);
+  const diameterIn = nn(toInches(s.diameter, s.lengthUnit));
+  const lengthIn = nn(toInches(w.length, s.lengthUnit));
   if (s.mode === "pressure") {
-    const pressurePsi = toPsi(w.pressure, s.pressureUnit);
+    const pressurePsi = nn(toPsi(w.pressure, s.pressureUnit));
     return {
       result: sizeByPressure({ diameterIn, lengthIn, pressurePsi }),
       requiredForceLbf: 0,
     };
   }
-  const pinsLbf = w.pinCount * toLbf(w.pinForce, s.forceUnit);
-  const frictionLbf = toLbf(w.friction, s.forceUnit);
-  const requiredForceLbf = (pinsLbf + frictionLbf) * s.margin;
+  const pinsLbf = nn(w.pinCount) * nn(toLbf(w.pinForce, s.forceUnit));
+  const frictionLbf = nn(toLbf(w.friction, s.forceUnit));
+  const requiredForceLbf = (pinsLbf + frictionLbf) * nn(s.margin);
   return {
     result: sizeByForce({ diameterIn, lengthIn, forceLbf: requiredForceLbf }),
     requiredForceLbf,
