@@ -68,6 +68,13 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText("1.5 g").first()).toBeVisible();
   });
 
+  test("the header has a Ko-fi tip link", async ({ page }) => {
+    await page.goto("/");
+    const tip = page.getByRole("link", { name: "Tip" });
+    await expect(tip).toBeVisible();
+    await expect(tip).toHaveAttribute("href", "https://ko-fi.com/nrdptel");
+  });
+
   test("has no serious accessibility violations", async ({ page }) => {
     await page.goto("/");
     const results = await new AxeBuilder({ page })

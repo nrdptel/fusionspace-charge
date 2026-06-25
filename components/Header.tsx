@@ -1,4 +1,5 @@
 import ThemeToggle from "./ThemeToggle";
+import KofiButton from "./KofiButton";
 
 export default function Header() {
   return (
@@ -17,7 +18,10 @@ export default function Header() {
           className="h-6 w-auto md:h-7"
         />
       </a>
-      <ThemeToggle />
+      <div className="flex items-center gap-2">
+        <KofiButton />
+        <ThemeToggle />
+      </div>
     </header>
   );
 }
