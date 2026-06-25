@@ -1,0 +1,17 @@
+{
+  "name": "Charge — HPR ejection-charge calculator",
+  "short_name": "Charge",
+  "description": "Black-powder ejection-charge calculator for high-power rocketry.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
