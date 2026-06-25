@@ -36,10 +36,16 @@ interface Computed {
 }
 
 // Clamp physical inputs to be non-negative. A stray minus sign — most dangerously a
-// negative friction or margin in force mode — would otherwise *reduce* the required
-// force and under-size the charge, the one error direction that matters for a pyro
-// tool. Negatives are treated as 0 (which surfaces as "—" rather than a low number).
+// negative friction in force mode — would otherwise *reduce* the required force and
+// under-size the charge, the one error direction that matters for a pyro tool.
+// Negatives are treated as 0 (which surfaces as "—" rather than a low number).
 const nn = (x: number): number => (Number.isFinite(x) && x > 0 ? x : 0);
+
+// The safety margin is a multiplier that must never be below 1 — a value in (0,1)
+// would scale the required force *down* and under-size the charge. The input hints
+// min=1, but a shared link, saved setup, or imported state can carry anything, so
+// the floor is enforced here at the computation edge.
+const clampMargin = (x: number): number => (Number.isFinite(x) ? Math.max(1, x) : 1);
 
 function computeWell(s: State, w: WellInput): Computed {
   const diameterIn = nn(toInches(s.diameter, s.lengthUnit));
@@ -53,7 +59,7 @@ function computeWell(s: State, w: WellInput): Computed {
   }
   const pinsLbf = nn(w.pinCount) * nn(toLbf(w.pinForce, s.forceUnit));
   const frictionLbf = nn(toLbf(w.friction, s.forceUnit));
-  const requiredForceLbf = (pinsLbf + frictionLbf) * nn(s.margin);
+  const requiredForceLbf = (pinsLbf + frictionLbf) * clampMargin(s.margin);
   return {
     result: sizeByForce({ diameterIn, lengthIn, forceLbf: requiredForceLbf }),
     requiredForceLbf,
@@ -278,7 +284,10 @@ export default function Calculator({
         </button>
         <button
           type="button"
-          onClick={() => setState(DEFAULT_STATE)}
+          onClick={() => {
+            setState(DEFAULT_STATE);
+            onActiveRocketChange?.("");
+          }}
           className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
         >
           Reset
@@ -407,11 +416,10 @@ function WellCard({
       )}
 
       {/* Result */}
-      <div
-        aria-live="polite"
-        className="mt-5 flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10"
-      >
-        <div className="flex items-baseline gap-2">
+      <div className="mt-5 flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
+        {/* aria-live scoped to the headline mass so a screen reader announces the
+            result, not the whole block of chips, on each input change. */}
+        <div aria-live="polite" className="flex items-baseline gap-2">
           <span
             data-testid="mass"
             className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50"

@@ -11,7 +11,9 @@ export function round(n: number, decimals = 2): number {
 /** Format a number with up to `decimals` places, trimming trailing zeros. */
 export function fmt(n: number, decimals = 2): string {
   if (!Number.isFinite(n)) return "—";
-  return round(n, decimals).toLocaleString(undefined, {
+  // Pin the locale: these numbers are server-rendered on first paint, so a
+  // locale-dependent separator (1.87 vs 1,87) would cause a hydration mismatch.
+  return round(n, decimals).toLocaleString("en-US", {
     maximumFractionDigits: decimals,
   });
 }
