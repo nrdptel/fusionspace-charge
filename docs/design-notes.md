@@ -159,13 +159,26 @@ link. Theme and the ground-test log live in `localStorage` under a `charge.*` na
   non-affiliation line, and — specific to Charge — a safety line making ground-testing
   the headline, plus "not authoritative, your responsibility" framing.
 
-### Open questions for you
+### Decisions (resolved)
 
-1. **Scope of v1.** I'm building both modes (pressure + force), dual-deploy, units, the
-   methodology disclosures, and the ground-test log. Say the word if you'd rather ship a
-   leaner v1 (e.g. pressure-mode + single-deploy first) and grow it.
-2. **Shear-pin presets.** Published shear values for nylon 2-56 / 4-40 / 6-32 vary by
-   source. I'll ship editable presets with a visible "values vary — verify yours" note
-   rather than imply authority. Good?
-3. **GitHub repo name** for the footer/source link — confirm it's
-   `nrdptel/fusionspace-charge` (the Motor Finder links to a differently-named repo).
+- **Scope of v1:** the full tool — both modes (pressure + force), dual-deploy, units,
+  methodology disclosures, and the ground-test log.
+- **Shear-pin presets:** editable values (2-56 / 4-40 / 6-32 nylon) with a visible
+  "values vary — verify yours" note; nothing presented as authoritative.
+- **Repo:** `nrdptel/fusionspace-charge`.
+- **License:** MIT — mirroring the Motor Finder.
+- **Deployment:** GitHub Actions → Cloudflare Pages (`cloudflare/wrangler-action`,
+  `pages deploy out --project-name=fusionspace-charge --branch=main`), mirroring the
+  Motor Finder. Production branch is `main`; a monthly scheduled run rebuilds so the
+  awareness observance rolls over with the calendar. Secrets `CLOUDFLARE_API_TOKEN` and
+  `CLOUDFLARE_ACCOUNT_ID` are set in the repo, and the custom domain is configured on the
+  Pages project — both one-time dashboard steps.
+- **Awareness banners:** carried over verbatim from the Motor Finder (`lib/observances.ts`)
+  — a thin top accent rule and a warm footer line for the month's observances.
+- **Repo hygiene mirrored:** CONTRIBUTING, SECURITY, issue templates, `_headers`,
+  `wrangler.toml`, and CI (lint, unit tests, build, Playwright e2e with an axe audit).
+
+The one thing still genuinely worth your eye is the **physics assumptions** — R = 22.16
+ft·lbf/(lbm·°R), T = 3307 °R, ideal-gas with no efficiency derating. These are the
+standard HPR values, shown transparently in-app, but matching the family doesn't settle
+whether you'd want a different T or an explicit derating knob.
