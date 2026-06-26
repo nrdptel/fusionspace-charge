@@ -108,6 +108,16 @@ The default is **separation-force** mode (pins + friction + margin): it's the mo
 rigorous path and makes the holding force explicit. Target-pressure mode is one toggle
 away for flyers who already fly a known pressure.
 
+**Redundant altimeters** are the norm in high-power, so they're modelled directly. Set
+the altimeter control to Redundant and each well reports a second, backup charge sized a
+little above the primary (the dial defaults to +20%, the widely-cited NASA Student Launch
+convention). The backup is deliberately larger, not equal: it exists for the case where
+the primary fired but didn't free the airframe, so it has to break a joint the first
+charge already strained against. Both charges still get their own ground test — the app
+adds the backup to the ground-test ladder and says so in the methodology. It's a global
+toggle (both wells share it) because the two altimeters fire every charge on the airframe,
+not just one well's.
+
 ### Honesty, carried further than usual
 
 This number drives a real pyrotechnic event, so the transparency bar is higher than the
