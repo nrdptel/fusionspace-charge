@@ -128,6 +128,20 @@ adds the backup to the ground-test ladder and says so in the methodology. It's a
 toggle (both wells share it) because the two altimeters fire every charge on the airframe,
 not just one well's.
 
+**Altimeter vent holes** are a natural companion: the same flyers, the same airframe, a
+question they all hit. Barometric altimeters sample outside air through small static
+ports; size them wrong and you get a late/missed apogee (too small) or gust-triggered
+deploys (too large). It's a self-contained helper with its own little state (it's about
+the av-bay, not the charge wells, so it doesn't entangle the URL-synced calculator), but
+it reuses the same geometry inputs, units, voice, and the "show the derivation" habit. The
+math (`lib/vent.ts`, pure + tested) is the area form of the standard rule — one ¼″ port
+per 100 in³ — distributed over N equal ports: `d = 0.02216 · ID · √(L/N)`, where the
+constant is just √(area of a ¼″ hole ÷ 100 in³). It deliberately stays a guideline with a
+loud "your altimeter's manual wins" caveat, and notes that bigger is *not* safer here.
+This widens the tool slightly past pure ejection charges, but it's the same job (getting
+the recovery electronics to fire correctly), so it earns its place rather than being scope
+creep.
+
 ### Honesty, carried further than usual
 
 This number drives a real pyrotechnic event, so the transparency bar is higher than the

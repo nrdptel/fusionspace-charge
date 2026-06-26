@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Calculator from "./Calculator";
+import VentPorts from "./VentPorts";
 import GroundTestLog from "./GroundTestLog";
 
 /** A charge weight sent from a well's ground-test plan to the log. The nonce makes
@@ -25,6 +26,7 @@ export default function ChargeApp() {
   return (
     <>
       <Calculator onActiveRocketChange={setActiveRocket} onPlanCharge={planCharge} />
+      <VentPorts />
       <GroundTestLog defaultLabel={activeRocket} pendingCharge={pendingCharge} />
     </>
   );

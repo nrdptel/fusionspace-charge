@@ -160,6 +160,19 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText(/backup charge \(\+20%\)/i)).toBeVisible();
   });
 
+  test("sizes altimeter vent ports by the rule of thumb", async ({ page }) => {
+    await page.goto("/");
+    const port = page.getByTestId("port-diameter");
+    // Default 4" × 6" bay over 3 ports → ~0.125" each.
+    await expect(port).toHaveText("0.125");
+    // The same bay through a single port needs a bigger hole.
+    await page
+      .getByRole("group", { name: "Number of ports" })
+      .getByRole("button", { name: "1" })
+      .click();
+    await expect(port).toHaveText("0.217");
+  });
+
   test("the header has a Ko-fi tip link", async ({ page }) => {
     await page.goto("/");
     const tip = page.getByRole("link", { name: "Tip" });
