@@ -7,6 +7,8 @@ export type Mode = "pressure" | "force";
 export type Deploy = "single" | "dual";
 
 export interface WellInput {
+  /** Tube inner diameter for this well, in the active length unit. */
+  diameter: number;
   /** Pressurized section length, in the active length unit. */
   length: number;
   /** Target pressure (pressure mode), in the active pressure unit. */
@@ -25,8 +27,6 @@ export interface State {
   lengthUnit: LengthUnit;
   pressureUnit: PressureUnit;
   forceUnit: ForceUnit;
-  /** Airframe inner diameter, shared across wells, in the active length unit. */
-  diameter: number;
   /** Safety margin applied to required force in force mode (e.g. 1.5 = +50%). */
   margin: number;
   drogue: WellInput;
@@ -42,15 +42,14 @@ export const SHEAR_PIN_PRESETS: { label: string; lbf: number }[] = [
 ];
 
 export const DEFAULT_STATE: State = {
-  mode: "pressure",
+  mode: "force",
   deploy: "dual",
   lengthUnit: "in",
   pressureUnit: "psi",
   forceUnit: "lbf",
-  diameter: 4,
   margin: 1.5,
-  drogue: { length: 12, pressure: 12, pinCount: 2, pinForce: 32, friction: 0 },
-  main: { length: 24, pressure: 12, pinCount: 4, pinForce: 32, friction: 0 },
+  drogue: { diameter: 4, length: 12, pressure: 12, pinCount: 2, pinForce: 32, friction: 0 },
+  main: { diameter: 4, length: 24, pressure: 12, pinCount: 4, pinForce: 32, friction: 0 },
 };
 
 // --- URL serialization -------------------------------------------------------------
@@ -67,9 +66,9 @@ export function encodeState(s: State): string {
   p.set("lu", s.lengthUnit);
   p.set("pu", s.pressureUnit);
   p.set("fu", s.forceUnit);
-  p.set("dia", String(s.diameter));
   p.set("mg", String(s.margin));
   const well = (prefix: string, w: WellInput) => {
+    p.set(`${prefix}dia`, String(w.diameter));
     p.set(`${prefix}l`, String(w.length));
     p.set(`${prefix}p`, String(w.pressure));
     p.set(`${prefix}n`, String(w.pinCount));
@@ -92,6 +91,9 @@ export function decodeState(query: string): State {
     return Number.isFinite(n) ? n : fallback;
   };
   const well = (prefix: string, d: WellInput): WellInput => ({
+    // Per-well diameter, falling back to the legacy shared `dia` param so older
+    // shared links still resolve to a diameter.
+    diameter: numOr(`${prefix}dia`, numOr("dia", d.diameter)),
     length: numOr(`${prefix}l`, d.length),
     pressure: numOr(`${prefix}p`, d.pressure),
     pinCount: numOr(`${prefix}n`, d.pinCount),
@@ -109,7 +111,6 @@ export function decodeState(query: string): State {
     lengthUnit: lu === "mm" ? "mm" : "in",
     pressureUnit: pu === "kPa" ? "kPa" : "psi",
     forceUnit: fu === "N" ? "N" : "lbf",
-    diameter: numOr("dia", DEFAULT_STATE.diameter),
     // Floor the safety margin at 1: a value in (0,1) from a hand-edited or shared
     // link would otherwise under-size the charge.
     margin: Math.max(1, numOr("mg", DEFAULT_STATE.margin)),
