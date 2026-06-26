@@ -3,19 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Segmented } from "./ui";
 import { NumberField } from "./ui";
-
-type Outcome = "clean" | "partial" | "none";
-
-interface TestEntry {
-  id: string;
-  date: string; // yyyy-mm-dd
-  label: string; // which well / airframe
-  charge: number; // grams
-  outcome: Outcome;
-  notes: string;
-}
-
-const STORAGE_KEY = "charge.testlog";
+import {
+  TESTLOG_STORAGE_KEY,
+  type Outcome,
+  type TestEntry,
+} from "@/lib/testlog";
 
 const OUTCOME_LABEL: Record<Outcome, string> = {
   clean: "Clean",
@@ -48,6 +40,7 @@ function newId(): string {
 export default function GroundTestLog({
   defaultLabel = "",
   pendingCharge = null,
+  onEntriesChange,
 }: {
   /** The active saved rocket's name, used to pre-fill the airframe field so a
    *  test is recorded against the airframe being sized. */
@@ -55,6 +48,9 @@ export default function GroundTestLog({
   /** A charge weight picked from a well's ground-test plan; pre-fills the charge
    *  field and jumps here so the test is ready to record. */
   pendingCharge?: { value: number; nonce: number } | null;
+  /** Notifies the parent of the current entries so the calculator can surface a
+   *  tested charge for the active airframe. */
+  onEntriesChange?: (entries: TestEntry[]) => void;
 }) {
   const [entries, setEntries] = useState<TestEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -86,7 +82,7 @@ export default function GroundTestLog({
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(TESTLOG_STORAGE_KEY);
       if (raw) setEntries(JSON.parse(raw));
     } catch {
       /* ignore malformed storage */
@@ -97,11 +93,17 @@ export default function GroundTestLog({
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(TESTLOG_STORAGE_KEY, JSON.stringify(entries));
     } catch {
       /* storage may be full or unavailable */
     }
   }, [entries, loaded]);
+
+  // Surface the entries to the parent (once loaded, and on every change) so the
+  // calculator can show the airframe's tested charge alongside the estimate.
+  useEffect(() => {
+    if (loaded) onEntriesChange?.(entries);
+  }, [entries, loaded, onEntriesChange]);
 
   const add = () => {
     if (charge <= 0) return;

@@ -35,6 +35,8 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   entered as the bore, a pressure outside the usual band — without ever changing the math.
 - A **ground-test log** kept in your browser, because the charge that actually separated
   the airframe on the bench is the one worth flying.
+- **Closes the loop**: once a saved airframe has a clean ground test logged, the calculator
+  surfaces that proven charge above the estimate — so you fly what you validated.
 - Inputs live in the URL, so a configured calculation is a link you can share or bookmark.
 - Installable, and works **offline** once loaded — launches happen where there's no signal.
 
