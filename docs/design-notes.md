@@ -142,6 +142,16 @@ This widens the tool slightly past pure ejection charges, but it's the same job 
 the recovery electronics to fire correctly), so it earns its place rather than being scope
 creep.
 
+**Sanity hints** sit on top of the inputs (`lib/checks.ts`, pure + tested). They never
+touch the math — they just surface a quiet amber line when a value lands well outside what
+hobby airframes use: a diameter that reads like mm typed into an inches field (or the
+outside diameter), or a target pressure outside the usual ~8–15 psi band, or a charge far
+larger than a few grams. The classic, and most dangerous, mistake on a tool like this is a
+unit/OD mix-up that silently produces a plausible-looking number; a nudge at the screen is
+cheap insurance. Thresholds are deliberately wide and the wording is always "check", never
+"wrong", so a genuinely unusual build isn't nagged — and the defaults produce no hints at
+all, so the tool isn't crying wolf out of the box.
+
 ### Honesty, carried further than usual
 
 This number drives a real pyrotechnic event, so the transparency bar is higher than the
