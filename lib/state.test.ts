@@ -10,7 +10,7 @@ describe("URL state", () => {
     expect(decodeState(encodeState(DEFAULT_STATE))).toEqual(DEFAULT_STATE);
   });
 
-  it("round-trips a customized state", () => {
+  it("round-trips a customized state with different per-well diameters", () => {
     const custom: State = {
       ...DEFAULT_STATE,
       mode: "force",
@@ -18,10 +18,9 @@ describe("URL state", () => {
       lengthUnit: "mm",
       pressureUnit: "kPa",
       forceUnit: "N",
-      diameter: 98,
       margin: 2,
-      drogue: { length: 300, pressure: 100, pinCount: 3, pinForce: 142, friction: 20 },
-      main: { length: 600, pressure: 120, pinCount: 4, pinForce: 220, friction: 30 },
+      drogue: { diameter: 98, length: 300, pressure: 100, pinCount: 3, pinForce: 142, friction: 20 },
+      main: { diameter: 152, length: 600, pressure: 120, pinCount: 4, pinForce: 220, friction: 30 },
     };
     expect(decodeState(encodeState(custom))).toEqual(custom);
   });
@@ -33,10 +32,16 @@ describe("URL state", () => {
     expect(s.lengthUnit).toBe(DEFAULT_STATE.lengthUnit);
   });
 
-  it("merges partial input over defaults", () => {
-    const s = decodeState("dia=6");
-    expect(s.diameter).toBe(6);
-    expect(s.drogue).toEqual(DEFAULT_STATE.drogue);
+  it("reads a per-well diameter and leaves the other well at its default", () => {
+    const s = decodeState("ddia=6");
+    expect(s.drogue.diameter).toBe(6);
+    expect(s.main.diameter).toBe(DEFAULT_STATE.main.diameter);
+  });
+
+  it("falls back to the legacy shared diameter param for both wells", () => {
+    const s = decodeState("dia=5.5");
+    expect(s.drogue.diameter).toBe(5.5);
+    expect(s.main.diameter).toBe(5.5);
   });
 
   it("floors a sub-1 safety margin from a hand-edited link", () => {

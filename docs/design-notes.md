@@ -100,8 +100,13 @@ Two ways to choose `P`, i.e. two modes:
    and it makes the assumptions visible.
 
 **Dual-deploy** is first-class: separate drogue (apogee) and main wells, each with its
-own section length (and its own pins/force), since the same airframe usually has two
-very different pressurized volumes. Single-deploy is just one well.
+own diameter, section length, and pins/force — usually the same tube with two very
+different pressurized volumes, but the wells are independent so a different-diameter
+payload and booster section are handled too. Single-deploy is just one well.
+
+The default is **separation-force** mode (pins + friction + margin): it's the more
+rigorous path and makes the holding force explicit. Target-pressure mode is one toggle
+away for flyers who already fly a known pressure.
 
 ### Honesty, carried further than usual
 

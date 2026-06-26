@@ -48,7 +48,7 @@ const nn = (x: number): number => (Number.isFinite(x) && x > 0 ? x : 0);
 const clampMargin = (x: number): number => (Number.isFinite(x) ? Math.max(1, x) : 1);
 
 function computeWell(s: State, w: WellInput): Computed {
-  const diameterIn = nn(toInches(s.diameter, s.lengthUnit));
+  const diameterIn = nn(toInches(w.diameter, s.lengthUnit));
   const lengthIn = nn(toInches(w.length, s.lengthUnit));
   if (s.mode === "pressure") {
     const pressurePsi = nn(toPsi(w.pressure, s.pressureUnit));
@@ -100,9 +100,16 @@ export default function Calculator({
     setState((s) => ({
       ...s,
       lengthUnit: lu,
-      diameter: conv(s.diameter),
-      drogue: { ...s.drogue, length: conv(s.drogue.length) },
-      main: { ...s.main, length: conv(s.main.length) },
+      drogue: {
+        ...s.drogue,
+        diameter: conv(s.drogue.diameter),
+        length: conv(s.drogue.length),
+      },
+      main: {
+        ...s.main,
+        diameter: conv(s.main.diameter),
+        length: conv(s.main.length),
+      },
     }));
   };
   const setPressureUnit = (pu: PressureUnit) => {
@@ -223,16 +230,8 @@ export default function Calculator({
           )}
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3">
-          <NumberField
-            label="Airframe inner diameter"
-            value={state.diameter}
-            onChange={(diameter) => update({ diameter })}
-            unit={state.lengthUnit}
-            step={state.lengthUnit === "mm" ? 1 : 0.1}
-            hint="Tube ID — the bore the gas pressurizes. Shared by both wells."
-          />
-          {state.mode === "force" && (
+        {state.mode === "force" && (
+          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3">
             <NumberField
               label="Safety margin"
               value={state.margin}
@@ -240,10 +239,10 @@ export default function Calculator({
               unit="×"
               step={0.1}
               min={1}
-              hint="Multiplier on the required force. 1.5 = +50% over the bare minimum."
+              hint="Multiplier on the required force, applied to both wells. 1.5 = +50% over the bare minimum."
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Wells + results */}
@@ -348,6 +347,14 @@ function WellCard({
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <NumberField
+          label="Inner diameter"
+          value={well.diameter}
+          onChange={(diameter) => onChange({ diameter })}
+          unit={state.lengthUnit}
+          step={state.lengthUnit === "mm" ? 1 : 0.1}
+          hint="Tube ID — the bore the gas pressurizes."
+        />
+        <NumberField
           label="Pressurized length"
           value={well.length}
           onChange={(length) => onChange({ length })}
@@ -355,6 +362,9 @@ function WellCard({
           step={state.lengthUnit === "mm" ? 5 : 0.5}
           hint="Length of the section the charge pressurizes."
         />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {state.mode === "pressure" ? (
           <NumberField
             label="Target pressure"

@@ -12,8 +12,13 @@ test.describe("Charge calculator", () => {
     expect(errors).toEqual([]);
   });
 
-  test("computes the default pressure-mode charges", async ({ page }) => {
+  test("force mode is the default", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByText("Force per pin").first()).toBeVisible();
+  });
+
+  test("computes the pressure-mode benchmark charges", async ({ page }) => {
+    await page.goto("/?mode=p&dep=d");
     const masses = page.getByTestId("mass");
     // 4 in airframe, 12 psi: drogue (12 in) ≈ 0.93 g, main (24 in) ≈ 1.87 g.
     await expect(masses.nth(0)).toHaveText("0.93");
@@ -26,11 +31,13 @@ test.describe("Charge calculator", () => {
     await expect(page.getByRole("button", { name: "2-56 nylon" }).first()).toBeVisible();
   });
 
-  test("editing an input writes shareable state into the URL", async ({ page }) => {
-    await page.goto("/");
-    const dia = page.getByLabel("Airframe inner diameter");
-    await dia.fill("6");
-    await expect(page).toHaveURL(/dia=6/);
+  test("each well takes its own diameter, written to the URL", async ({ page }) => {
+    await page.goto("/?dep=d");
+    const diameters = page.getByLabel("Inner diameter");
+    await diameters.nth(0).fill("6"); // drogue
+    await diameters.nth(1).fill("4"); // main
+    await expect(page).toHaveURL(/ddia=6/);
+    await expect(page).toHaveURL(/mdia=4/);
   });
 
   test("the theme toggle cycles and persists", async ({ page }) => {
@@ -70,7 +77,7 @@ test.describe("Charge calculator", () => {
 
   test("saves and reloads a rocket setup", async ({ page }) => {
     await page.goto("/");
-    const dia = page.getByLabel("Airframe inner diameter");
+    const dia = page.getByLabel("Inner diameter").first();
     await dia.fill("5.5");
     await page.getByRole("button", { name: "Save current setup" }).click();
     await page.getByPlaceholder("Name this setup").fill("Test Bird");
@@ -121,7 +128,7 @@ test.describe("Charge calculator", () => {
 
   test("negative force inputs cannot under-size the charge", async ({ page }) => {
     await page.goto("/?mode=f&dep=s");
-    const friction = page.getByLabel("Friction / extra hold");
+    const friction = page.getByLabel("Friction / extra hold").first();
     await expect(friction).toBeVisible(); // wait for force mode to apply before reading
     const mass = page.getByTestId("mass").first();
     const baseline = (await mass.textContent())!.trim();
