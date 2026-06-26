@@ -132,6 +132,21 @@ test.describe("Charge calculator", () => {
     await expect(page.getByLabel("Well / airframe")).toHaveValue("Av-Bay 4");
   });
 
+  test("surfaces the airframe's proven charge once a clean test is logged", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Loop Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    // Log a clean ground test for the now-active airframe (label auto-fills to its name).
+    await page.getByLabel("Charge tested").fill("1.5");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    // The calculator now points past the estimate to the proven charge.
+    await expect(page.getByText(/proven Loop Bird/)).toBeVisible();
+    await expect(page.getByText(/1\.50 g/)).toBeVisible();
+  });
+
   test("a sub-1 margin in a shared link is floored to 1", async ({ page }) => {
     await page.goto("/?mode=f&dep=s&mg=0.5");
     // The dangerous value must be sanitized on load, not used to shrink the charge.

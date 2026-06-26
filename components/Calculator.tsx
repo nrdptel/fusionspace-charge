@@ -25,6 +25,7 @@ import {
 } from "@/lib/units";
 import { sizeByForce, sizeByPressure, type WellResult } from "@/lib/charge";
 import { wellCautions } from "@/lib/checks";
+import type { TestEntry } from "@/lib/testlog";
 import { fmt, fmtMass, round } from "@/lib/format";
 import { Chip, NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
@@ -94,9 +95,12 @@ function computeWell(s: State, w: WellInput): Computed {
 export default function Calculator({
   onActiveRocketChange,
   onPlanCharge,
+  testedSummary,
 }: {
   onActiveRocketChange?: (name: string) => void;
   onPlanCharge?: (grams: number) => void;
+  /** The active airframe's proven charge, if it has clean ground tests logged. */
+  testedSummary?: { name: string; cleanCount: number; lastClean?: TestEntry } | null;
 }) {
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
@@ -320,6 +324,26 @@ export default function Calculator({
           />
         ))}
       </div>
+
+      {testedSummary?.lastClean && (
+        <div className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm leading-relaxed text-emerald-800 dark:text-emerald-300">
+          <span aria-hidden className="mt-0.5 shrink-0 text-base">
+            ✓
+          </span>
+          <p>
+            <strong className="font-semibold">
+              You&apos;ve proven {testedSummary.name}.
+            </strong>{" "}
+            Its most recent clean separation was{" "}
+            <span className="font-mono font-semibold tabular-nums">
+              {fmtMass(testedSummary.lastClean.charge)} g
+            </span>{" "}
+            on {testedSummary.lastClean.date}
+            {testedSummary.cleanCount > 1 && ` (${testedSummary.cleanCount} clean tests logged)`}.
+            Fly the charge you tested — the estimate below is only a starting point.
+          </p>
+        </div>
+      )}
 
       <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
         These are theoretical starting estimates from the ideal-gas method below — a

@@ -177,6 +177,15 @@ and notes ("0.8 g, clean, pins sheared; 0.6 g didn't"). The log lives in `localS
 and can be exported/shared so it's not trapped on one device. The calculator and the log
 sit together, closing the loop the disclaimer keeps pointing at.
 
+The loop is closed *visibly*, not just structurally: once a saved airframe has a clean test
+logged against it, the calculator shows that proven charge — most recent clean separation,
+the weight, the date — in an emerald callout above the estimate, telling you in plain words
+to fly what you tested. Matching is by the airframe's name (the log's label defaults to the
+active saved rocket), and the summary is a pure, tested helper (`lib/testlog.ts`); it only
+appears in the full save-a-rocket-then-test workflow, so it adds nothing for a one-off
+calculation. It's the whole thesis of the tool made literal: the estimate starts you, the
+test you logged is the answer.
+
 ### Units
 
 Flyers think in mixed units. Diameter and length in **mm or inches** (toggle, remembered);
