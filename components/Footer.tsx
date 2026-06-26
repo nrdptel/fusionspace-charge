@@ -33,15 +33,6 @@ export default function Footer() {
           </a>
           <Dot />
           <a
-            href="https://fusionspace.co"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-zinc-800 dark:hover:text-zinc-200"
-          >
-            Fusion Space
-          </a>
-          <Dot />
-          <a
             href="https://motor.fusionspace.co"
             target="_blank"
             rel="noopener noreferrer"
@@ -50,19 +41,29 @@ export default function Footer() {
             Motor Finder
           </a>
         </nav>
-        <div className="flex items-center gap-1.5">
-          <span>Built by</span>
-          <a href="https://fusionspace.co" aria-label="Fusion Space">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/fusion-space-wordmark.svg"
-              alt="Fusion Space"
-              width={1598}
-              height={281}
-              className="h-4 w-auto"
-            />
-          </a>
-        </div>
+        <a
+          href="https://fusionspace.co"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Fusion Space — free, polished tools for high-power rocketry"
+          className="group inline-flex items-center gap-1.5 transition hover:opacity-80"
+        >
+          <span>A</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/fusion-space-wordmark.svg"
+            alt="Fusion Space"
+            width={1598}
+            height={281}
+            className="h-5 w-auto"
+          />
+          <span>
+            project{" "}
+            <span aria-hidden className="opacity-0 transition group-hover:opacity-100">
+              ↗
+            </span>
+          </span>
+        </a>
       </div>
       <p className="mt-5 max-w-3xl leading-relaxed text-zinc-500 dark:text-zinc-400">
         <strong className="font-medium text-zinc-600 dark:text-zinc-300">
