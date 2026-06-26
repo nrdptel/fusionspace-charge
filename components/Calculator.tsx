@@ -28,6 +28,7 @@ import { fmt, fmtMass, round } from "@/lib/format";
 import { NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
 import SavedRockets from "./SavedRockets";
+import MeasureGuide from "./MeasureGuide";
 
 interface Computed {
   result: WellResult;
@@ -246,6 +247,8 @@ export default function Calculator({
           </div>
         )}
       </div>
+
+      <MeasureGuide />
 
       {/* Wells + results */}
       <div
