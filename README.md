@@ -28,6 +28,7 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
 - A **ground-test log** kept in your browser, because the charge that actually separated
   the airframe on the bench is the one worth flying.
 - Inputs live in the URL, so a configured calculation is a link you can share or bookmark.
+- Installable, and works **offline** once loaded — launches happen where there's no signal.
 
 ## How the math works
 

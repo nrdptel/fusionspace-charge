@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { observancesForDate } from "@/lib/observances";
+import ServiceWorker from "@/components/ServiceWorker";
 import "./globals.css";
 
 const SITE_URL = "https://charge.fusionspace.co";
@@ -74,6 +75,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <ServiceWorker />
         {bars.map((b, i) => (
           <div
             key={i}
