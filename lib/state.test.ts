@@ -65,4 +65,9 @@ describe("URL state", () => {
     expect(decodeState("rdn=1&bpct=-10").backupPct).toBe(0);
     expect(decodeState("rdn=1&bpct=25").backupPct).toBe(25);
   });
+
+  it("round-trips and floors the field elevation", () => {
+    expect(decodeState(encodeState({ ...DEFAULT_STATE, elevation: 5400 })).elevation).toBe(5400);
+    expect(decodeState("el=-100").elevation).toBe(0);
+  });
 });

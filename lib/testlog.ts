@@ -14,6 +14,10 @@ export interface TestEntry {
   charge: number; // grams
   outcome: Outcome;
   notes: string;
+  /** The model's estimate (g) for this charge when it was planned from a ground-test
+   *  ladder step — lets the tool learn how your real charges compare to the formula.
+   *  Absent for manually-entered charges and for backup-charge tests. */
+  estimate?: number;
 }
 
 export const TESTLOG_STORAGE_KEY = "charge.testlog";
@@ -42,4 +46,28 @@ export function summarizeFor(entries: TestEntry[], label: string): TestedSummary
   let lastClean = matches[0];
   for (const e of matches) if (e.date > lastClean.date) lastClean = e;
   return { cleanCount: matches.length, lastClean };
+}
+
+export interface Calibration {
+  /** Number of clean tests that carried a model estimate. */
+  count: number;
+  /** Average ratio of the charge that worked to the model's estimate. */
+  mean: number;
+  min: number;
+  max: number;
+}
+
+/**
+ * How your real, clean charges have compared to the ideal-gas estimate, across every test
+ * that was planned from a ladder step (so it has an estimate to compare against). Needs at
+ * least two data points to mean anything. This is insight, never an auto-applied factor —
+ * the honest use is "expect to test toward the high end", never "trim the charge down".
+ */
+export function calibrationFromEntries(entries: TestEntry[]): Calibration | null {
+  const ratios = entries
+    .filter((e) => e.outcome === "clean" && e.charge > 0 && (e.estimate ?? 0) > 0)
+    .map((e) => e.charge / (e.estimate as number));
+  if (ratios.length < 2) return null;
+  const mean = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+  return { count: ratios.length, mean, min: Math.min(...ratios), max: Math.max(...ratios) };
 }

@@ -10,6 +10,8 @@ import { summarizeFor, type TestEntry } from "@/lib/testlog";
  *  each pick a distinct value so re-picking the same weight still re-triggers. */
 export interface PendingCharge {
   value: number;
+  /** The model estimate (g) this charge was planned from, for calibration. 0 = none. */
+  estimate: number;
   nonce: number;
 }
 
@@ -22,8 +24,8 @@ export default function ChargeApp() {
   const [pendingCharge, setPendingCharge] = useState<PendingCharge | null>(null);
   const [logEntries, setLogEntries] = useState<TestEntry[]>([]);
 
-  const planCharge = (value: number) =>
-    setPendingCharge((p) => ({ value, nonce: (p?.nonce ?? 0) + 1 }));
+  const planCharge = (value: number, estimate: number) =>
+    setPendingCharge((p) => ({ value, estimate, nonce: (p?.nonce ?? 0) + 1 }));
 
   // Close the loop: when the active airframe has clean ground tests logged, hand the
   // calculator its proven charge so it can point past the estimate to what actually worked.

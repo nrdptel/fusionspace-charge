@@ -33,6 +33,8 @@ export interface State {
   redundant: boolean;
   /** How much larger the backup charge is than the primary, as a percent (e.g. 20 = +20%). */
   backupPct: number;
+  /** Launch field elevation in feet — drives an altitude advisory only; never the math. */
+  elevation: number;
   drogue: WellInput;
   main: WellInput;
 }
@@ -54,6 +56,7 @@ export const DEFAULT_STATE: State = {
   margin: 1.5,
   redundant: false,
   backupPct: 20,
+  elevation: 0,
   drogue: { diameter: 4, length: 12, pressure: 12, pinCount: 2, pinForce: 32, friction: 0 },
   main: { diameter: 4, length: 24, pressure: 12, pinCount: 4, pinForce: 32, friction: 0 },
 };
@@ -75,6 +78,7 @@ export function encodeState(s: State): string {
   p.set("mg", String(s.margin));
   p.set("rdn", s.redundant ? "1" : "0");
   p.set("bpct", String(s.backupPct));
+  p.set("el", String(s.elevation));
   const well = (prefix: string, w: WellInput) => {
     p.set(`${prefix}dia`, String(w.diameter));
     p.set(`${prefix}l`, String(w.length));
@@ -126,6 +130,7 @@ export function decodeState(query: string): State {
     // Floor the backup uplift at 0 so a hand-edited link can't shrink the backup
     // below the primary; the UI default and convention is +20%.
     backupPct: Math.max(0, numOr("bpct", DEFAULT_STATE.backupPct)),
+    elevation: Math.max(0, numOr("el", DEFAULT_STATE.elevation)),
     drogue: well("d", DEFAULT_STATE.drogue),
     main: well("m", DEFAULT_STATE.main),
   };
