@@ -145,6 +145,12 @@ test.describe("Charge calculator", () => {
     await expect(tip).toHaveAttribute("href", "https://ko-fi.com/nrdptel");
   });
 
+  test("tells the user it works offline and how to install", async ({ page }) => {
+    await page.goto("/");
+    await page.getByText("Use it offline & install it").click();
+    await expect(page.getByText(/Add to Home Screen/)).toBeVisible();
+  });
+
   test("works offline once the service worker is registered", async ({
     page,
     context,

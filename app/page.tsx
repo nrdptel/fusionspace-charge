@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChargeApp from "@/components/ChargeApp";
+import InstallHint from "@/components/InstallHint";
 
 const JSON_LD = {
   "@context": "https://schema.org",
@@ -67,6 +68,7 @@ export default function Page() {
       </div>
 
       <ChargeApp />
+      <InstallHint />
       <Footer />
     </main>
   );
