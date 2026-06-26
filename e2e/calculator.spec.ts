@@ -33,7 +33,7 @@ test.describe("Charge calculator", () => {
 
   test("each well takes its own diameter, written to the URL", async ({ page }) => {
     await page.goto("/?dep=d");
-    const diameters = page.getByLabel("Inner diameter");
+    const diameters = page.getByRole("spinbutton", { name: /Inner diameter/ });
     await diameters.nth(0).fill("6"); // drogue
     await diameters.nth(1).fill("4"); // main
     await expect(page).toHaveURL(/ddia=6/);
@@ -77,7 +77,7 @@ test.describe("Charge calculator", () => {
 
   test("saves and reloads a rocket setup", async ({ page }) => {
     await page.goto("/");
-    const dia = page.getByLabel("Inner diameter").first();
+    const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
     await dia.fill("5.5");
     await page.getByRole("button", { name: "Save current setup" }).click();
     await page.getByPlaceholder("Name this setup").fill("Test Bird");
@@ -143,6 +143,15 @@ test.describe("Charge calculator", () => {
     const tip = page.getByRole("link", { name: "Tip" });
     await expect(tip).toBeVisible();
     await expect(tip).toHaveAttribute("href", "https://ko-fi.com/nrdptel");
+  });
+
+  test("the measure guide explains inner diameter and pressurized length", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByText("What am I measuring?").click();
+    await expect(page.getByRole("img", { name: /inner diameter/i })).toBeVisible();
+    await expect(page.getByText(/the bay the gas/i)).toBeVisible();
   });
 
   test("a ground-test plan step pre-fills the log's charge field", async ({ page }) => {
