@@ -19,7 +19,9 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
 ## What it does
 
 - Size by **target pressure**, or by **separation force** — shear pins (with editable
-  presets for common nylon screws) plus friction and a safety margin.
+  presets for common nylon screws) plus friction.
+- A **safety margin** in either mode: it sizes the charge above the bare separation
+  force, or above your target pressure so a leaky real well still reaches it.
 - **Single and dual-deploy**: separate drogue and main wells.
 - **Redundant altimeters**: size a backup charge alongside the primary — a little larger,
   following the common +20% convention — for the second altimeter most flyers carry.

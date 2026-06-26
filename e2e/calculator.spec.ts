@@ -18,11 +18,23 @@ test.describe("Charge calculator", () => {
   });
 
   test("computes the pressure-mode benchmark charges", async ({ page }) => {
-    await page.goto("/?mode=p&dep=d");
+    // mg=1 isolates the bare ideal-gas result (no safety margin).
+    await page.goto("/?mode=p&dep=d&mg=1");
     const masses = page.getByTestId("mass");
     // 4 in airframe, 12 psi: drogue (12 in) ≈ 0.93 g, main (24 in) ≈ 1.87 g.
     await expect(masses.nth(0)).toHaveText("0.93");
     await expect(masses.nth(1)).toHaveText("1.87");
+  });
+
+  test("the safety margin sizes the charge up in target-pressure mode", async ({
+    page,
+  }) => {
+    // Same 0.93 g bare charge, with a 2× safety margin, sizes to ~1.87 g — the charge
+    // is loaded so an ideal well would reach 2× the 12 psi target.
+    await page.goto("/?mode=p&dep=s&mg=2");
+    await expect(page.getByTestId("mass").first()).toHaveText("1.87");
+    // The entered target stays honest; the chip shows target → sized pressure.
+    await expect(page.getByText("12 → 24 psi")).toBeVisible();
   });
 
   test("a deep link restores force mode and dual deploy", async ({ page }) => {
@@ -141,8 +153,8 @@ test.describe("Charge calculator", () => {
   test("a redundant altimeter adds a backup charge sized above the primary", async ({
     page,
   }) => {
-    // Pressure/single drogue ≈ 0.93 g; a +20% backup is 0.93 × 1.2 = 1.12 g.
-    await page.goto("/?mode=p&dep=s&rdn=1&bpct=20");
+    // Pressure/single drogue ≈ 0.93 g (mg=1, bare); a +20% backup is 0.93 × 1.2 = 1.12 g.
+    await page.goto("/?mode=p&dep=s&rdn=1&bpct=20&mg=1");
     await expect(page.getByTestId("mass").first()).toHaveText("0.93");
     await expect(page.getByTestId("backup-mass").first()).toHaveText("1.12");
     await expect(page.getByText(/backup charge \(\+20%\)/i)).toBeVisible();
@@ -165,7 +177,7 @@ test.describe("Charge calculator", () => {
   });
 
   test("a ground-test plan step pre-fills the log's charge field", async ({ page }) => {
-    await page.goto("/?mode=p&dep=s"); // pressure/single: drogue ≈ 0.93 g
+    await page.goto("/?mode=p&dep=s&mg=1"); // pressure/single, bare: drogue ≈ 0.93 g
     // The "Estimate" step equals the computed mass; tap it and the log picks it up.
     await page.getByRole("button", { name: /Estimate/ }).first().click();
     await expect(page.getByLabel("Charge tested")).toHaveValue("0.93");
