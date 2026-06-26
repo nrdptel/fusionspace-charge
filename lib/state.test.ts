@@ -50,4 +50,19 @@ describe("URL state", () => {
     expect(decodeState("mode=f&mg=-3").margin).toBe(1);
     expect(decodeState("mode=f&mg=2").margin).toBe(2);
   });
+
+  it("round-trips redundant altimeter settings", () => {
+    const custom: State = { ...DEFAULT_STATE, redundant: true, backupPct: 30 };
+    expect(decodeState(encodeState(custom))).toEqual(custom);
+  });
+
+  it("defaults to a single altimeter when the param is absent", () => {
+    expect(decodeState("ddia=6").redundant).toBe(false);
+    expect(decodeState("ddia=6").backupPct).toBe(DEFAULT_STATE.backupPct);
+  });
+
+  it("floors a negative backup uplift so the backup can't drop below the primary", () => {
+    expect(decodeState("rdn=1&bpct=-10").backupPct).toBe(0);
+    expect(decodeState("rdn=1&bpct=25").backupPct).toBe(25);
+  });
 });

@@ -48,6 +48,12 @@ const nn = (x: number): number => (Number.isFinite(x) && x > 0 ? x : 0);
 // the floor is enforced here at the computation edge.
 const clampMargin = (x: number): number => (Number.isFinite(x) ? Math.max(1, x) : 1);
 
+// A backup altimeter's charge is sized a bit larger than the primary so it can still
+// separate an airframe the primary already strained against but didn't free. The
+// uplift never goes below 0% — a backup smaller than the primary defeats the point.
+const backupMass = (primaryMass: number, backupPct: number): number =>
+  primaryMass * (1 + Math.max(0, Number.isFinite(backupPct) ? backupPct : 0) / 100);
+
 function computeWell(s: State, w: WellInput): Computed {
   const diameterIn = nn(toInches(w.diameter, s.lengthUnit));
   const lengthIn = nn(toInches(w.length, s.lengthUnit));
@@ -162,7 +168,9 @@ export default function Calculator({
       <div className="mb-5">
         <SavedRockets
           current={state}
-          onLoad={setState}
+          // Merge over defaults so a setup saved before a field existed (e.g. the
+          // redundancy toggle) still loads with sane values for the new fields.
+          onLoad={(s) => setState({ ...DEFAULT_STATE, ...s })}
           onActivate={onActiveRocketChange}
         />
       </div>
@@ -178,6 +186,17 @@ export default function Calculator({
               options={[
                 { value: "single", label: "Single" },
                 { value: "dual", label: "Dual" },
+              ]}
+            />
+          </ControlGroup>
+          <ControlGroup label="Altimeters">
+            <Segmented<"single" | "redundant">
+              ariaLabel="Altimeter configuration"
+              value={state.redundant ? "redundant" : "single"}
+              onChange={(v) => update({ redundant: v === "redundant" })}
+              options={[
+                { value: "single", label: "Single" },
+                { value: "redundant", label: "Redundant" },
               ]}
             />
           </ControlGroup>
@@ -233,17 +252,30 @@ export default function Calculator({
           )}
         </div>
 
-        {state.mode === "force" && (
+        {(state.mode === "force" || state.redundant) && (
           <div className="mt-5 grid grid-cols-1 gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3">
-            <NumberField
-              label="Safety margin"
-              value={state.margin}
-              onChange={(margin) => update({ margin })}
-              unit="×"
-              step={0.1}
-              min={1}
-              hint="Multiplier on the required force, applied to both wells. 1.5 = +50% over the bare minimum."
-            />
+            {state.mode === "force" && (
+              <NumberField
+                label="Safety margin"
+                value={state.margin}
+                onChange={(margin) => update({ margin })}
+                unit="×"
+                step={0.1}
+                min={1}
+                hint="Multiplier on the required force, applied to both wells. 1.5 = +50% over the bare minimum."
+              />
+            )}
+            {state.redundant && (
+              <NumberField
+                label="Backup charge uplift"
+                value={state.backupPct}
+                onChange={(backupPct) => update({ backupPct })}
+                unit="%"
+                step={5}
+                min={0}
+                hint="How much larger the backup altimeter's charge is than the primary. The common convention is +20%."
+              />
+            )}
           </div>
         )}
       </div>
@@ -346,6 +378,7 @@ function WellCard({
   onPlanCharge?: (grams: number) => void;
 }) {
   const { result, requiredForceLbf } = computed;
+  const backup = backupMass(result.mass, state.backupPct);
   return (
     <div className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
       <div className="flex items-baseline justify-between gap-3">
@@ -446,9 +479,23 @@ function WellCard({
           </span>
           <span className="text-lg text-zinc-500 dark:text-zinc-400">g</span>
           <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-            black powder
+            {state.redundant ? "primary charge" : "black powder"}
           </span>
         </div>
+        {state.redundant && result.mass > 0 && (
+          <div className="flex items-baseline gap-2 border-t border-indigo-200/70 pt-3 dark:border-indigo-500/20">
+            <span
+              data-testid="backup-mass"
+              className="font-mono text-xl font-semibold tracking-tight text-zinc-700 tabular-nums dark:text-zinc-200"
+            >
+              {fmtMass(backup)}
+            </span>
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">g</span>
+            <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
+              backup charge (+{round(state.backupPct, 0)}%)
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Chip
             label="Volume"
@@ -475,12 +522,16 @@ function WellCard({
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             Bench-test from the low charge up until separation is clean and energetic.
             Tap a step to start a log entry below.
+            {state.redundant && " Test the backup charge too — it fires on its own if the primary doesn't."}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {[
               { label: "Low −20%", factor: 0.8 },
               { label: "Estimate", factor: 1 },
               { label: "High +20%", factor: 1.2 },
+              ...(state.redundant
+                ? [{ label: `Backup +${round(state.backupPct, 0)}%`, factor: 1 + Math.max(0, state.backupPct) / 100 }]
+                : []),
             ].map((s) => {
               const grams = round(result.mass * s.factor, 2);
               return (

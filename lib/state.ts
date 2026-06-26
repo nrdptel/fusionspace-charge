@@ -29,6 +29,10 @@ export interface State {
   forceUnit: ForceUnit;
   /** Safety margin applied to required force in force mode (e.g. 1.5 = +50%). */
   margin: number;
+  /** Whether the airframe carries a redundant (backup) altimeter firing its own charge. */
+  redundant: boolean;
+  /** How much larger the backup charge is than the primary, as a percent (e.g. 20 = +20%). */
+  backupPct: number;
   drogue: WellInput;
   main: WellInput;
 }
@@ -48,6 +52,8 @@ export const DEFAULT_STATE: State = {
   pressureUnit: "psi",
   forceUnit: "lbf",
   margin: 1.5,
+  redundant: false,
+  backupPct: 20,
   drogue: { diameter: 4, length: 12, pressure: 12, pinCount: 2, pinForce: 32, friction: 0 },
   main: { diameter: 4, length: 24, pressure: 12, pinCount: 4, pinForce: 32, friction: 0 },
 };
@@ -67,6 +73,8 @@ export function encodeState(s: State): string {
   p.set("pu", s.pressureUnit);
   p.set("fu", s.forceUnit);
   p.set("mg", String(s.margin));
+  p.set("rdn", s.redundant ? "1" : "0");
+  p.set("bpct", String(s.backupPct));
   const well = (prefix: string, w: WellInput) => {
     p.set(`${prefix}dia`, String(w.diameter));
     p.set(`${prefix}l`, String(w.length));
@@ -114,6 +122,10 @@ export function decodeState(query: string): State {
     // Floor the safety margin at 1: a value in (0,1) from a hand-edited or shared
     // link would otherwise under-size the charge.
     margin: Math.max(1, numOr("mg", DEFAULT_STATE.margin)),
+    redundant: p.get("rdn") === "1",
+    // Floor the backup uplift at 0 so a hand-edited link can't shrink the backup
+    // below the primary; the UI default and convention is +20%.
+    backupPct: Math.max(0, numOr("bpct", DEFAULT_STATE.backupPct)),
     drogue: well("d", DEFAULT_STATE.drogue),
     main: well("m", DEFAULT_STATE.main),
   };

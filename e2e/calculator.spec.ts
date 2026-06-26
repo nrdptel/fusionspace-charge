@@ -138,6 +138,16 @@ test.describe("Charge calculator", () => {
     await expect(mass).toHaveText(baseline);
   });
 
+  test("a redundant altimeter adds a backup charge sized above the primary", async ({
+    page,
+  }) => {
+    // Pressure/single drogue ≈ 0.93 g; a +20% backup is 0.93 × 1.2 = 1.12 g.
+    await page.goto("/?mode=p&dep=s&rdn=1&bpct=20");
+    await expect(page.getByTestId("mass").first()).toHaveText("0.93");
+    await expect(page.getByTestId("backup-mass").first()).toHaveText("1.12");
+    await expect(page.getByText(/backup charge \(\+20%\)/i)).toBeVisible();
+  });
+
   test("the header has a Ko-fi tip link", async ({ page }) => {
     await page.goto("/");
     const tip = page.getByRole("link", { name: "Tip" });

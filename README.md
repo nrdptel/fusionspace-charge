@@ -21,6 +21,8 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
 - Size by **target pressure**, or by **separation force** — shear pins (with editable
   presets for common nylon screws) plus friction and a safety margin.
 - **Single and dual-deploy**: separate drogue and main wells.
+- **Redundant altimeters**: size a backup charge alongside the primary — a little larger,
+  following the common +20% convention — for the second altimeter most flyers carry.
 - Units that convert in place — diameter and length in **mm or in**, pressure in
   **psi or kPa**, force in **lbf or N**. Black powder is always reported in grams.
 - The full formula, every constant, and a worked example using your own inputs, so the

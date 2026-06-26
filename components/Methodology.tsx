@@ -169,6 +169,32 @@ export default function Methodology({
           down, and let the ground test set the final number.
         </p>
       </Disclosure>
+
+      <Disclosure summary="Redundant altimeters and the backup charge">
+        <p>
+          Most high-power flyers run two altimeters — a primary and a backup — each wired
+          to its own ejection charge and its own e-match. The two fire independently: the
+          backup is set to go a moment after the primary (apogee plus a short delay on the
+          drogue, a lower altitude on the main), so if the primary altimeter, battery, or
+          match fails, the backup still gets the airframe open.
+        </p>
+        <p>
+          The backup charge is sized a little <em>larger</em> than the primary, not equal
+          to it. The reason is the failure it&apos;s there for: if the primary already fired
+          but didn&apos;t separate the airframe — a charge that was a touch light, a tight
+          joint, shear pins that bound — the backup has to break free a section the first
+          charge may have strained against. The widely-used convention, including NASA&apos;s
+          Student Launch handbook, is to make the backup about <strong>20% larger</strong>{" "}
+          (or at least ~0.5 g more, whichever is greater). Some flyers go larger; that&apos;s
+          the dial in the controls above.
+        </p>
+        <p className="font-medium text-zinc-700 dark:text-zinc-300">
+          Both charges still get ground-tested. The primary has to separate the airframe on
+          its own, and so does the backup — fire each one on the bench and confirm a clean,
+          energetic separation before you fly. Redundancy is a second chance, not a reason
+          to skip the test.
+        </p>
+      </Disclosure>
     </section>
   );
 }
