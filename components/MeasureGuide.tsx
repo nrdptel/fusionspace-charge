@@ -10,11 +10,12 @@ export default function MeasureGuide() {
         What am I measuring?
       </summary>
       <div className="mt-3 space-y-4 text-zinc-600 dark:text-zinc-400">
+        <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
         <svg
-          viewBox="0 0 440 210"
+          viewBox="60 22 340 192"
           role="img"
-          aria-label="Airframe section: the inner diameter is the tube's inside bore; the pressurized length runs from the charge's bulkhead to the separation joint."
-          className="h-auto w-full max-w-md"
+          aria-label="Airframe section: the inner diameter is measured across the tube's inside bore; the pressurized length runs from the charge's bulkhead to the separation joint."
+          className="mx-auto h-auto w-full max-w-md"
           fontSize="11"
         >
           <defs>
@@ -23,91 +24,96 @@ export default function MeasureGuide() {
               viewBox="0 0 10 10"
               refX="5"
               refY="5"
-              markerWidth="6"
-              markerHeight="6"
+              markerWidth="7"
+              markerHeight="7"
               orient="auto-start-reverse"
             >
-              <path d="M0,0 L10,5 L0,10 z" className="fill-zinc-400 dark:fill-zinc-500" />
+              <path d="M0,0 L10,5 L0,10 z" className="fill-zinc-500 dark:fill-zinc-400" />
             </marker>
           </defs>
 
-          {/* Pressurized bay (bulkhead → joint) */}
-          <rect x="165" y="60" width="165" height="70" className="fill-indigo-500/10" />
+          {/* Pressurized bay (bulkhead → joint), inset inside the tube walls */}
+          <rect x="170" y="64" width="148" height="84" className="fill-indigo-500/10" />
           {/* Airframe tube */}
           <rect
-            x="70"
-            y="60"
+            x="80"
+            y="62"
             width="300"
-            height="70"
-            rx="10"
+            height="88"
+            rx="12"
             fill="none"
             className="stroke-zinc-400 dark:stroke-zinc-600"
             strokeWidth="2"
           />
-          {/* Bulkhead */}
+          {/* Bulkhead (full bore) */}
           <line
-            x1="165"
-            y1="60"
-            x2="165"
-            y2="130"
+            x1="170"
+            y1="64"
+            x2="170"
+            y2="148"
             className="stroke-zinc-500 dark:stroke-zinc-400"
-            strokeWidth="4"
+            strokeWidth="5"
           />
-          {/* Charge well */}
-          <rect x="170" y="88" width="14" height="14" rx="2" className="fill-indigo-500" />
+          {/* Charge well, on the bulkhead face, centered on the bore */}
+          <rect x="174" y="97" width="16" height="18" rx="3" className="fill-indigo-500" />
           {/* Separation joint */}
           <line
-            x1="330"
-            y1="54"
-            x2="330"
-            y2="136"
+            x1="318"
+            y1="56"
+            x2="318"
+            y2="156"
             className="stroke-zinc-400 dark:stroke-zinc-500"
             strokeWidth="2"
             strokeDasharray="4 4"
           />
 
-          {/* Inner-diameter dimension */}
+          {/* Inner-diameter dimension — drawn across the bore so it reads as the
+              inside, not the outside */}
           <line
-            x1="52"
-            y1="60"
-            x2="52"
-            y2="130"
-            className="stroke-zinc-400 dark:stroke-zinc-500"
-            strokeWidth="1.5"
+            x1="120"
+            y1="65"
+            x2="120"
+            y2="147"
+            className="stroke-zinc-500 dark:stroke-zinc-400"
+            strokeWidth="1.25"
             markerStart="url(#mg-arrow)"
             markerEnd="url(#mg-arrow)"
           />
-          <text x="46" y="99" textAnchor="end" className="fill-zinc-600 dark:fill-zinc-400">
+          <text x="131" y="110" className="fill-zinc-600 dark:fill-zinc-400">
             ID
           </text>
 
-          {/* Pressurized-length dimension */}
+          {/* Pressurized-length dimension, with witness lines down from the
+              bulkhead and the joint so it spans exactly that bay */}
+          <line x1="170" y1="150" x2="170" y2="184" className="stroke-zinc-300 dark:stroke-zinc-700" strokeWidth="1" />
+          <line x1="318" y1="150" x2="318" y2="184" className="stroke-zinc-300 dark:stroke-zinc-700" strokeWidth="1" />
           <line
-            x1="165"
-            y1="152"
-            x2="330"
-            y2="152"
-            className="stroke-zinc-400 dark:stroke-zinc-500"
-            strokeWidth="1.5"
+            x1="170"
+            y1="180"
+            x2="318"
+            y2="180"
+            className="stroke-zinc-500 dark:stroke-zinc-400"
+            strokeWidth="1.25"
             markerStart="url(#mg-arrow)"
             markerEnd="url(#mg-arrow)"
           />
-          <text x="247" y="170" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
+          <text x="244" y="200" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
             pressurized length
           </text>
 
-          {/* Callout labels */}
-          <line x1="165" y1="48" x2="165" y2="58" className="stroke-zinc-300 dark:stroke-zinc-700" />
-          <text x="160" y="44" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
+          {/* Top callouts with leader lines to the feature */}
+          <line x1="170" y1="46" x2="170" y2="62" className="stroke-zinc-300 dark:stroke-zinc-700" strokeWidth="1" />
+          <text x="170" y="42" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
             bulkhead + charge well
           </text>
-          <line x1="330" y1="48" x2="330" y2="54" className="stroke-zinc-300 dark:stroke-zinc-700" />
-          <text x="330" y="44" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
+          <line x1="318" y1="46" x2="318" y2="56" className="stroke-zinc-300 dark:stroke-zinc-700" strokeWidth="1" />
+          <text x="318" y="42" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
             separation joint
           </text>
         </svg>
+        </div>
 
-        <dl className="space-y-2">
+        <dl className="space-y-3">
           <div>
             <dt className="font-medium text-zinc-700 dark:text-zinc-300">Inner diameter (ID)</dt>
             <dd>The tube&apos;s inside bore — what the gas actually fills. Not the outside diameter.</dd>
