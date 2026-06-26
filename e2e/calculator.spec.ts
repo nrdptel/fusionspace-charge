@@ -145,6 +145,13 @@ test.describe("Charge calculator", () => {
     await expect(tip).toHaveAttribute("href", "https://ko-fi.com/nrdptel");
   });
 
+  test("a ground-test plan step pre-fills the log's charge field", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s"); // pressure/single: drogue ≈ 0.93 g
+    // The "Estimate" step equals the computed mass; tap it and the log picks it up.
+    await page.getByRole("button", { name: /Estimate/ }).first().click();
+    await expect(page.getByLabel("Charge tested")).toHaveValue("0.93");
+  });
+
   test("tells the user it works offline and how to install", async ({ page }) => {
     await page.goto("/");
     await page.getByText("Use it offline & install it").click();

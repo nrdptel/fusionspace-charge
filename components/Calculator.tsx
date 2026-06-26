@@ -68,8 +68,10 @@ function computeWell(s: State, w: WellInput): Computed {
 
 export default function Calculator({
   onActiveRocketChange,
+  onPlanCharge,
 }: {
   onActiveRocketChange?: (name: string) => void;
+  onPlanCharge?: (grams: number) => void;
 }) {
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
@@ -261,6 +263,7 @@ export default function Calculator({
             well={state[key]}
             onChange={(patch) => updateWell(key, patch)}
             computed={data}
+            onPlanCharge={onPlanCharge}
           />
         ))}
       </div>
@@ -329,6 +332,7 @@ function WellCard({
   well,
   onChange,
   computed,
+  onPlanCharge,
 }: {
   title: string;
   sub: string;
@@ -336,6 +340,7 @@ function WellCard({
   well: WellInput;
   onChange: (patch: Partial<WellInput>) => void;
   computed: Computed;
+  onPlanCharge?: (grams: number) => void;
 }) {
   const { result, requiredForceLbf } = computed;
   return (
@@ -458,6 +463,43 @@ function WellCard({
           )}
         </div>
       </div>
+
+      {result.mass > 0 && (
+        <div className="mt-4">
+          <div className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Ground-test plan
+          </div>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            Bench-test from the low charge up until separation is clean and energetic.
+            Tap a step to start a log entry below.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {[
+              { label: "Low −20%", factor: 0.8 },
+              { label: "Estimate", factor: 1 },
+              { label: "High +20%", factor: 1.2 },
+            ].map((s) => {
+              const grams = round(result.mass * s.factor, 2);
+              return (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => onPlanCharge?.(grams)}
+                  title={`Log a ${grams} g test`}
+                  className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-left transition hover:border-indigo-400 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-500/60"
+                >
+                  <span className="block text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                    {s.label}
+                  </span>
+                  <span className="block font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
+                    {fmtMass(grams)} g
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

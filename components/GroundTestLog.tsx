@@ -47,10 +47,14 @@ function newId(): string {
 
 export default function GroundTestLog({
   defaultLabel = "",
+  pendingCharge = null,
 }: {
   /** The active saved rocket's name, used to pre-fill the airframe field so a
    *  test is recorded against the airframe being sized. */
   defaultLabel?: string;
+  /** A charge weight picked from a well's ground-test plan; pre-fills the charge
+   *  field and jumps here so the test is ready to record. */
+  pendingCharge?: { value: number; nonce: number } | null;
 }) {
   const [entries, setEntries] = useState<TestEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -68,6 +72,17 @@ export default function GroundTestLog({
   useEffect(() => {
     if (defaultLabel) setLabel(defaultLabel);
   }, [defaultLabel]);
+
+  // When a charge is picked from a well's ground-test plan, drop it into the form
+  // and bring the log into view so the test is ready to record. The nonce makes
+  // every pick distinct, so re-picking the same weight still fires.
+  useEffect(() => {
+    if (!pendingCharge) return;
+    setCharge(pendingCharge.value);
+    document
+      .getElementById("ground-test")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [pendingCharge]);
 
   useEffect(() => {
     try {
