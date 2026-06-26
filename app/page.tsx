@@ -1,7 +1,9 @@
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChargeApp from "@/components/ChargeApp";
 import InstallHint from "@/components/InstallHint";
+import FusionSpaceBadge from "@/components/FusionSpaceBadge";
+import ThemeToggle from "@/components/ThemeToggle";
+import KofiButton from "@/components/KofiButton";
 
 const JSON_LD = {
   "@context": "https://schema.org",
@@ -23,33 +25,20 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
-      <Header />
-
-      <section className="relative mt-12 overflow-hidden md:mt-16">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-[36rem] max-w-full -translate-x-1/2 rounded-full bg-indigo-500/15 blur-3xl dark:bg-indigo-500/20"
-        />
-        <div className="flex flex-col items-start">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/fusion-space-mark.svg"
-            alt=""
-            aria-hidden
-            width={880}
-            height={815}
-            className="h-11 w-auto md:h-12"
-          />
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight md:text-5xl">
-            Charge
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
-            A black-powder ejection-charge calculator for high-power rocketry. Size a
-            charge to separate your airframe and deploy recovery — from your tube, your
-            pressurized section, and the force holding it together.
+      <header className="flex items-start justify-between gap-4 border-b border-zinc-200 pb-6 dark:border-zinc-800">
+        <div>
+          <FusionSpaceBadge className="mb-1.5" />
+          <h1 className="text-2xl font-semibold tracking-tight">Charge</h1>
+          <p className="mt-2 max-w-xl text-sm text-zinc-500 dark:text-zinc-400">
+            Black-powder ejection-charge calculator for high-power rocketry — size a
+            charge to separate your airframe and deploy recovery.
           </p>
         </div>
-      </section>
+        <div className="flex shrink-0 items-center gap-2">
+          <KofiButton />
+          <ThemeToggle />
+        </div>
+      </header>
 
       {/* Safety is the headline, not the fine print. */}
       <div className="mt-8 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-relaxed text-amber-900 dark:text-amber-200">
