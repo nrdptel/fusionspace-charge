@@ -39,6 +39,7 @@ export default function ChargeApp() {
         onActiveRocketChange={setActiveRocket}
         onPlanCharge={planCharge}
         testedSummary={testedSummary}
+        airframeName={activeRocket}
       />
       <VentPorts />
       <GroundTestLog

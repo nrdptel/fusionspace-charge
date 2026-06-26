@@ -37,6 +37,8 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   the airframe on the bench is the one worth flying.
 - **Closes the loop**: once a saved airframe has a clean ground test logged, the calculator
   surfaces that proven charge above the estimate — so you fly what you validated.
+- **Printable build & ground-test card**: a one-page sheet with each well's charges and a
+  grid to record results at the bench or the field, where there's no signal. Save as PDF too.
 - Inputs live in the URL, so a configured calculation is a link you can share or bookmark.
 - Installable, and works **offline** once loaded — launches happen where there's no signal.
 
