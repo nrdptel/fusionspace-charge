@@ -186,6 +186,19 @@ appears in the full save-a-rocket-then-test workflow, so it adds nothing for a o
 calculation. It's the whole thesis of the tool made literal: the estimate starts you, the
 test you logged is the answer.
 
+### The printable field card
+
+The tool's other half is *off the screen*. Launches happen at remote fields with no signal,
+and many ranges keep phones away from the pad — but everyone runs on paper. So "Print card"
+produces a one-page **build & ground-test card**: each well's charges (estimate, backup, and
+the proven tested charge if there is one) and a fill-in grid to record what each test did at
+the bench. It's a `PrintCard` component portalled to `<body>` and hidden on screen; a single
+`@media print` rule in `globals.css` hides every other direct child of the body and reveals
+just the card, so it prints clean regardless of the on-screen component tree (and "Save as
+PDF" from the dialog gives a digital copy). It carries the same safety framing the page does,
+because the card is what's actually in your hand at the pad. This is the offline ethos made
+physical — the calculation leaves the browser and goes to the bench.
+
 ### Units
 
 Flyers think in mixed units. Diameter and length in **mm or inches** (toggle, remembered);

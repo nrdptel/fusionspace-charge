@@ -31,6 +31,7 @@ import { Chip, NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
 import SavedRockets from "./SavedRockets";
 import MeasureGuide from "./MeasureGuide";
+import PrintCard, { type PrintPlan } from "./PrintCard";
 
 interface Computed {
   result: WellResult;
@@ -96,11 +97,14 @@ export default function Calculator({
   onActiveRocketChange,
   onPlanCharge,
   testedSummary,
+  airframeName,
 }: {
   onActiveRocketChange?: (name: string) => void;
   onPlanCharge?: (grams: number) => void;
   /** The active airframe's proven charge, if it has clean ground tests logged. */
   testedSummary?: { name: string; cleanCount: number; lastClean?: TestEntry } | null;
+  /** The active saved rocket's name, used to title the printable card. */
+  airframeName?: string;
 }) {
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
@@ -184,6 +188,39 @@ export default function Calculator({
           { key: "main", title: "Main well", sub: "Lower — deploys the main", data: main },
         ]
       : [{ key: "drogue", title: "Ejection charge", sub: "Separates the airframe", data: drogue }];
+
+  // The plan for the printable build & ground-test card. Only wells with a real charge
+  // are included; each gets the ground-test ladder as rows to fill in at the bench.
+  const printPlan: PrintPlan = {
+    title: airframeName?.trim() || "Ejection charge plan",
+    meta: `${state.deploy === "dual" ? "Dual deploy" : "Single deploy"} · sized by ${
+      state.mode === "force" ? "separation force" : "target pressure"
+    }`,
+    tested: testedSummary?.lastClean
+      ? `${fmtMass(testedSummary.lastClean.charge)} g — ${testedSummary.name} (${testedSummary.lastClean.date})`
+      : undefined,
+    wells: wells
+      .filter(({ data }) => data.result.mass > 0)
+      .map(({ key, title, data }) => {
+        const w = state[key];
+        const mass = data.result.mass;
+        return {
+          title,
+          idText: `${fmt(w.diameter, 3)} ${state.lengthUnit}`,
+          lenText: `${fmt(w.length, 2)} ${state.lengthUnit}`,
+          estimate: fmtMass(mass),
+          backup: state.redundant ? fmtMass(backupMass(mass, state.backupPct)) : undefined,
+          steps: [
+            { label: "low −20%", grams: fmtMass(mass * 0.8) },
+            { label: "estimate", grams: fmtMass(mass) },
+            { label: "high +20%", grams: fmtMass(mass * 1.2) },
+            ...(state.redundant
+              ? [{ label: backupFloorBinds(mass, state.backupPct) ? "backup +0.5 g" : "backup", grams: fmtMass(backupMass(mass, state.backupPct)) }]
+              : []),
+          ],
+        };
+      }),
+  };
 
   return (
     <div className="mt-10 md:mt-14">
@@ -363,6 +400,13 @@ export default function Calculator({
         </button>
         <button
           type="button"
+          onClick={() => window.print()}
+          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        >
+          Print card
+        </button>
+        <button
+          type="button"
           onClick={() => {
             setState(DEFAULT_STATE);
             onActiveRocketChange?.("");
@@ -373,7 +417,13 @@ export default function Calculator({
         </button>
       </div>
 
+      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+        Print card prints a one-page build &amp; ground-test sheet for the bench or the
+        field — or save it as PDF from the print dialog.
+      </p>
+
       <Methodology state={state} drogue={drogue} />
+      <PrintCard plan={printPlan} />
     </div>
   );
 }

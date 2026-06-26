@@ -144,7 +144,9 @@ test.describe("Charge calculator", () => {
     await page.getByRole("button", { name: "Log test", exact: true }).click();
     // The calculator now points past the estimate to the proven charge.
     await expect(page.getByText(/proven Loop Bird/)).toBeVisible();
-    await expect(page.getByText(/1\.50 g/)).toBeVisible();
+    await expect(page.locator("p").filter({ hasText: "proven Loop Bird" })).toContainText(
+      "1.50 g",
+    );
   });
 
   test("a sub-1 margin in a shared link is floored to 1", async ({ page }) => {
@@ -211,6 +213,24 @@ test.describe("Charge calculator", () => {
       .getByRole("button", { name: "1" })
       .click();
     await expect(port).toHaveText("0.217");
+  });
+
+  test("a printable build & ground-test card replaces the page on print", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=p&dep=s&mg=1"); // single well ≈ 0.93 g
+    // On screen the card is hidden and the app is visible.
+    await expect(page.getByRole("button", { name: "Print card" })).toBeVisible();
+    await expect(page.getByText("Ejection charge & ground-test card")).toBeHidden();
+    // Under print media, only the card shows: the on-screen heading is hidden and the
+    // card's heading and ground-test grid appear.
+    await page.emulateMedia({ media: "print" });
+    await expect(page.getByText("Ejection charge & ground-test card")).toBeVisible();
+    await expect(page.getByText("☐ clean ☐ partial ☐ no sep.").first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Charge", exact: true, level: 1 }),
+    ).toBeHidden();
+    await page.emulateMedia({ media: "screen" });
   });
 
   test("the header has a Ko-fi tip link", async ({ page }) => {
