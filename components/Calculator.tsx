@@ -24,6 +24,7 @@ import {
   type PressureUnit,
 } from "@/lib/units";
 import { sizeByForce, sizeByPressure, type WellResult } from "@/lib/charge";
+import { wellCautions } from "@/lib/checks";
 import { fmt, fmtMass, round } from "@/lib/format";
 import { NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
@@ -383,6 +384,7 @@ function WellCard({
 }) {
   const { result, requiredForceLbf } = computed;
   const backup = backupMass(result.mass, state.backupPct);
+  const cautions = wellCautions(state, well, { mass: result.mass });
   return (
     <div className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
       <div className="flex items-baseline justify-between gap-3">
@@ -521,6 +523,22 @@ function WellCard({
           )}
         </div>
       </div>
+
+      {cautions.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {cautions.map((c) => (
+            <p
+              key={c.id}
+              className="flex items-start gap-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400"
+            >
+              <span aria-hidden className="mt-px shrink-0">
+                ⚠
+              </span>
+              <span>{c.message}</span>
+            </p>
+          ))}
+        </div>
+      )}
 
       {result.mass > 0 && (
         <div className="mt-4">

@@ -31,6 +31,8 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   **psi or kPa**, force in **lbf or N**. Black powder is always reported in grams.
 - The full formula, every constant, and a worked example using your own inputs, so the
   number is never a black box.
+- **Sanity hints** that flag a likely input error — a unit mix-up, the outside diameter
+  entered as the bore, a pressure outside the usual band — without ever changing the math.
 - A **ground-test log** kept in your browser, because the charge that actually separated
   the airframe on the bench is the one worth flying.
 - Inputs live in the URL, so a configured calculation is a link you can share or bookmark.

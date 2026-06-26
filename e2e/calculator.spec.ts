@@ -160,6 +160,18 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText(/backup charge \(\+20%\)/i)).toBeVisible();
   });
 
+  test("warns when an inner diameter looks like a unit or OD mix-up", async ({ page }) => {
+    await page.goto("/?mode=f&dep=s");
+    const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
+    await expect(dia).toBeVisible();
+    // A 98 in "inner diameter" is really 98 mm typed into an inches field.
+    await dia.fill("98");
+    await expect(page.getByText(/did you mean mm, or enter the outside diameter/i)).toBeVisible();
+    // Fixing it clears the caution.
+    await dia.fill("4");
+    await expect(page.getByText(/did you mean mm, or enter the outside diameter/i)).toHaveCount(0);
+  });
+
   test("sizes altimeter vent ports by the rule of thumb", async ({ page }) => {
     await page.goto("/");
     const port = page.getByTestId("port-diameter");
