@@ -120,8 +120,10 @@ and the worked example spells out the multiply.
 
 **Redundant altimeters** are the norm in high-power, so they're modelled directly. Set
 the altimeter control to Redundant and each well reports a second, backup charge sized a
-little above the primary (the dial defaults to +20%, the widely-cited NASA Student Launch
-convention). The backup is deliberately larger, not equal: it exists for the case where
+little above the primary — the larger of the dial's percentage (default +20%) or a +0.5 g
+floor, the widely-cited NASA Student Launch convention. The floor is what matters for small
+charges, where 20% is only a fraction of a gram; the label and the ground-test step name
+whichever rule actually binds. The backup is deliberately larger, not equal: it exists for the case where
 the primary fired but didn't free the airframe, so it has to break a joint the first
 charge already strained against. Both charges still get their own ground test — the app
 adds the backup to the ground-test ladder and says so in the methodology. It's a global

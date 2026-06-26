@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { NumberField, Segmented } from "./ui";
+import { Chip, Disclosure, NumberField, Segmented } from "./ui";
 import { fmt, round } from "@/lib/format";
 import {
   fromInches,
@@ -27,36 +27,6 @@ interface VentState {
 }
 
 const DEFAULT: VentState = { diameter: 4, length: 6, ports: 3, lengthUnit: "in" };
-
-function Disclosure({
-  summary,
-  children,
-}: {
-  summary: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <details className="group mt-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-      <summary className="cursor-pointer select-none font-medium text-zinc-700 dark:text-zinc-300">
-        {summary}
-      </summary>
-      <div className="mt-3 space-y-4 text-zinc-600 dark:text-zinc-400">{children}</div>
-    </details>
-  );
-}
-
-function Chip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
-        {label}
-      </div>
-      <div className="font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
-        {value}
-      </div>
-    </div>
-  );
-}
 
 export default function VentPorts() {
   const [state, setState] = useState<VentState>(DEFAULT);

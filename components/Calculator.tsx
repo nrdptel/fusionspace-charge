@@ -26,7 +26,7 @@ import {
 import { sizeByForce, sizeByPressure, type WellResult } from "@/lib/charge";
 import { wellCautions } from "@/lib/checks";
 import { fmt, fmtMass, round } from "@/lib/format";
-import { NumberField, Segmented } from "./ui";
+import { Chip, NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
 import SavedRockets from "./SavedRockets";
 import MeasureGuide from "./MeasureGuide";
@@ -49,11 +49,24 @@ const nn = (x: number): number => (Number.isFinite(x) && x > 0 ? x : 0);
 // the floor is enforced here at the computation edge.
 const clampMargin = (x: number): number => (Number.isFinite(x) ? Math.max(1, x) : 1);
 
-// A backup altimeter's charge is sized a bit larger than the primary so it can still
-// separate an airframe the primary already strained against but didn't free. The
-// uplift never goes below 0% — a backup smaller than the primary defeats the point.
-const backupMass = (primaryMass: number, backupPct: number): number =>
-  primaryMass * (1 + Math.max(0, Number.isFinite(backupPct) ? backupPct : 0) / 100);
+// A backup altimeter's charge is sized above the primary so it can still separate an
+// airframe the primary already strained against but didn't free. The convention (widely
+// cited via NASA's Student Launch handbook) is the larger of +20% or +0.5 g — the absolute
+// floor is what matters for small charges, where 20% is only a fraction of a gram. The
+// percentage never goes below 0%; a backup smaller than the primary defeats the point.
+const BACKUP_MIN_G = 0.5;
+const backupPctClamped = (backupPct: number): number =>
+  Math.max(0, Number.isFinite(backupPct) ? backupPct : 0);
+const backupMass = (primaryMass: number, backupPct: number): number => {
+  if (!(primaryMass > 0)) return 0;
+  const byPercent = primaryMass * (1 + backupPctClamped(backupPct) / 100);
+  return Math.max(byPercent, primaryMass + BACKUP_MIN_G);
+};
+// Whether the +0.5 g floor (not the percentage) is what sets the backup, so the label can
+// name the rule that actually applies instead of quoting a percentage that doesn't.
+const backupFloorBinds = (primaryMass: number, backupPct: number): boolean =>
+  primaryMass > 0 &&
+  primaryMass + BACKUP_MIN_G > primaryMass * (1 + backupPctClamped(backupPct) / 100);
 
 function computeWell(s: State, w: WellInput): Computed {
   const diameterIn = nn(toInches(w.diameter, s.lengthUnit));
@@ -352,19 +365,6 @@ function ControlGroup({ label, children }: { label: string; children: React.Reac
   );
 }
 
-function Chip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
-        {label}
-      </div>
-      <div className="font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
-        {value}
-      </div>
-    </div>
-  );
-}
-
 function WellCard({
   title,
   sub,
@@ -384,6 +384,9 @@ function WellCard({
 }) {
   const { result, requiredForceLbf } = computed;
   const backup = backupMass(result.mass, state.backupPct);
+  const backupLabel = backupFloorBinds(result.mass, state.backupPct)
+    ? `+${BACKUP_MIN_G} g`
+    : `+${round(backupPctClamped(state.backupPct), 0)}%`;
   const cautions = wellCautions(state, well, { mass: result.mass });
   return (
     <div className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
@@ -498,7 +501,7 @@ function WellCard({
             </span>
             <span className="text-sm text-zinc-500 dark:text-zinc-400">g</span>
             <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-              backup charge (+{round(state.backupPct, 0)}%)
+              backup charge ({backupLabel})
             </span>
           </div>
         )}
@@ -552,31 +555,28 @@ function WellCard({
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {[
-              { label: "Low −20%", factor: 0.8 },
-              { label: "Estimate", factor: 1 },
-              { label: "High +20%", factor: 1.2 },
+              { label: "Low −20%", grams: round(result.mass * 0.8, 2) },
+              { label: "Estimate", grams: round(result.mass, 2) },
+              { label: "High +20%", grams: round(result.mass * 1.2, 2) },
               ...(state.redundant
-                ? [{ label: `Backup +${round(state.backupPct, 0)}%`, factor: 1 + Math.max(0, state.backupPct) / 100 }]
+                ? [{ label: `Backup ${backupLabel}`, grams: round(backup, 2) }]
                 : []),
-            ].map((s) => {
-              const grams = round(result.mass * s.factor, 2);
-              return (
-                <button
-                  key={s.label}
-                  type="button"
-                  onClick={() => onPlanCharge?.(grams)}
-                  title={`Log a ${grams} g test`}
-                  className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-left transition hover:border-indigo-400 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-500/60"
-                >
-                  <span className="block text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
-                    {s.label}
-                  </span>
-                  <span className="block font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
-                    {fmtMass(grams)} g
-                  </span>
-                </button>
-              );
-            })}
+            ].map((s) => (
+              <button
+                key={s.label}
+                type="button"
+                onClick={() => onPlanCharge?.(s.grams)}
+                title={`Log a ${s.grams} g test`}
+                className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-left transition hover:border-indigo-400 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-500/60"
+              >
+                <span className="block text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                  {s.label}
+                </span>
+                <span className="block font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
+                  {fmtMass(s.grams)} g
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       )}

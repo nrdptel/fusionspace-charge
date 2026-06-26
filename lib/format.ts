@@ -23,9 +23,3 @@ export function fmtMass(grams: number): string {
   if (!Number.isFinite(grams) || grams <= 0) return "—";
   return grams.toFixed(2);
 }
-
-/** Parse a user-entered number, tolerating empty/garbage as 0. */
-export function num(value: string): number {
-  const n = Number.parseFloat(value);
-  return Number.isFinite(n) ? n : 0;
-}
