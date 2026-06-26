@@ -25,6 +25,8 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
 - **Single and dual-deploy**: separate drogue and main wells.
 - **Redundant altimeters**: size a backup charge alongside the primary — a little larger,
   following the common +20% convention — for the second altimeter most flyers carry.
+- **Altimeter vent holes**: size the static sampling ports for your electronics bay by the
+  standard one-¼″-port-per-100-in³ rule, split across the ports you plan to drill.
 - Units that convert in place — diameter and length in **mm or in**, pressure in
   **psi or kPa**, force in **lbf or N**. Black powder is always reported in grams.
 - The full formula, every constant, and a worked example using your own inputs, so the

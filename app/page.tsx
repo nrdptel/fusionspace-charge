@@ -13,7 +13,7 @@ const JSON_LD = {
   operatingSystem: "Any",
   url: "https://charge.fusionspace.co",
   description:
-    "Black-powder ejection-charge calculator for high-power rocketry, with the full formula shown and a ground-test log.",
+    "Black-powder ejection-charge calculator for high-power rocketry, with the full formula shown, altimeter vent-port sizing, and a ground-test log.",
   isAccessibleForFree: true,
   publisher: { "@type": "Organization", name: "Fusion Space", url: "https://fusionspace.co" },
 };

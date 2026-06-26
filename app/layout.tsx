@@ -7,7 +7,7 @@ import "./globals.css";
 
 const SITE_URL = "https://charge.fusionspace.co";
 const DESCRIPTION =
-  "Black-powder ejection-charge calculator for high-power rocketry. Size a charge from your tube, pressurized section, and separation force — with the full formula shown, and a log for the ground tests that actually validate it.";
+  "Black-powder ejection-charge calculator for high-power rocketry. Size a charge from your tube, pressurized section, and separation force — with the full formula shown, altimeter vent-port sizing, and a log for the ground tests that actually validate it.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
