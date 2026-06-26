@@ -22,7 +22,7 @@ export default function MeasureGuide() {
             <marker
               id="mg-arrow"
               viewBox="0 0 10 10"
-              refX="5"
+              refX="9.5"
               refY="5"
               markerWidth="7"
               markerHeight="7"
@@ -32,48 +32,41 @@ export default function MeasureGuide() {
             </marker>
           </defs>
 
-          {/* Pressurized bay (bulkhead → joint), inset inside the tube walls */}
-          <rect x="170" y="64" width="148" height="84" className="fill-indigo-500/10" />
-          {/* Airframe tube */}
-          <rect
-            x="80"
-            y="62"
-            width="300"
-            height="88"
-            rx="12"
-            fill="none"
-            className="stroke-zinc-400 dark:stroke-zinc-600"
-            strokeWidth="2"
-          />
-          {/* Bulkhead (full bore) */}
+          {/* Pressurized bay (bulkhead → joint), within the bore */}
+          <rect x="170" y="69" width="148" height="74" className="fill-indigo-500/10" />
+          {/* Tube walls (top & bottom) — the bore is the gap between them, which is
+              what the inner-diameter dimension measures */}
+          <rect x="80" y="62" width="300" height="7" rx="3" className="fill-zinc-300 dark:fill-zinc-700" />
+          <rect x="80" y="143" width="300" height="7" rx="3" className="fill-zinc-300 dark:fill-zinc-700" />
+          {/* Bulkhead (spans the bore, between the walls) */}
           <line
             x1="170"
-            y1="64"
+            y1="69"
             x2="170"
-            y2="148"
+            y2="143"
             className="stroke-zinc-500 dark:stroke-zinc-400"
             strokeWidth="5"
           />
           {/* Charge well, on the bulkhead face, centered on the bore */}
           <rect x="174" y="97" width="16" height="18" rx="3" className="fill-indigo-500" />
-          {/* Separation joint */}
+          {/* Separation joint — crosses both walls to show where the airframe splits */}
           <line
             x1="318"
-            y1="56"
+            y1="60"
             x2="318"
-            y2="156"
+            y2="152"
             className="stroke-zinc-400 dark:stroke-zinc-500"
             strokeWidth="2"
             strokeDasharray="4 4"
           />
 
-          {/* Inner-diameter dimension — drawn across the bore so it reads as the
-              inside, not the outside */}
+          {/* Inner-diameter dimension — spans the bore between the inner wall faces,
+              so it reads as the inside, not the outside */}
           <line
             x1="120"
-            y1="65"
+            y1="69"
             x2="120"
-            y2="147"
+            y2="143"
             className="stroke-zinc-500 dark:stroke-zinc-400"
             strokeWidth="1.25"
             markerStart="url(#mg-arrow)"
@@ -106,7 +99,7 @@ export default function MeasureGuide() {
           <text x="170" y="42" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
             bulkhead + charge well
           </text>
-          <line x1="318" y1="46" x2="318" y2="56" className="stroke-zinc-300 dark:stroke-zinc-700" strokeWidth="1" />
+          <line x1="318" y1="46" x2="318" y2="60" className="stroke-zinc-300 dark:stroke-zinc-700" strokeWidth="1" />
           <text x="318" y="42" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
             separation joint
           </text>
