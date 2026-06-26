@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { Segmented } from "./ui";
 import { NumberField } from "./ui";
 import {
+  calibrationFromEntries,
   TESTLOG_STORAGE_KEY,
   type Outcome,
   type TestEntry,
 } from "@/lib/testlog";
+import { fmt } from "@/lib/format";
 
 const OUTCOME_LABEL: Record<Outcome, string> = {
   clean: "Clean",
@@ -46,8 +48,9 @@ export default function GroundTestLog({
    *  test is recorded against the airframe being sized. */
   defaultLabel?: string;
   /** A charge weight picked from a well's ground-test plan; pre-fills the charge
-   *  field and jumps here so the test is ready to record. */
-  pendingCharge?: { value: number; nonce: number } | null;
+   *  field and jumps here so the test is ready to record. `estimate` is the model
+   *  baseline (0 if none), captured with the entry for calibration. */
+  pendingCharge?: { value: number; estimate: number; nonce: number } | null;
   /** Notifies the parent of the current entries so the calculator can surface a
    *  tested charge for the active airframe. */
   onEntriesChange?: (entries: TestEntry[]) => void;
@@ -61,6 +64,9 @@ export default function GroundTestLog({
   const [charge, setCharge] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>("clean");
   const [notes, setNotes] = useState("");
+  // The model estimate the drafted charge was planned from (0 = none), carried onto the
+  // entry so the tool can learn how real charges compare to the formula.
+  const [draftEstimate, setDraftEstimate] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // When a saved rocket becomes active, default the airframe field to its name
@@ -75,6 +81,7 @@ export default function GroundTestLog({
   useEffect(() => {
     if (!pendingCharge) return;
     setCharge(pendingCharge.value);
+    setDraftEstimate(pendingCharge.estimate);
     document
       .getElementById("ground-test")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -114,11 +121,13 @@ export default function GroundTestLog({
       charge,
       outcome,
       notes: notes.trim(),
+      ...(draftEstimate > 0 ? { estimate: draftEstimate } : {}),
     };
     setEntries((e) => [entry, ...e]);
     // reset the parts that change per test, keep date/label for fast repeat entries
     setCharge(0);
     setNotes("");
+    setDraftEstimate(0);
   };
 
   const remove = (id: string) => setEntries((e) => e.filter((x) => x.id !== id));
@@ -178,6 +187,9 @@ export default function GroundTestLog({
           outcome:
             x.outcome === "partial" || x.outcome === "none" ? x.outcome : "clean",
           notes: typeof x.notes === "string" ? x.notes : "",
+          ...(typeof x.estimate === "number" && x.estimate > 0
+            ? { estimate: x.estimate }
+            : {}),
         }))
         // Same rule the add form enforces: a test has a real charge weight.
         .filter((e) => e.charge > 0);
@@ -189,6 +201,8 @@ export default function GroundTestLog({
       alert("Couldn't read that file — expected a Charge ground-test log export.");
     }
   };
+
+  const calibration = calibrationFromEntries(entries);
 
   return (
     <section id="ground-test" className="mt-16 scroll-mt-8">
@@ -204,6 +218,25 @@ export default function GroundTestLog({
         that counts. Record each test here so you fly what you proved, not what a formula
         guessed. Entries stay in this browser — nothing is uploaded.
       </p>
+
+      {calibration && (
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
+          <span aria-hidden className="mt-0.5 shrink-0 text-base">
+            📈
+          </span>
+          <p>
+            <strong className="font-semibold">Your calibration.</strong> Across{" "}
+            {calibration.count} clean tests planned from the calculator, your charges ran on
+            average{" "}
+            <span className="font-mono font-semibold tabular-nums">
+              {fmt(calibration.mean, 2)}×
+            </span>{" "}
+            the ideal-gas estimate (range {fmt(calibration.min, 2)}–{fmt(calibration.max, 2)}×).
+            That&apos;s your own data, not the formula&apos;s — expect to ground-test toward the
+            higher end. It never trims the estimate down; testing larger is the safe direction.
+          </p>
+        </div>
+      )}
 
       {/* Add form */}
       <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
@@ -307,6 +340,14 @@ export default function GroundTestLog({
                     <span className="text-sm text-zinc-700 dark:text-zinc-300">
                       {e.label}
                     </span>
+                    {e.estimate && e.estimate > 0 && (
+                      <span
+                        title={`Model estimate was ${e.estimate} g`}
+                        className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500"
+                      >
+                        {fmt(e.charge / e.estimate, 2)}× est
+                      </span>
+                    )}
                     <span className="font-mono text-xs text-zinc-500 dark:text-zinc-500">
                       {e.date}
                     </span>

@@ -197,7 +197,33 @@ the bench. It's a `PrintCard` component portalled to `<body>` and hidden on scre
 just the card, so it prints clean regardless of the on-screen component tree (and "Save as
 PDF" from the dialog gives a digital copy). It carries the same safety framing the page does,
 because the card is what's actually in your hand at the pad. This is the offline ethos made
-physical — the calculation leaves the browser and goes to the bench.
+physical — the calculation leaves the browser and goes to the bench. A one-click **"Copy
+plan"** gives the same summary as plain text, for a phone note or a club chat.
+
+### Learning from your own data (calibration)
+
+The model is a starting point; your tests are the truth — so the tool *learns* the gap. When
+a test is planned from a ground-test ladder step, the entry quietly records the model
+estimate alongside the charge you packed. Across your clean tests it then reports your
+average charge-to-estimate ratio ("your charges ran ~1.3× the model"), with each entry
+tagged by its own ratio. It's framed as **insight, never an auto-applied factor**: it tells
+you to expect to test toward the high end, and explicitly never trims the estimate down —
+testing larger is the safe direction, and a learned multiplier that shrank a charge would be
+the one dangerous move. Backup-charge tests are excluded (they're intentionally inflated),
+and it needs two data points before it says anything. Pure, tested logic in `lib/testlog.ts`.
+
+### Smaller touches
+
+- **Dual-deploy sequence diagram** — a labeled SVG (apogee → drogue, low altitude → main) in
+  the measure-guide's house style, shown only for dual deploy, so a beginner can see what the
+  two charges the calculator sizes actually do in flight. Education, not decoration.
+- **Common tube-ID presets** — quick-set chips under the diameter field (38/54/75/98/152 mm,
+  or the inch equivalents), mirroring the shear-pin presets. Starting points; the field still
+  rules and the copy says to measure.
+- **Field-elevation advisory** — an optional elevation input that, up high, notes black powder
+  is a touch less efficient in thin air and to test toward the high end. Advisory only — it
+  never changes the number, consistent with the no-derate stance. State floors at 0 and rides
+  in the share URL like everything else.
 
 ### Units
 

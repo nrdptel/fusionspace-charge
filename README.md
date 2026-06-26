@@ -37,8 +37,12 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   the airframe on the bench is the one worth flying.
 - **Closes the loop**: once a saved airframe has a clean ground test logged, the calculator
   surfaces that proven charge above the estimate — so you fly what you validated.
-- **Printable build & ground-test card**: a one-page sheet with each well's charges and a
-  grid to record results at the bench or the field, where there's no signal. Save as PDF too.
+- **Learns your calibration**: across the clean tests you log, it shows how much bigger your
+  real charges run than the formula — your own correction, never an auto-applied trim.
+- **Printable build & ground-test card** (and a one-click **plain-text plan**): a one-page
+  sheet with each well's charges and a grid to record results at the bench or the field.
+- A **dual-deploy sequence diagram** so beginners can see what each charge actually does in
+  flight, common **tube-ID presets**, and a **field-elevation advisory** for thin-air launches.
 - Inputs live in the URL, so a configured calculation is a link you can share or bookmark.
 - Installable, and works **offline** once loaded — launches happen where there's no signal.
 

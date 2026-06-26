@@ -233,6 +233,53 @@ test.describe("Charge calculator", () => {
     await page.emulateMedia({ media: "screen" });
   });
 
+  test("learns your calibration from clean tests planned via the ladder", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=p&dep=s&mg=1"); // single well ≈ 0.93 g
+    // Plan two clean tests from ladder steps (which carry the model estimate), at the
+    // estimate and at +20% — enough for a calibration to appear.
+    await page.getByRole("button", { name: /Estimate/ }).first().click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await page.getByRole("button", { name: /High/ }).first().click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText("Your calibration")).toBeVisible();
+    await expect(page.getByText(/× est/).first()).toBeVisible();
+  });
+
+  test("shows the dual-deploy sequence diagram only for dual deploy", async ({ page }) => {
+    await page.goto("/?dep=d");
+    await expect(page.getByText("How dual deployment works")).toBeVisible();
+    await page.goto("/?dep=s");
+    await expect(page.getByText("How dual deployment works")).toHaveCount(0);
+  });
+
+  test("flags thinner air at a high field elevation, and stays quiet low down", async ({
+    page,
+  }) => {
+    await page.goto("/?el=6000");
+    await expect(page.getByText(/the air is thinner/)).toBeVisible();
+    await page.goto("/?el=0");
+    await expect(page.getByText(/the air is thinner/)).toHaveCount(0);
+  });
+
+  test("a tube-ID preset sets the inner diameter", async ({ page }) => {
+    await page.goto("/?dep=s&lu=in");
+    const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
+    await page.getByRole("button", { name: "3.9 in" }).first().click();
+    await expect(dia).toHaveValue("3.9");
+  });
+
+  test("copies the plan as text to the clipboard", async ({ page }) => {
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.goto("/?dep=s&mg=1");
+    await page.getByRole("button", { name: "Copy plan" }).click();
+    await expect(page.getByRole("button", { name: "Plan copied" })).toBeVisible();
+    const text = await page.evaluate(() => navigator.clipboard.readText());
+    expect(text).toContain("Ejection charge plan");
+    expect(text).toContain("Ladder:");
+  });
+
   test("the header has a Ko-fi tip link", async ({ page }) => {
     await page.goto("/");
     const tip = page.getByRole("link", { name: "Tip" });

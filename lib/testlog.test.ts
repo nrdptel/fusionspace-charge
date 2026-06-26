@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { summarizeFor, type TestEntry } from "./testlog";
+import { calibrationFromEntries, summarizeFor, type TestEntry } from "./testlog";
 
 const entry = (p: Partial<TestEntry>): TestEntry => ({
   id: Math.random().toString(36).slice(2),
@@ -46,5 +46,36 @@ describe("ground-test summary", () => {
 
   it("does not match a different airframe", () => {
     expect(summarizeFor([entry({ label: "Drogue" })], "Main")).toEqual({ cleanCount: 0 });
+  });
+});
+
+describe("model calibration", () => {
+  it("needs at least two clean tests with an estimate", () => {
+    expect(calibrationFromEntries([])).toBeNull();
+    expect(
+      calibrationFromEntries([entry({ charge: 1.2, estimate: 1.0 })]),
+    ).toBeNull();
+  });
+
+  it("averages the charge-to-estimate ratio across clean tests", () => {
+    const c = calibrationFromEntries([
+      entry({ charge: 1.2, estimate: 1.0 }), // 1.2×
+      entry({ charge: 1.6, estimate: 1.0 }), // 1.6×
+    ]);
+    expect(c?.count).toBe(2);
+    expect(c?.mean).toBeCloseTo(1.4, 5);
+    expect(c?.min).toBeCloseTo(1.2, 5);
+    expect(c?.max).toBeCloseTo(1.6, 5);
+  });
+
+  it("ignores tests without an estimate, with no charge, or that weren't clean", () => {
+    const c = calibrationFromEntries([
+      entry({ charge: 1.2, estimate: 1.0 }),
+      entry({ charge: 1.5, estimate: 1.0 }),
+      entry({ charge: 2.0, estimate: undefined }), // no estimate
+      entry({ charge: 2.0, estimate: 1.0, outcome: "partial" }), // not clean
+      entry({ charge: 0, estimate: 1.0 }), // no charge
+    ]);
+    expect(c?.count).toBe(2);
   });
 });

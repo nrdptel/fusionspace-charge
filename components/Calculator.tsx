@@ -31,6 +31,7 @@ import { Chip, NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
 import SavedRockets from "./SavedRockets";
 import MeasureGuide from "./MeasureGuide";
+import DeploySequence from "./DeploySequence";
 import PrintCard, { type PrintPlan } from "./PrintCard";
 
 interface Computed {
@@ -70,6 +71,14 @@ const backupFloorBinds = (primaryMass: number, backupPct: number): boolean =>
   primaryMass > 0 &&
   primaryMass + BACKUP_MIN_G > primaryMass * (1 + backupPctClamped(backupPct) / 100);
 
+// Common nominal HPR airframe inner diameters, per unit, as quick-set chips (paired so a
+// unit switch lands on the matching size: 1.5"≈38 mm, 2.1"≈54, 3"≈75, 3.9"≈98, 6"≈152).
+// These are starting points — actual tube ID varies by brand, so the field still rules.
+const ID_PRESETS: Record<LengthUnit, number[]> = {
+  in: [1.5, 2.1, 3, 3.9, 6],
+  mm: [38, 54, 75, 98, 152],
+};
+
 function computeWell(s: State, w: WellInput): Computed {
   const diameterIn = nn(toInches(w.diameter, s.lengthUnit));
   const lengthIn = nn(toInches(w.length, s.lengthUnit));
@@ -100,7 +109,7 @@ export default function Calculator({
   airframeName,
 }: {
   onActiveRocketChange?: (name: string) => void;
-  onPlanCharge?: (grams: number) => void;
+  onPlanCharge?: (grams: number, estimate: number) => void;
   /** The active airframe's proven charge, if it has clean ground tests logged. */
   testedSummary?: { name: string; cleanCount: number; lastClean?: TestEntry } | null;
   /** The active saved rocket's name, used to title the printable card. */
@@ -109,6 +118,7 @@ export default function Calculator({
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [planCopied, setPlanCopied] = useState(false);
 
   // Load state from the URL on mount.
   useEffect(() => {
@@ -220,6 +230,30 @@ export default function Calculator({
           ],
         };
       }),
+  };
+
+  // A plain-text version of the same plan, for pasting into phone notes, a flight log, or a
+  // club chat — the portable sibling of the printable card.
+  const copyPlan = async () => {
+    const lines = [`Ejection charge plan — ${printPlan.title}`, printPlan.meta];
+    if (printPlan.tested) lines.push(`Proven: ${printPlan.tested}`);
+    for (const w of printPlan.wells) {
+      lines.push("");
+      lines.push(`${w.title} — ID ${w.idText}, length ${w.lenText}`);
+      lines.push(`  Estimate ${w.estimate} g${w.backup ? `, backup ${w.backup} g` : ""}`);
+      lines.push(`  Ladder: ${w.steps.map((s) => `${s.label} ${s.grams} g`).join(" / ")}`);
+    }
+    lines.push("");
+    lines.push(
+      "Theoretical starting estimates — always ground-test before flight. charge.fusionspace.co",
+    );
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setPlanCopied(true);
+      setTimeout(() => setPlanCopied(false), 1800);
+    } catch {
+      /* clipboard may be blocked */
+    }
   };
 
   return (
@@ -336,10 +370,21 @@ export default function Calculator({
                 hint="How much larger the backup altimeter's charge is than the primary. The common convention is +20%."
               />
             )}
+            <NumberField
+              label="Field elevation"
+              value={state.elevation}
+              onChange={(elevation) => update({ elevation })}
+              unit="ft"
+              step={500}
+              min={0}
+              placeholder="0"
+              hint="Optional. Flags thinner-air effects up high; it doesn't change the estimate — you can't trim a charge for altitude."
+            />
         </div>
       </div>
 
       <MeasureGuide />
+      {state.deploy === "dual" && <DeploySequence />}
 
       {/* Wells + results */}
       <div
@@ -390,6 +435,21 @@ export default function Calculator({
         </a>
       </p>
 
+      {state.elevation >= 3000 && (
+        <p className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+          <span aria-hidden className="mt-px shrink-0">
+            ⛰
+          </span>
+          <span>
+            At {fmt(state.elevation, 0)} ft the air is thinner and black powder burns a little
+            less efficiently, so a real well can reach less pressure than down low.{" "}
+            {state.elevation >= 6000 ? "Especially up here, " : ""}ground-test toward the high
+            end of the ladder — this is a heads-up, not a number to trim (you can&apos;t derate
+            your way to a smaller charge safely).
+          </span>
+        </p>
+      )}
+
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -397,6 +457,13 @@ export default function Calculator({
           className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500"
         >
           {copied ? "Link copied" : "Copy share link"}
+        </button>
+        <button
+          type="button"
+          onClick={copyPlan}
+          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        >
+          {planCopied ? "Plan copied" : "Copy plan"}
         </button>
         <button
           type="button"
@@ -454,7 +521,7 @@ function WellCard({
   well: WellInput;
   onChange: (patch: Partial<WellInput>) => void;
   computed: Computed;
-  onPlanCharge?: (grams: number) => void;
+  onPlanCharge?: (grams: number, estimate: number) => void;
 }) {
   const { result, requiredForceLbf } = computed;
   const backup = backupMass(result.mass, state.backupPct);
@@ -470,14 +537,31 @@ function WellCard({
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <NumberField
-          label="Inner diameter"
-          value={well.diameter}
-          onChange={(diameter) => onChange({ diameter })}
-          unit={state.lengthUnit}
-          step={state.lengthUnit === "mm" ? 1 : 0.1}
-          hint="Tube ID — the bore the gas pressurizes."
-        />
+        <div>
+          <NumberField
+            label="Inner diameter"
+            value={well.diameter}
+            onChange={(diameter) => onChange({ diameter })}
+            unit={state.lengthUnit}
+            step={state.lengthUnit === "mm" ? 1 : 0.1}
+            hint="Tube ID — the bore the gas pressurizes."
+          />
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {ID_PRESETS[state.lengthUnit].map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => onChange({ diameter: v })}
+                className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                {v} {state.lengthUnit}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            Common nominal airframe sizes — measure your own tube&apos;s ID.
+          </p>
+        </div>
         <NumberField
           label="Pressurized length"
           value={well.length}
@@ -629,17 +713,19 @@ function WellCard({
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {[
-              { label: "Low −20%", grams: round(result.mass * 0.8, 2) },
-              { label: "Estimate", grams: round(result.mass, 2) },
-              { label: "High +20%", grams: round(result.mass * 1.2, 2) },
+              // estimate = the model baseline this step calibrates against; the backup step
+              // is intentionally inflated for redundancy, so it carries none (estimate 0).
+              { label: "Low −20%", grams: round(result.mass * 0.8, 2), estimate: result.mass },
+              { label: "Estimate", grams: round(result.mass, 2), estimate: result.mass },
+              { label: "High +20%", grams: round(result.mass * 1.2, 2), estimate: result.mass },
               ...(state.redundant
-                ? [{ label: `Backup ${backupLabel}`, grams: round(backup, 2) }]
+                ? [{ label: `Backup ${backupLabel}`, grams: round(backup, 2), estimate: 0 }]
                 : []),
             ].map((s) => (
               <button
                 key={s.label}
                 type="button"
-                onClick={() => onPlanCharge?.(s.grams)}
+                onClick={() => onPlanCharge?.(s.grams, s.estimate)}
                 title={`Log a ${s.grams} g test`}
                 className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-left transition hover:border-indigo-400 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-500/60"
               >
