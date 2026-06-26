@@ -34,9 +34,9 @@ export default function Page() {
             charge to separate your airframe and deploy recovery.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <KofiButton />
+        <div className="flex shrink-0 flex-col items-end gap-2">
           <ThemeToggle />
+          <KofiButton />
         </div>
       </header>
 
