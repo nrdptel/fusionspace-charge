@@ -13,7 +13,7 @@ const config = [
       "react-hooks/set-state-in-effect": "off",
     },
   },
-  { ignores: ["out/**", ".next/**", "node_modules/**", "next-env.d.ts"] },
+  { ignores: ["out/**", ".next/**", "node_modules/**", "next-env.d.ts", "public/sw.js"] },
 ];
 
 export default config;

@@ -145,6 +145,22 @@ test.describe("Charge calculator", () => {
     await expect(tip).toHaveAttribute("href", "https://ko-fi.com/nrdptel");
   });
 
+  test("works offline once the service worker is registered", async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/");
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    // Reload so the page is controlled by the SW and the shell + assets are cached.
+    await page.reload();
+    await page.evaluate(() => navigator.serviceWorker.ready);
+
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Charge", level: 1 })).toBeVisible();
+    await context.setOffline(false);
+  });
+
   test("has no serious accessibility violations", async ({ page }) => {
     await page.goto("/");
     const results = await new AxeBuilder({ page })
