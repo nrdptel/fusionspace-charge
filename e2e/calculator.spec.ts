@@ -153,10 +153,23 @@ test.describe("Charge calculator", () => {
   test("a redundant altimeter adds a backup charge sized above the primary", async ({
     page,
   }) => {
-    // Pressure/single drogue ≈ 0.93 g (mg=1, bare); a +20% backup is 0.93 × 1.2 = 1.12 g.
+    // Pressure/single drogue ≈ 0.93 g (mg=1, bare). At this size the +20% uplift (0.19 g)
+    // is below the +0.5 g floor, so the backup is 0.93 + 0.5 = 1.43 g and the label names
+    // the floor, per the "20% or 0.5 g, whichever is greater" convention.
     await page.goto("/?mode=p&dep=s&rdn=1&bpct=20&mg=1");
     await expect(page.getByTestId("mass").first()).toHaveText("0.93");
-    await expect(page.getByTestId("backup-mass").first()).toHaveText("1.12");
+    await expect(page.getByTestId("backup-mass").first()).toHaveText("1.43");
+    await expect(page.getByText(/backup charge \(\+0\.5 g\)/i)).toBeVisible();
+  });
+
+  test("the backup uses the percentage once it exceeds the +0.5 g floor", async ({
+    page,
+  }) => {
+    // A larger 6" × 30" bay at 15 psi (mg=1) ≈ 6.56 g, where +20% (1.31 g) beats the
+    // 0.5 g floor — so the backup is 6.56 × 1.2 = 7.88 g and the label quotes the percent.
+    await page.goto("/?mode=p&dep=s&rdn=1&bpct=20&mg=1&ddia=6&dl=30&dp=15");
+    await expect(page.getByTestId("mass").first()).toHaveText("6.56");
+    await expect(page.getByTestId("backup-mass").first()).toHaveText("7.88");
     await expect(page.getByText(/backup charge \(\+20%\)/i)).toBeVisible();
   });
 

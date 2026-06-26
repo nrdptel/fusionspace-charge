@@ -53,6 +53,43 @@ export function Segmented<T extends string>({
   );
 }
 
+/** A small labelled value, used for the result read-outs (volume, pressure, …). */
+export function Chip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+        {label}
+      </div>
+      <div className="font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+/** A collapsible "show your work" disclosure — the transparency pattern used throughout. */
+export function Disclosure({
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  summary: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className="group mt-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+    >
+      <summary className="cursor-pointer select-none font-medium text-zinc-700 dark:text-zinc-300">
+        {summary}
+      </summary>
+      <div className="mt-3 space-y-4 text-zinc-600 dark:text-zinc-400">{children}</div>
+    </details>
+  );
+}
+
 function display(value: number): string {
   return value === 0 ? "" : String(value);
 }

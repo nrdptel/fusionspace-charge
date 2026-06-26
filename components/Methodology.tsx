@@ -10,6 +10,7 @@ import {
 } from "@/lib/charge";
 import { fmt } from "@/lib/format";
 import type { State } from "@/lib/state";
+import { Disclosure } from "./ui";
 
 function Row({ term, children }: { term: string; children: React.ReactNode }) {
   return (
@@ -17,28 +18,6 @@ function Row({ term, children }: { term: string; children: React.ReactNode }) {
       <dt className="font-mono text-zinc-700 dark:text-zinc-300">{term}</dt>
       <dd className="text-zinc-600 dark:text-zinc-400">{children}</dd>
     </div>
-  );
-}
-
-function Disclosure({
-  summary,
-  defaultOpen = false,
-  children,
-}: {
-  summary: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <details
-      open={defaultOpen}
-      className="group mt-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/50"
-    >
-      <summary className="cursor-pointer select-none font-medium text-zinc-700 dark:text-zinc-300">
-        {summary}
-      </summary>
-      <div className="mt-3 space-y-4 text-zinc-600 dark:text-zinc-400">{children}</div>
-    </details>
   );
 }
 
