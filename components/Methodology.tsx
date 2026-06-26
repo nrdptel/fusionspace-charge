@@ -50,6 +50,7 @@ export default function Methodology({
   drogue: { result: WellResult; requiredForceLbf: number };
 }) {
   const r = drogue.result;
+  const margin = Math.max(1, state.margin);
   const volumeFt3 = r.volume / IN3_PER_FT3;
   const pressurePsf = r.pressure * PSI_TO_PSF;
   const massLbm = r.mass / LBM_TO_G;
@@ -109,6 +110,13 @@ export default function Methodology({
                 {fmt(r.area, 2)} in²)
               </>
             )}
+            {state.mode === "pressure" && margin > 1 && (
+              <>
+                {" "}
+                (your {fmt(r.pressure / margin, 2)} psi target × {fmt(margin, 2)} safety
+                margin)
+              </>
+            )}
           </Row>
           <Row term="Mass">
             ({fmt(pressurePsf, 1)} × {fmt(volumeFt3, 5)}) / ({R_BP} × {T_BP}) ={" "}
@@ -164,9 +172,10 @@ export default function Methodology({
           trimming the charge down until it doesn&apos;t separate.
         </p>
         <p className="font-medium text-zinc-700 dark:text-zinc-300">
-          The honest levers are the ones already here, and they only add margin: pick your
-          target pressure (or a safety factor on the separation force), round up rather than
-          down, and let the ground test set the final number.
+          The honest levers are the ones already here, and they only add margin: the safety
+          margin (it sizes the charge above your target pressure, or above the bare
+          separation force), rounding up rather than down, and letting the ground test set
+          the final number.
         </p>
       </Disclosure>
 

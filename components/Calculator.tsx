@@ -58,9 +58,13 @@ function computeWell(s: State, w: WellInput): Computed {
   const diameterIn = nn(toInches(w.diameter, s.lengthUnit));
   const lengthIn = nn(toInches(w.length, s.lengthUnit));
   if (s.mode === "pressure") {
-    const pressurePsi = nn(toPsi(w.pressure, s.pressureUnit));
+    const targetPsi = nn(toPsi(w.pressure, s.pressureUnit));
+    // The margin sizes the charge so an *ideal* well would reach target × margin. A real
+    // well loses gas and heat, so the extra powder is what lets it still hit your target.
+    // The entered target stays your honest design pressure; this only raises the charge.
+    const effectivePsi = targetPsi * clampMargin(s.margin);
     return {
-      result: sizeByPressure({ diameterIn, lengthIn, pressurePsi }),
+      result: sizeByPressure({ diameterIn, lengthIn, pressurePsi: effectivePsi }),
       requiredForceLbf: 0,
     };
   }
@@ -252,19 +256,20 @@ export default function Calculator({
           )}
         </div>
 
-        {(state.mode === "force" || state.redundant) && (
-          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3">
-            {state.mode === "force" && (
-              <NumberField
-                label="Safety margin"
-                value={state.margin}
-                onChange={(margin) => update({ margin })}
-                unit="×"
-                step={0.1}
-                min={1}
-                hint="Multiplier on the required force, applied to both wells. 1.5 = +50% over the bare minimum."
-              />
-            )}
+        <div className="mt-5 grid grid-cols-1 gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3">
+            <NumberField
+              label="Safety margin"
+              value={state.margin}
+              onChange={(margin) => update({ margin })}
+              unit="×"
+              step={0.1}
+              min={1}
+              hint={
+                state.mode === "force"
+                  ? "Multiplier on the required separation force, applied to both wells. 1.5 = +50% over the bare minimum."
+                  : "Sizes the charge above your target pressure so a leaky real well still reaches it. 1.5 = enough powder for an ideal well to hit 1.5× your target."
+              }
+            />
             {state.redundant && (
               <NumberField
                 label="Backup charge uplift"
@@ -276,8 +281,7 @@ export default function Calculator({
                 hint="How much larger the backup altimeter's charge is than the primary. The common convention is +20%."
               />
             )}
-          </div>
-        )}
+        </div>
       </div>
 
       <MeasureGuide />
@@ -502,8 +506,12 @@ function WellCard({
             value={`${fmt(result.volume, 1)} in³ · ${fmt(in3ToCc(result.volume), 0)} cc`}
           />
           <Chip
-            label="Pressure"
-            value={`${fmt(fromPsi(result.pressure, state.pressureUnit), 1)} ${state.pressureUnit}`}
+            label={state.mode === "pressure" && state.margin > 1 ? "Pressure (target → sized)" : "Pressure"}
+            value={
+              state.mode === "pressure" && state.margin > 1
+                ? `${fmt(well.pressure, 1)} → ${fmt(fromPsi(result.pressure, state.pressureUnit), 1)} ${state.pressureUnit}`
+                : `${fmt(fromPsi(result.pressure, state.pressureUnit), 1)} ${state.pressureUnit}`
+            }
           />
           {state.mode === "force" && (
             <Chip

@@ -108,6 +108,16 @@ The default is **separation-force** mode (pins + friction + margin): it's the mo
 rigorous path and makes the holding force explicit. Target-pressure mode is one toggle
 away for flyers who already fly a known pressure.
 
+A **safety margin** applies in *both* modes, which took a little thought in pressure
+mode. In force mode it simply multiplies the required separation force. In pressure mode
+a naive multiply on the entered pressure would quietly redefine the user's target — they
+typed 12 psi and the tool would act on 18. Instead the entered value stays the honest
+*design target*, and the margin sizes the charge so an *ideal* well would reach
+`target × margin`. Since real wells leak and lose heat (the same one-directional error
+the methodology already leans on), that headroom is what lets a real well still reach the
+target. The result shows both numbers — `target → sized` pressure — so nothing is hidden,
+and the worked example spells out the multiply.
+
 **Redundant altimeters** are the norm in high-power, so they're modelled directly. Set
 the altimeter control to Redundant and each well reports a second, backup charge sized a
 little above the primary (the dial defaults to +20%, the widely-cited NASA Student Launch
