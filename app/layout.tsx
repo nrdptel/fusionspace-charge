@@ -5,41 +5,47 @@ import { observancesForDate } from "@/lib/observances";
 import ServiceWorker from "@/components/ServiceWorker";
 import "./globals.css";
 
-const SITE_URL = "https://charge.fusionspace.co";
+// Origin used to resolve OG / Twitter card image URLs absolutely. Defaults to the
+// production site; a fork can override with NEXT_PUBLIC_SITE_URL on its deploy
+// host (Cloudflare Pages) to point cards at its own domain. Mirrors the Motor Finder.
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://charge.fusionspace.co";
+
 const DESCRIPTION =
-  "Black-powder ejection-charge calculator for high-power rocketry. Size a charge from your tube, pressurized section, and separation force — with the full formula shown, altimeter vent-port sizing, and a log for the ground tests that actually validate it.";
+  "Black-powder ejection-charge calculator for high-power rocketry. Size a charge by " +
+  "target pressure or separation force, ground-test it until it separates clean, and " +
+  "take a bench card or cert report to the field — with the full formula shown.";
+
+const TITLE = "Charge — HPR ejection-charge calculator";
+
+// Pre-generated at build by scripts/gen-og.mjs (static export can't render the dynamic
+// next/og route at request time). Resolved absolutely against metadataBase. Shares the
+// card template with the Motor Finder.
+const OG_IMAGE = "/og/default.png";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: "Charge — HPR ejection-charge calculator",
+  metadataBase: new URL(siteUrl),
+  title: TITLE,
   description: DESCRIPTION,
   applicationName: "Charge",
   manifest: "/manifest.webmanifest",
-  alternates: { canonical: SITE_URL },
+  alternates: { canonical: "/" },
   icons: {
     icon: { url: "/icon.svg", type: "image/svg+xml" },
     apple: { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
   },
   openGraph: {
-    title: "Charge — HPR ejection-charge calculator",
-    description: DESCRIPTION,
-    url: SITE_URL,
-    siteName: "Fusion Space",
     type: "website",
-    images: [
-      {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
-        alt: "Charge — HPR ejection-charge calculator",
-      },
-    ],
+    siteName: "Charge",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/",
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: TITLE }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Charge — HPR ejection-charge calculator",
+    title: TITLE,
     description: DESCRIPTION,
-    images: ["/og.png"],
+    images: [OG_IMAGE],
   },
 };
 
