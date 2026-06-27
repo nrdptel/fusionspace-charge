@@ -72,7 +72,7 @@ export default function DataBackup() {
   };
 
   return (
-    <section className="mt-16 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+    <section id="data" className="mt-16 scroll-mt-8 border-t border-zinc-200 pt-6 dark:border-zinc-800">
       <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
         Your data
       </h2>

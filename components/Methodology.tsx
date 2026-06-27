@@ -35,7 +35,7 @@ export default function Methodology({
   const massLbm = r.mass / LBM_TO_G;
 
   return (
-    <section className="mt-10">
+    <section id="methodology" className="mt-10 scroll-mt-8">
       <h2 className="text-lg font-semibold tracking-tight">
         Where the numbers come from
       </h2>
