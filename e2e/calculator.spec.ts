@@ -475,9 +475,30 @@ test.describe("Charge calculator", () => {
     await page.reload();
     await page.evaluate(() => navigator.serviceWorker.ready);
 
+    // The durable layer: the SW cache should hold the JS/CSS, not just the HTML shell,
+    // so the app survives even if the browser's own asset cache is evicted.
+    const cached = await page.evaluate(async () => {
+      const urls: string[] = [];
+      for (const n of await caches.keys()) {
+        const c = await caches.open(n);
+        for (const r of await c.keys()) urls.push(new URL(r.url).pathname);
+      }
+      return {
+        js: urls.some((u) => u.includes("/_next/static/") && u.endsWith(".js")),
+        css: urls.some((u) => u.endsWith(".css")),
+      };
+    });
+    expect(cached.js, "SW cached JS chunks").toBe(true);
+    expect(cached.css, "SW cached CSS").toBe(true);
+
     await context.setOffline(true);
-    await page.reload();
+    await page.goto("/?mode=p&dep=s&mg=1");
+    // Not just the static heading — the calculator must hydrate and compute offline.
     await expect(page.getByRole("heading", { name: "Charge", level: 1 })).toBeVisible();
+    await expect(page.getByTestId("mass").first()).toHaveText("0.93");
+    // …and stay reactive: switching to dual deploy adds a second well.
+    await page.getByRole("button", { name: "Dual" }).click();
+    await expect(page.getByTestId("mass")).toHaveCount(2);
     await context.setOffline(false);
   });
 
