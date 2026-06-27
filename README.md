@@ -1,5 +1,8 @@
 # Charge
 
+[![test](https://github.com/nrdptel/fusionspace-charge/actions/workflows/test.yml/badge.svg)](https://github.com/nrdptel/fusionspace-charge/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A black-powder ejection-charge calculator for high-power rocketry, at
 [charge.fusionspace.co](https://charge.fusionspace.co).
 
@@ -73,7 +76,7 @@ starting point, not a guarantee — the full derivation and its assumptions are 
 the app under "Where the numbers come from". The physics lives in `lib/charge.ts` as pure
 functions with tests in `lib/charge.test.ts`.
 
-## Development
+## Running locally
 
 Static site built with Next.js and Tailwind, exported to plain HTML/CSS/JS. Everything
 runs in the browser; there is no backend.
@@ -86,7 +89,7 @@ npm test         # run the unit tests
 npm run lint     # lint
 ```
 
-## Deployment
+## Deploying
 
 Hosted on Cloudflare Pages as a fully static site. Build command `npm run build`, output
 directory `out`. No Functions, no server-side code.
@@ -95,3 +98,8 @@ directory `out`. No Functions, no server-side code.
 
 Personal, non-commercial project — not affiliated with any rocketry vendor or
 manufacturer. Built for the hobby rocketry community.
+
+## License
+
+Released under the [MIT License](LICENSE) — fork it, modify it, deploy your own copy, no
+attribution required.
