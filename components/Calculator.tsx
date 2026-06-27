@@ -374,6 +374,19 @@ export default function Calculator({
       ? { label: "Proven", charge: fmtMass(testedSummary.lastClean.charge) }
       : null;
 
+  // Setup-drift guard: a proven/validated charge is only proven for the geometry it was
+  // tested at. The clean test recorded the model estimate it was planned from; if the
+  // current configuration would now size very differently, the airframe likely changed —
+  // so the "proven" charge shouldn't be trusted until re-tested. Single-deploy only, where
+  // the one well maps unambiguously to the logged test; dual is left alone.
+  const driftFrom =
+    state.deploy === "single" ? testedSummary?.lastClean?.estimate : undefined;
+  const drift =
+    driftFrom && driftFrom > 0 && drogue.result.mass > 0 &&
+    Math.abs(drogue.result.mass / driftFrom - 1) > 0.15
+      ? { now: drogue.result.mass, then: driftFrom }
+      : null;
+
   // A plain-text version of the same plan, for pasting into phone notes, a flight log, or a
   // club chat — the portable sibling of the printable card.
   const copyPlan = async () => {
@@ -666,24 +679,40 @@ export default function Calculator({
           <span aria-hidden className="mt-0.5 shrink-0 text-base">
             ✓
           </span>
-          <p>
-            <strong className="font-semibold">
-              You&apos;ve proven {testedSummary.name}.
-            </strong>
-            {testedSummary.validated && (
-              <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 align-middle text-[11px] font-semibold">
-                ✓ Validated · {fmtMass(testedSummary.validated.charge)} g ×{" "}
-                {testedSummary.validated.count}
-              </span>
-            )}{" "}
-            Its most recent clean separation was{" "}
-            <span className="font-mono font-semibold tabular-nums">
-              {fmtMass(testedSummary.lastClean.charge)} g
-            </span>{" "}
-            on {testedSummary.lastClean.date}
-            {testedSummary.cleanCount > 1 && ` (${testedSummary.cleanCount} clean tests logged)`}.
-            Fly the charge you tested — the estimate below is only a starting point.
-          </p>
+          <div className="min-w-0">
+            <p>
+              <strong className="font-semibold">
+                You&apos;ve proven {testedSummary.name}.
+              </strong>
+              {testedSummary.validated && (
+                <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 align-middle text-[11px] font-semibold">
+                  ✓ Validated · {fmtMass(testedSummary.validated.charge)} g ×{" "}
+                  {testedSummary.validated.count}
+                </span>
+              )}{" "}
+              Its most recent clean separation was{" "}
+              <span className="font-mono font-semibold tabular-nums">
+                {fmtMass(testedSummary.lastClean.charge)} g
+              </span>{" "}
+              on {testedSummary.lastClean.date}
+              {testedSummary.cleanCount > 1 && ` (${testedSummary.cleanCount} clean tests logged)`}.
+              Fly the charge you tested — the estimate below is only a starting point.
+            </p>
+            {drift && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                <span aria-hidden className="mt-px shrink-0">
+                  ⚠
+                </span>
+                <span>
+                  This setup now sizes to{" "}
+                  <span className="font-mono tabular-nums">{fmtMass(drift.now)} g</span>, but the
+                  airframe was proven at a setup that sized to{" "}
+                  <span className="font-mono tabular-nums">{fmtMass(drift.then)} g</span>. If you
+                  changed the tube, length, or pins, re-test before trusting the proven charge.
+                </span>
+              </p>
+            )}
+          </div>
         </div>
       )}
 

@@ -256,6 +256,25 @@ only. Both are pure helpers in `lib/testlog.ts` (`nextChargeSuggestion`,
 callout and the calibration insight, this is the estimate → test → *guide* → validate arc the
 whole tool is built around, made fully literal.
 
+### Trust & durability
+
+- **Setup-drift guard** — a proven/validated charge is only proven for the geometry it was
+  tested at, but the callout matches an airframe by *name*, so changing the tube or length
+  could leave a stale "proven" claim showing. Each ladder-planned test records the model
+  estimate it was planned at; if the current configuration would now size more than ~15%
+  differently, the callout adds an amber "re-test before trusting this" note. Scoped to
+  single-deploy, where the one well maps cleanly to the logged test; dual is left alone.
+- **Back up & restore everything** — the log could export itself, but saved rockets had *no*
+  backup at all, so a cleared cache lost the fleet. "Your data" writes rockets + log + theme
+  to one JSON file and restores by **merging** (by id), so it combines rather than clobbers.
+  Pure pieces (`lib/backup.ts`) are tested; the component does the localStorage IO and reloads
+  so the other components re-read.
+- **References & sources** — the methodology shows the math; a "References" disclosure now
+  cites *where the values come from* (the ideal-gas method and R/T from Ted Apke's
+  ejection-charge method and HARA's guide, the +20%/0.5 g backup from NASA Student Launch,
+  the vent rule from Vern Knowles + community). Deepens the transparency the tool trades on,
+  and gives the cert-documentation crowd something to cite.
+
 ### Smaller touches
 
 - **Native share** — where the browser supports the Web Share API (mostly mobile), a "Share"

@@ -30,13 +30,14 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
 - Units that convert in place — diameter and length in **mm or in**, pressure in
   **psi or kPa**, force in **lbf or N**. Black powder is always reported in grams.
 - The full formula, every constant, and a worked example using your own inputs, so the
-  number is never a black box.
+  number is never a black box — with a **references** section citing where each value comes from.
 - **Sanity hints** that flag a likely input error — a unit mix-up, the outside diameter
   entered as the bore, a pressure outside the usual band — without ever changing the math.
 - A **ground-test log** kept in your browser, because the charge that actually separated
   the airframe on the bench is the one worth flying.
 - **Closes the loop**: once a saved airframe has a clean ground test logged, the calculator
-  surfaces that proven charge above the estimate — so you fly what you validated.
+  surfaces that proven charge above the estimate — so you fly what you validated, and it
+  **warns if the setup has drifted** from what you tested.
 - **Learns your calibration**: across the clean tests you log, it shows how much bigger your
   real charges run than the formula — your own correction, never an auto-applied trim.
 - **Coaches the bench loop**: after each test it suggests what to pack next (step up after a
@@ -52,6 +53,8 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   flight, common **tube-ID presets**, and a **field-elevation advisory** for thin-air launches.
 - Inputs live in the URL, so a configured calculation is a link you can share or bookmark —
   via the OS **share sheet** on mobile, or a copied link anywhere.
+- **Back up & restore** your whole setup — saved rockets, ground-test log, and theme — as one
+  file, so a cleared cache or a new device doesn't lose a season's work.
 - Installable, and works **offline** once loaded — launches happen where there's no signal.
 - **Bench mode**: a full-screen, high-contrast, big-number view of the charges and test
   ladder for using your phone at the bench or the pad — bright sun, greasy hands. Tap a
