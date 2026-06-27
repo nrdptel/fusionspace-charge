@@ -238,6 +238,14 @@ whole tool is built around, made fully literal.
   is a touch less efficient in thin air and to test toward the high end. Advisory only — it
   never changes the number, consistent with the no-derate stance. State floors at 0 and rides
   in the share URL like everything else.
+- **Update prompt** — an offline app can otherwise sit on a stale version forever, so the
+  service worker no longer force-activates: a new build waits, and the page shows a small
+  "new version available — Refresh" toast that calls `skipWaiting()` only when the user
+  accepts (then reloads on `controllerchange`, guarded so the first-ever activation doesn't
+  reload). First visits still activate immediately, so offline works straight away. Purely
+  client-side — no server, no Functions.
+- **Reduced motion** — the jump-to-log scroll honors `prefers-reduced-motion`, falling back to
+  an instant jump instead of an animated one.
 
 ### Units
 

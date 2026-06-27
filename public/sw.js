@@ -10,16 +10,21 @@
 //     load instantly and refresh in the background.
 // The cache name is versioned; old caches are cleared on activate.
 
-const CACHE = "charge-v1";
+const CACHE = "charge-v2";
 const SHELL = "/";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((c) => c.add(SHELL))
-      .then(() => self.skipWaiting()),
-  );
+  // Note: no skipWaiting() here. When a controller is already running (an updated
+  // visit), the new worker waits so it can't swap assets out from under an open tab;
+  // the page shows a "refresh" prompt and calls skipWaiting() via the message below.
+  // On a first-ever visit there's no controller, so the browser activates immediately.
+  event.waitUntil(caches.open(CACHE).then((c) => c.add(SHELL)));
+});
+
+// The page posts this when the user accepts the update, letting the waiting worker
+// take over; the page then reloads on controllerchange.
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
