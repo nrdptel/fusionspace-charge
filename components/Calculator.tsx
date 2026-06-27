@@ -175,6 +175,7 @@ export default function Calculator({
   testedSummary,
   airframeName,
   airframeTests,
+  children,
 }: {
   onActiveRocketChange?: (name: string) => void;
   onPlanCharge?: (grams: number, estimate: number) => void;
@@ -189,6 +190,9 @@ export default function Calculator({
   airframeName?: string;
   /** The active airframe's logged tests, included in the downloadable recovery report. */
   airframeTests?: TestEntry[];
+  /** The ground-test log, rendered between the sized charge and the field/export panel so
+   *  the page reads in loop order: size → ground-test → take it to the field. */
+  children?: React.ReactNode;
 }) {
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
@@ -547,7 +551,8 @@ export default function Calculator({
   const slug = slugify(airframeName?.trim() || "plan");
 
   return (
-    <div id="calculator" className="mt-10 scroll-mt-8 md:mt-14">
+    <>
+      <div id="calculator" className="mt-10 scroll-mt-8 md:mt-14">
       <div className="mb-5">
         <SavedRockets
           current={state}
@@ -762,8 +767,16 @@ export default function Calculator({
         </p>
       )}
 
+      </div>
+
+      {/* The ground-test log, handed in by ChargeApp as children. It renders right after the
+          sized charge so the page reads in loop order — size → ground-test → take it to the
+          field — while keeping its own pendingCharge / entries wiring in the parent. */}
+      {children}
+
       {/* Take it to the field — every share / pad / export action in one place, so the
-          calculation flows straight into something you can carry to the pad or file after. */}
+          calculation flows straight into something you can carry to the pad or file after.
+          Sits after the log: the field card and report read best once tests are logged. */}
       <section
         id="field"
         className="mt-8 scroll-mt-8 rounded-xl border border-zinc-200 bg-zinc-50/60 p-5 dark:border-zinc-800 dark:bg-zinc-900/40"
@@ -865,7 +878,7 @@ export default function Calculator({
           onClose={() => setBenchOpen(false)}
         />
       )}
-    </div>
+    </>
   );
 }
 

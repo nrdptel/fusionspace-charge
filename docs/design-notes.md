@@ -77,21 +77,29 @@ it, and Charge helps you record what actually worked.
 
 ### Information architecture (how the page is organized)
 
-The product grew a lot of features, so the page is deliberately ordered as one loop the
-flyer actually walks through, top to bottom:
+The product grew a lot of features, so the page is deliberately ordered as the one loop a
+flyer actually walks through, and reads top to bottom in exactly that order:
 
-1. **Size** — the calculator (`#calculator`): controls, wells, results, ground-test ladder.
-2. **Take it to the field** — one consolidated panel (`#field`) gathering every share / pad /
+1. **Size** — the calculator (`#calculator`): controls, wells, results, and the ground-test
+   ladder, ending with a nudge to go test.
+2. **Ground-test & validate** — the log (`#ground-test`), placed immediately after the sized
+   charge so the loop is contiguous. (It's owned by `ChargeApp` but passed into `Calculator`
+   as `children`, which renders it between the result and the export panel — this keeps the
+   calculator's state self-contained while still putting the log in loop order, no lifting.)
+3. **Take it to the field** — one consolidated panel (`#field`) gathering every share / pad /
    export action: bench mode, copy/share link, the build & ground-test card, and the recovery
-   report. Previously these were two separate clusters; merging them keeps the calculation
-   flowing straight into something you can carry to the pad or file afterward.
-3. **Understand** — the methodology (`#methodology`), the math behind that number.
-4. **Test & validate** — the ground-test log (`#ground-test`), so the core size→test loop is
-   contiguous.
-5. **Companion tool** — altimeter vent ports (`#vent`), sitting *after* the loop behind a
-   "Companion tool" divider so it reads as a separate second tool (it's about the av-bay, not
-   the charge wells) rather than interrupting size→test, which is where it used to sit.
+   report. Previously these were two separate clusters; merging them, and placing them after
+   the log, means the card and report read best once tests are logged.
+4. **Understand** — the methodology (`#methodology`), the math behind the number; reference you
+   consult anytime, so it sits below the active loop.
+5. **Companion tool** — altimeter vent ports (`#vent`), after the loop behind a "Companion
+   tool" divider so it reads as a separate second tool (it's about the av-bay, not the charge
+   wells) rather than interrupting size→test, which is where it used to sit.
 6. **Your data & install** (`#data`), then the footer.
+
+The earlier pass left the export panel and methodology *above* the log, which contradicted the
+"size → test → field" loop the overview advertises; this ordering fixes that so the page
+matches what it promises.
 
 Discoverability is handled by a collapsed **"What's in here"** overview (`FeatureGuide`) near
 the top: the four-step loop as numbered cards, then every feature grouped by purpose with a
