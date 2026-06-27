@@ -242,6 +242,35 @@ test.describe("Charge calculator", () => {
     await expect(page.getByLabel("Charge tested")).toHaveValue("0.75");
   });
 
+  test("offers failure causes after a failed test", async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Well / airframe").fill("Iter");
+    await page.getByLabel("Charge tested").fill("0.6");
+    await page.getByRole("button", { name: "None", exact: true }).click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await page.getByText("Why might it not have separated?").click();
+    await expect(page.getByText(/Charge too small/)).toBeVisible();
+  });
+
+  test("offers a native share sheet where the browser supports it", async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as unknown as { __shared?: unknown }).__shared = null;
+      // Stub the Web Share API so the (mobile-only) button appears and we can observe it.
+      (navigator as unknown as { share: (d: unknown) => Promise<void> }).share = (d) => {
+        (window as unknown as { __shared?: unknown }).__shared = d;
+        return Promise.resolve();
+      };
+    });
+    await page.goto("/");
+    const shareBtn = page.getByRole("button", { name: "Share", exact: true });
+    await expect(shareBtn).toBeVisible();
+    await shareBtn.click();
+    const shared = (await page.evaluate(() => (window as unknown as { __shared: { url?: string } }).__shared)) as {
+      url?: string;
+    };
+    expect(shared?.url).toContain("http");
+  });
+
   test("marks a charge validated after two clean separations", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Save current setup" }).click();

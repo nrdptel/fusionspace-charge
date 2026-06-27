@@ -195,11 +195,26 @@ export default function Calculator({
   const [copied, setCopied] = useState(false);
   const [planCopied, setPlanCopied] = useState(false);
   const [benchOpen, setBenchOpen] = useState(false);
+  // Native share sheet, where the browser supports it (mostly mobile). Detected after mount
+  // so the buttons only appear when usable; otherwise the copy/download paths stand in.
+  const [canShare, setCanShare] = useState(false);
+  const [canShareFiles, setCanShareFiles] = useState(false);
 
   // Load state from the URL on mount.
   useEffect(() => {
     setState(decodeState(window.location.search));
     setHydrated(true);
+  }, []);
+
+  // Detect native-share support (client-only; navigator is absent during SSR).
+  useEffect(() => {
+    setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
+    try {
+      const probe = new File(["x"], "x.txt", { type: "text/plain" });
+      setCanShareFiles(!!navigator.canShare && navigator.canShare({ files: [probe] }));
+    } catch {
+      setCanShareFiles(false);
+    }
   }, []);
 
   // Keep the URL in sync so the configured calculation is a shareable link.
@@ -264,6 +279,31 @@ export default function Calculator({
       setTimeout(() => setCopied(false), 1800);
     } catch {
       /* clipboard may be blocked; the URL bar already holds the shareable link */
+    }
+  };
+
+  // Push the configured calculation into the OS share sheet (Messages, mail, a club chat).
+  const shareLink = async () => {
+    try {
+      await navigator.share({
+        title: "Charge — ejection charge plan",
+        text: "My ejection charge plan",
+        url: window.location.href,
+      });
+    } catch {
+      /* the user dismissed the sheet, or it's unsupported — no-op */
+    }
+  };
+
+  // Share a generated document (card or report) as a file, where the browser allows it.
+  const shareFile = async (html: string, filename: string) => {
+    try {
+      const file = new File([html], filename, { type: "text/html" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+      }
+    } catch {
+      /* dismissed or unsupported — no-op */
     }
   };
 
@@ -678,6 +718,15 @@ export default function Calculator({
         >
           {copied ? "Link copied" : "Copy share link"}
         </button>
+        {canShare && (
+          <button
+            type="button"
+            onClick={shareLink}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          >
+            Share
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setBenchOpen(true)}
@@ -710,6 +759,11 @@ export default function Calculator({
           <button type="button" onClick={copyPlan} className={EXPORT_BTN}>
             {planCopied ? "Copied" : "Copy text"}
           </button>
+          {canShareFiles && (
+            <button type="button" aria-label="Share card" onClick={() => shareFile(buildCardHtml(printPlan, todayISO()), `charge-card-${slug}.html`)} className={EXPORT_BTN}>
+              Share
+            </button>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-zinc-500 dark:text-zinc-400">Recovery report</span>
@@ -719,6 +773,11 @@ export default function Calculator({
           <button type="button" aria-label="Print report to PDF" onClick={() => printHtml(buildReportHtml(reportData()))} className={EXPORT_BTN}>
             PDF
           </button>
+          {canShareFiles && (
+            <button type="button" aria-label="Share report" onClick={() => shareFile(buildReportHtml(reportData()), `charge-report-${slug}.html`)} className={EXPORT_BTN}>
+              Share
+            </button>
+          )}
           <span className="text-xs text-zinc-500 dark:text-zinc-400">
             full write-up for a cert package or build thread
           </span>
