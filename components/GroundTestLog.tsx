@@ -5,11 +5,13 @@ import { Segmented } from "./ui";
 import { NumberField } from "./ui";
 import {
   calibrationFromEntries,
+  nextChargeSuggestion,
+  validatedCharge,
   TESTLOG_STORAGE_KEY,
   type Outcome,
   type TestEntry,
 } from "@/lib/testlog";
-import { fmt } from "@/lib/format";
+import { fmt, fmtMass } from "@/lib/format";
 
 const OUTCOME_LABEL: Record<Outcome, string> = {
   clean: "Clean",
@@ -203,6 +205,10 @@ export default function GroundTestLog({
   };
 
   const calibration = calibrationFromEntries(entries);
+  // Bench coaching for the airframe currently in the form: a validated charge is
+  // flight-ready; otherwise the last result drives what to pack next.
+  const validated = validatedCharge(entries, label);
+  const next = validated ? null : nextChargeSuggestion(entries, label);
 
   return (
     <section id="ground-test" className="mt-16 scroll-mt-8">
@@ -314,6 +320,59 @@ export default function GroundTestLog({
           </button>
         </div>
       </div>
+
+      {/* Bench coach: what to pack next, or flight-ready */}
+      {validated && (
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm leading-relaxed text-emerald-800 dark:text-emerald-300">
+          <span aria-hidden className="mt-0.5 shrink-0 text-base">
+            ✓
+          </span>
+          <p>
+            <strong className="font-semibold">{label} is validated.</strong>{" "}
+            {validated.count} clean separations at{" "}
+            <span className="font-mono font-semibold tabular-nums">
+              {fmtMass(validated.charge)} g
+            </span>{" "}
+            — flight-ready. Fly the charge you proved.
+          </p>
+        </div>
+      )}
+      {next && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
+          <span aria-hidden className="shrink-0 text-base">
+            🎯
+          </span>
+          <p className="min-w-0 flex-1">
+            {next.kind === "increase" ? (
+              <>
+                Last test of {label}:{" "}
+                <span className="font-mono tabular-nums">{fmtMass(next.fromCharge)} g</span>,{" "}
+                {OUTCOME_LABEL[next.fromOutcome].toLowerCase()}. Step up — try{" "}
+                <span className="font-mono font-semibold tabular-nums">
+                  {fmtMass(next.suggested)} g
+                </span>{" "}
+                next.
+              </>
+            ) : (
+              <>
+                {label}&apos;s{" "}
+                <span className="font-mono tabular-nums">{fmtMass(next.fromCharge)} g</span>{" "}
+                test was clean. Repeat it once to confirm — then it&apos;s validated.
+              </>
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setCharge(next.suggested);
+              setDraftEstimate(0);
+            }}
+            className="shrink-0 rounded-lg border border-indigo-400/60 bg-white/70 px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:bg-white dark:bg-indigo-500/10 dark:text-indigo-200 dark:hover:bg-indigo-500/20"
+          >
+            Use {fmtMass(next.suggested)} g
+          </button>
+        </div>
+      )}
 
       {/* Entries */}
       {entries.length > 0 && (

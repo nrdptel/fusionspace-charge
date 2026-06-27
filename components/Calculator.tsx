@@ -111,7 +111,12 @@ export default function Calculator({
   onActiveRocketChange?: (name: string) => void;
   onPlanCharge?: (grams: number, estimate: number) => void;
   /** The active airframe's proven charge, if it has clean ground tests logged. */
-  testedSummary?: { name: string; cleanCount: number; lastClean?: TestEntry } | null;
+  testedSummary?: {
+    name: string;
+    cleanCount: number;
+    lastClean?: TestEntry;
+    validated?: { charge: number; count: number };
+  } | null;
   /** The active saved rocket's name, used to title the printable card. */
   airframeName?: string;
 }) {
@@ -415,7 +420,13 @@ export default function Calculator({
           <p>
             <strong className="font-semibold">
               You&apos;ve proven {testedSummary.name}.
-            </strong>{" "}
+            </strong>
+            {testedSummary.validated && (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 align-middle text-[11px] font-semibold">
+                ✓ Validated · {fmtMass(testedSummary.validated.charge)} g ×{" "}
+                {testedSummary.validated.count}
+              </span>
+            )}{" "}
             Its most recent clean separation was{" "}
             <span className="font-mono font-semibold tabular-nums">
               {fmtMass(testedSummary.lastClean.charge)} g

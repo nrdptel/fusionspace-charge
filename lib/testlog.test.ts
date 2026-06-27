@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { calibrationFromEntries, summarizeFor, type TestEntry } from "./testlog";
+import {
+  calibrationFromEntries,
+  nextChargeSuggestion,
+  summarizeFor,
+  validatedCharge,
+  type TestEntry,
+} from "./testlog";
 
 const entry = (p: Partial<TestEntry>): TestEntry => ({
   id: Math.random().toString(36).slice(2),
@@ -77,5 +83,79 @@ describe("model calibration", () => {
       entry({ charge: 0, estimate: 1.0 }), // no charge
     ]);
     expect(c?.count).toBe(2);
+  });
+});
+
+describe("validated charge", () => {
+  it("needs two clean separations at the same charge for one airframe", () => {
+    expect(validatedCharge([entry({ label: "X", charge: 1.5 })], "X")).toBeNull();
+    const v = validatedCharge(
+      [entry({ label: "X", charge: 1.5 }), entry({ label: "X", charge: 1.5 })],
+      "X",
+    );
+    expect(v).toEqual({ charge: 1.5, count: 2 });
+  });
+
+  it("does not count partials, different charges, or other airframes", () => {
+    expect(
+      validatedCharge(
+        [
+          entry({ label: "X", charge: 1.5 }),
+          entry({ label: "X", charge: 1.5, outcome: "partial" }),
+          entry({ label: "X", charge: 1.7 }),
+          entry({ label: "Y", charge: 1.5 }),
+        ],
+        "X",
+      ),
+    ).toBeNull();
+  });
+
+  it("prefers the most-tested charge, breaking ties toward the larger", () => {
+    const v = validatedCharge(
+      [
+        entry({ label: "X", charge: 1.5 }),
+        entry({ label: "X", charge: 1.5 }),
+        entry({ label: "X", charge: 1.8 }),
+        entry({ label: "X", charge: 1.8 }),
+      ],
+      "X",
+    );
+    expect(v).toEqual({ charge: 1.8, count: 2 });
+  });
+});
+
+describe("next-charge suggestion", () => {
+  it("steps up ~25% after no separation", () => {
+    const n = nextChargeSuggestion([entry({ label: "X", charge: 0.6, outcome: "none" })], "X");
+    expect(n).toEqual({ kind: "increase", fromCharge: 0.6, fromOutcome: "none", suggested: 0.75 });
+  });
+
+  it("steps up ~15% after a partial", () => {
+    const n = nextChargeSuggestion([entry({ label: "X", charge: 1.0, outcome: "partial" })], "X");
+    expect(n?.kind).toBe("increase");
+    expect(n?.suggested).toBeCloseTo(1.15, 5);
+  });
+
+  it("suggests repeating the same charge after a single clean test", () => {
+    const n = nextChargeSuggestion([entry({ label: "X", charge: 1.2, outcome: "clean" })], "X");
+    expect(n).toEqual({ kind: "confirm", fromCharge: 1.2, fromOutcome: "clean", suggested: 1.2 });
+  });
+
+  it("reads the most recently added test, and goes quiet once validated", () => {
+    // newest-first: a partial added after a none drives the suggestion.
+    const n = nextChargeSuggestion(
+      [
+        entry({ label: "X", charge: 0.8, outcome: "partial" }),
+        entry({ label: "X", charge: 0.6, outcome: "none" }),
+      ],
+      "X",
+    );
+    expect(n?.fromCharge).toBe(0.8);
+    // two cleans at the same charge → validated → no more suggestions.
+    const done = nextChargeSuggestion(
+      [entry({ label: "X", charge: 1.5 }), entry({ label: "X", charge: 1.5 })],
+      "X",
+    );
+    expect(done).toBeNull();
   });
 });

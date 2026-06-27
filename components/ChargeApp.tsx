@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Calculator from "./Calculator";
 import VentPorts from "./VentPorts";
 import GroundTestLog from "./GroundTestLog";
-import { summarizeFor, type TestEntry } from "@/lib/testlog";
+import { summarizeFor, validatedCharge, type TestEntry } from "@/lib/testlog";
 
 /** A charge weight sent from a well's ground-test plan to the log. The nonce makes
  *  each pick a distinct value so re-picking the same weight still re-triggers. */
@@ -32,7 +32,12 @@ export default function ChargeApp() {
   const testedSummary = useMemo(() => {
     if (!activeRocket) return null;
     const s = summarizeFor(logEntries, activeRocket);
-    return s.lastClean ? { name: activeRocket, ...s } : null;
+    if (!s.lastClean) return null;
+    return {
+      name: activeRocket,
+      ...s,
+      validated: validatedCharge(logEntries, activeRocket) ?? undefined,
+    };
   }, [activeRocket, logEntries]);
 
   return (

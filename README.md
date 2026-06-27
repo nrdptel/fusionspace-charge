@@ -39,6 +39,9 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   surfaces that proven charge above the estimate — so you fly what you validated.
 - **Learns your calibration**: across the clean tests you log, it shows how much bigger your
   real charges run than the formula — your own correction, never an auto-applied trim.
+- **Coaches the bench loop**: after each test it suggests what to pack next (step up after a
+  failed or partial separation, repeat to confirm after a clean one), and marks a charge
+  **validated** once it's separated cleanly twice.
 - **Printable build & ground-test card** (and a one-click **plain-text plan**): a one-page
   sheet with each well's charges and a grid to record results at the bench or the field.
 - A **dual-deploy sequence diagram** so beginners can see what each charge actually does in

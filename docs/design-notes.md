@@ -212,6 +212,20 @@ testing larger is the safe direction, and a learned multiplier that shrank a cha
 the one dangerous move. Backup-charge tests are excluded (they're intentionally inflated),
 and it needs two data points before it says anything. Pure, tested logic in `lib/testlog.ts`.
 
+### The bench coach (guidance + validation)
+
+The log doesn't just record the loop — it drives it. Reading the most recent test for the
+airframe in the form, the tool suggests what to pack next: a no-separation steps the charge
+up ~25%, a partial ~15%, and a single clean test suggests repeating the same charge to
+confirm it; a "use it" button drops the suggestion straight into the form. It only ever
+steps *up* — it never proposes a smaller charge, the one dangerous move. Once an airframe has
+separated cleanly twice at the same charge it's marked **validated** (a badge in the log and
+on the calculator's proven-charge callout), and the suggestions stop — there's nothing left
+to chase. Both are pure helpers in `lib/testlog.ts` (`nextChargeSuggestion`,
+`validatedCharge`), so the rules are testable on their own. Together with the proven-charge
+callout and the calibration insight, this is the estimate → test → *guide* → validate arc the
+whole tool is built around, made fully literal.
+
 ### Smaller touches
 
 - **Dual-deploy sequence diagram** — a labeled SVG (apogee → drogue, low altitude → main) in
