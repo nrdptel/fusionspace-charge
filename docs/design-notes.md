@@ -200,6 +200,17 @@ because the card is what's actually in your hand at the pad. This is the offline
 physical — the calculation leaves the browser and goes to the bench. A one-click **"Copy
 plan"** gives the same summary as plain text, for a phone note or a club chat.
 
+### Bench mode (built for the physical context)
+
+Every other view assumes a comfortable screen at a desk. The actual moment of use is a phone
+propped on a workbench or at the pad — bright sun, greasy or gloved hands. "Bench mode" is a
+full-screen, deliberately high-contrast (white-on-near-black) view with the charges set in
+huge type and the test ladder as large tap targets, one block per well, plus the proven/
+validated charge up top if there is one. Tapping a step hands that charge to the log and
+drops you back to record the result. It's a reframe around *ergonomics* rather than features:
+the print card covers "no phone"; this covers "phone, bad conditions." Escape or "Done"
+closes it, and it locks the page scroll behind itself while open.
+
 ### The recovery report (documentation)
 
 The field card answers "what do I do at the pad"; the report answers "how was this designed
