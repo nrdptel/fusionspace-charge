@@ -1,115 +1,54 @@
-// Pre-generate the Open Graph / Twitter card PNG at build time.
+// Regenerates public/og.png — the 1200×630 social share card.
 //
-// Charge is a static export (`output: "export"`), which forbids the dynamic
-// next/og image route at request time — so we render the card to a static PNG
-// here instead, at public/og/default.png, and point openGraph/twitter.images
-// at it. This mirrors the HPR Motor Finder's scripts/gen-og.mjs so the two
-// tools share one card template: same gradient, type scale, and the FusionSpace
-// wordmark + domain lockup in the corner.
+// Run locally to refresh the card (it's committed as a static asset, not built in
+// CI): `node scripts/gen-og.mjs`. Set PW_EXECUTABLE_PATH to point Playwright at a
+// pre-installed Chromium in sandboxed environments; otherwise it uses the default.
 //
-// Uses next/og's `ImageResponse` (Next's built-in OG renderer), imported via the
-// explicit `next/og.js` specifier so it resolves from a plain node script. The
-// layout is written with React.createElement to keep this a dependency-free .mjs.
-//
-// Runs in `prebuild`, before `next build`. Idempotent.
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+// The design matches the Fusion Space landing card (fusionspace.co): the brand mark
+// over the product name, a tagline, and the domain in mono, centered on the dark
+// background with the indigo radial glow. Rendered with Chromium (via Playwright)
+// because it renders the gradient mark and the radial glow faithfully.
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { chromium } from "@playwright/test";
 
-import React from "react";
-import { ImageResponse } from "next/og.js";
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const mark = await readFile(resolve(root, "public/brand/fusion-space-mark.svg"), "utf8");
 
-const here = dirname(fileURLToPath(import.meta.url));
-const root = resolve(here, "..");
-const ogDir = resolve(root, "public", "og");
+const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px}
+  .card{width:1200px;height:630px;position:relative;background:#09090b;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Helvetica Neue',Helvetica,Arial,'Liberation Sans',sans-serif}
+  .glow{position:absolute;inset:0;background:radial-gradient(58% 58% at 50% 32%,
+    rgba(99,102,241,.24),rgba(99,102,241,0))}
+  .col{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .mark{width:140px;height:140px}
+  .mark svg{width:140px;height:140px}
+  .name{font-size:104px;font-weight:700;letter-spacing:-.02em;color:#fafafa;margin-top:22px;line-height:1}
+  .tag{font-size:40px;font-weight:600;color:#e4e4e7;margin-top:34px}
+  .dom{font-family:'DejaVu Sans Mono','Liberation Mono',monospace;font-size:26px;color:#818cf8;margin-top:30px}
+</style></head><body>
+  <div class="card">
+    <div class="glow"></div>
+    <div class="col">
+      <div class="mark">${mark}</div>
+      <div class="name">Charge</div>
+      <div class="tag">Black-powder ejection-charge calculator</div>
+      <div class="dom">charge.fusionspace.co</div>
+    </div>
+  </div>
+</body></html>`;
 
-const SIZE = { width: 1200, height: 630 };
-const h = React.createElement;
-
-// Shared chrome — identical to the Motor Finder card so the family reads as one.
-const CARD_STYLE = {
-  width: "100%",
-  height: "100%",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "flex-start",
-  padding: "80px",
-  background: "linear-gradient(135deg, #09090b 0%, #18181b 100%)",
-  color: "#fafafa",
-  fontFamily: "sans-serif",
-  position: "relative",
-};
-
-function footer(logoUri) {
-  return h(
-    "div",
-    {
-      style: {
-        position: "absolute",
-        bottom: 58,
-        left: 80,
-        display: "flex",
-        alignItems: "center",
-        gap: 18,
-        opacity: 0.85,
-      },
-    },
-    h("img", { src: logoUri, width: 233, height: 52, alt: "Fusion Space" }),
-    h(
-      "span",
-      { style: { fontSize: 26, color: "#a1a1aa", letterSpacing: "0.04em" } },
-      "charge.fusionspace.co",
-    ),
-  );
-}
-
-function defaultCard(logoUri) {
-  return h(
-    "div",
-    { style: CARD_STYLE },
-    h(
-      "div",
-      {
-        style: {
-          fontSize: 28,
-          color: "#a1a1aa",
-          letterSpacing: "0.05em",
-          textTransform: "uppercase",
-          marginBottom: 24,
-        },
-      },
-      "High-power rocketry",
-    ),
-    h(
-      "div",
-      { style: { fontSize: 96, fontWeight: 700, lineHeight: 1.05, marginBottom: 32, letterSpacing: "-0.02em" } },
-      "Charge",
-    ),
-    h(
-      "div",
-      { style: { fontSize: 36, color: "#d4d4d8", lineHeight: 1.3, maxWidth: 980 } },
-      "Black-powder ejection-charge calculator — size a charge, ground-test it until it separates clean, then take a bench card or cert report to the field.",
-    ),
-    footer(logoUri),
-  );
-}
-
-async function render(element) {
-  const resp = new ImageResponse(element, { ...SIZE });
-  return Buffer.from(await resp.arrayBuffer());
-}
-
-async function main() {
-  // Extract the embedded wordmark data URI from lib/og-logo.ts (a .ts file, so
-  // read + regex rather than import). Shared verbatim with the Motor Finder.
-  const logoSrc = await readFile(resolve(root, "lib", "og-logo.ts"), "utf-8");
-  const logoUri = logoSrc.match(/data:image\/png;base64,[A-Za-z0-9+/=]+/)?.[0];
-  if (!logoUri) throw new Error("gen-og: could not extract OG_LOGO_PNG from lib/og-logo.ts");
-
-  await mkdir(ogDir, { recursive: true });
-  await writeFile(resolve(ogDir, "default.png"), await render(defaultCard(logoUri)));
-  console.log("gen-og: wrote public/og/default.png");
-}
-
-await main();
+const browser = await chromium.launch({
+  executablePath: process.env.PW_EXECUTABLE_PATH || undefined,
+});
+const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
+await page.setContent(html, { waitUntil: "networkidle" });
+await page.waitForTimeout(150);
+const buf = await page.locator(".card").screenshot();
+await writeFile(resolve(root, "public/og.png"), buf);
+await browser.close();
+console.log("gen-og: wrote public/og.png");
