@@ -200,6 +200,19 @@ because the card is what's actually in your hand at the pad. This is the offline
 physical — the calculation leaves the browser and goes to the bench. A one-click **"Copy
 plan"** gives the same summary as plain text, for a phone note or a club chat.
 
+### The recovery report (documentation)
+
+The field card answers "what do I do at the pad"; the report answers "how was this designed
+and validated" — the documentation a cert flight (Tripoli/NAR L1–L3) or a build writeup
+wants. "Download report" compiles what the tool already holds — the configuration, the
+sizing rationale *with the actual formula, constants, and a worked example*, and the logged
+ground-test results (with each test's ratio-to-model, plus validation and calibration) —
+into a single **self-contained HTML file**: inline CSS, zero dependencies, so it opens
+anywhere, prints to PDF, and survives offline. Downloading a file (rather than a print view)
+makes it archivable and shareable, and sidesteps the print-only card's `@media print` rule.
+The generator (`lib/report.ts`) is pure and escapes every user-supplied string, so a rocket
+name or a test note can't break — or inject into — the document.
+
 ### Learning from your own data (calibration)
 
 The model is a starting point; your tests are the truth — so the tool *learns* the gap. When

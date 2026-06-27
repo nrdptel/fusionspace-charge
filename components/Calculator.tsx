@@ -23,9 +23,19 @@ import {
   type LengthUnit,
   type PressureUnit,
 } from "@/lib/units";
-import { sizeByForce, sizeByPressure, type WellResult } from "@/lib/charge";
+import {
+  sizeByForce,
+  sizeByPressure,
+  IN3_PER_FT3,
+  LBM_TO_G,
+  PSI_TO_PSF,
+  R_BP,
+  T_BP,
+  type WellResult,
+} from "@/lib/charge";
 import { wellCautions } from "@/lib/checks";
-import type { TestEntry } from "@/lib/testlog";
+import { calibrationFromEntries, type TestEntry } from "@/lib/testlog";
+import { buildReportHtml } from "@/lib/report";
 import { fmt, fmtMass, round } from "@/lib/format";
 import { Chip, NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
@@ -107,6 +117,7 @@ export default function Calculator({
   onPlanCharge,
   testedSummary,
   airframeName,
+  airframeTests,
 }: {
   onActiveRocketChange?: (name: string) => void;
   onPlanCharge?: (grams: number, estimate: number) => void;
@@ -117,8 +128,10 @@ export default function Calculator({
     lastClean?: TestEntry;
     validated?: { charge: number; count: number };
   } | null;
-  /** The active saved rocket's name, used to title the printable card. */
+  /** The active saved rocket's name, used to title the printable card and report. */
   airframeName?: string;
+  /** The active airframe's logged tests, included in the downloadable recovery report. */
+  airframeTests?: TestEntry[];
 }) {
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
@@ -259,6 +272,130 @@ export default function Calculator({
     } catch {
       /* clipboard may be blocked */
     }
+  };
+
+  // The documentation half of the tool: a self-contained HTML recovery report (config +
+  // sizing rationale with the formula + logged ground-test results) for a cert package or
+  // a build writeup. Downloaded as a file so it's archivable and shareable, fully offline.
+  const downloadReport = () => {
+    const lu = state.lengthUnit;
+    const pu = state.pressureUnit;
+    const fu = state.forceUnit;
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    const summary: [string, string][] = [
+      ["Deployment", state.deploy === "dual" ? "Dual (drogue + main)" : "Single"],
+      ["Sized by", state.mode === "force" ? "Separation force" : "Target pressure"],
+    ];
+    if (state.mode === "force") summary.push(["Safety margin", `${fmt(state.margin, 2)}×`]);
+    else if (state.margin > 1)
+      summary.push(["Safety margin", `${fmt(state.margin, 2)}× (sized above target)`]);
+    if (state.redundant)
+      summary.push([
+        "Redundant altimeters",
+        `yes — backup +${fmt(backupPctClamped(state.backupPct), 0)}% (min +${BACKUP_MIN_G} g)`,
+      ]);
+    if (state.elevation > 0) summary.push(["Field elevation", `${fmt(state.elevation, 0)} ft`]);
+    summary.push(["Units", `${lu} · ${state.mode === "force" ? fu : pu}`]);
+
+    const wellBlocks = wells.map(({ key, title, data }) => {
+      const w = state[key];
+      const res = data.result;
+      const rws: [string, string][] = [
+        ["Inner diameter", `${fmt(w.diameter, 3)} ${lu}`],
+        ["Pressurized length", `${fmt(w.length, 2)} ${lu}`],
+      ];
+      if (state.mode === "pressure") rws.push(["Target pressure", `${fmt(w.pressure, 1)} ${pu}`]);
+      else {
+        rws.push(["Shear pins", `${fmt(w.pinCount, 0)} × ${fmt(w.pinForce, 1)} ${fu}`]);
+        if (w.friction > 0) rws.push(["Friction / extra hold", `${fmt(w.friction, 1)} ${fu}`]);
+        rws.push([
+          "Required separation force",
+          `${fmt(fromLbf(data.requiredForceLbf, fu), 0)} ${fu}`,
+        ]);
+      }
+      rws.push(["Charge (estimate)", `${fmtMass(res.mass)} g`]);
+      if (state.redundant)
+        rws.push(["Backup charge", `${fmtMass(backupMass(res.mass, state.backupPct))} g`]);
+      rws.push(["Sized pressure", `${fmt(fromPsi(res.pressure, pu), 1)} ${pu}`]);
+      rws.push(["Volume", `${fmt(res.volume, 1)} in³ · ${fmt(in3ToCc(res.volume), 0)} cc`]);
+      return { title, rows: rws };
+    });
+
+    const r = drogue.result;
+    const method = [
+      "m = (P · V) / (R · T)",
+      `R = ${R_BP} ft·lbf/(lbm·°R)    T = ${T_BP} °R    psi → lbf/ft² ×${PSI_TO_PSF}    lbm → g ×${LBM_TO_G}`,
+      "",
+      `Worked example — ${state.deploy === "dual" ? "drogue" : "ejection"} well:`,
+      `  V = ${fmt(r.volume, 2)} in³ = ${fmt(r.volume / IN3_PER_FT3, 5)} ft³`,
+      `  P = ${fmt(r.pressure, 2)} psi × ${PSI_TO_PSF} = ${fmt(r.pressure * PSI_TO_PSF, 1)} lbf/ft²`,
+      `  m = (${fmt(r.pressure * PSI_TO_PSF, 1)} × ${fmt(r.volume / IN3_PER_FT3, 5)}) / (${R_BP} × ${T_BP})`,
+      `    = ${fmt(r.mass / LBM_TO_G, 6)} lbm × ${LBM_TO_G} = ${fmt(r.mass, 2)} g`,
+    ];
+
+    const OUT: Record<string, string> = {
+      clean: "Clean",
+      partial: "Partial",
+      none: "No separation",
+    };
+    const sorted = [...(airframeTests ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+    const tests = sorted.map((e) => [
+      e.date,
+      `${fmtMass(e.charge)} g`,
+      OUT[e.outcome] ?? e.outcome,
+      e.estimate && e.estimate > 0 ? `${fmt(e.charge / e.estimate, 2)}×` : "—",
+      e.notes || "",
+    ]);
+
+    let testsNote: string;
+    if (sorted.length === 0) {
+      testsNote = airframeName?.trim()
+        ? `No ground tests logged for ${airframeName} yet — size, then bench-test before flight.`
+        : "No ground tests logged yet. Save a setup as a named airframe and log its bench tests to attach them here.";
+    } else {
+      const parts: string[] = [];
+      if (testedSummary?.validated)
+        parts.push(
+          `Validated — ${testedSummary.validated.count} clean separations at ${fmtMass(testedSummary.validated.charge)} g.`,
+        );
+      else if (testedSummary?.lastClean)
+        parts.push(
+          `Most recent clean separation: ${fmtMass(testedSummary.lastClean.charge)} g (${testedSummary.lastClean.date}). Not yet validated — needs two clean tests at one charge.`,
+        );
+      else parts.push("No clean separation logged yet.");
+      const cal = calibrationFromEntries(sorted);
+      if (cal)
+        parts.push(
+          `Across ${cal.count} clean tests, charges ran ${fmt(cal.mean, 2)}× the model (range ${fmt(cal.min, 2)}–${fmt(cal.max, 2)}×).`,
+        );
+      testsNote = parts.join(" ");
+    }
+
+    const html = buildReportHtml({
+      title: airframeName?.trim() || "Ejection charge plan",
+      generatedAt: today,
+      summary,
+      wells: wellBlocks,
+      method,
+      testsHeader: ["Date", "Charge", "Result", "vs model", "Notes"],
+      tests,
+      testsNote,
+    });
+    const slug =
+      (airframeName?.trim() || "plan").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") ||
+      "plan";
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `charge-report-${slug}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -485,6 +622,13 @@ export default function Calculator({
         </button>
         <button
           type="button"
+          onClick={downloadReport}
+          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        >
+          Download report
+        </button>
+        <button
+          type="button"
           onClick={() => {
             setState(DEFAULT_STATE);
             onActiveRocketChange?.("");
@@ -496,8 +640,9 @@ export default function Calculator({
       </div>
 
       <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-        Print card prints a one-page build &amp; ground-test sheet for the bench or the
-        field — or save it as PDF from the print dialog.
+        Print card prints a one-page build &amp; ground-test sheet for the bench or the field.
+        Download report saves a full recovery write-up (sizing rationale + your logged tests)
+        as an HTML file — for a cert package or a build thread, printable to PDF.
       </p>
 
       <Methodology state={state} drogue={drogue} />

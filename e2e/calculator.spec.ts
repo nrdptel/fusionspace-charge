@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import fs from "fs";
 
 test.describe("Charge calculator", () => {
   test("loads with a clean hydration and the heading", async ({ page }) => {
@@ -305,6 +306,22 @@ test.describe("Charge calculator", () => {
     const text = await page.evaluate(() => navigator.clipboard.readText());
     expect(text).toContain("Ejection charge plan");
     expect(text).toContain("Ladder:");
+  });
+
+  test("downloads a self-contained recovery report", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s&mg=1");
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download report" }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^charge-report-.*\.html$/);
+    const path = await download.path();
+    const html = fs.readFileSync(path, "utf8");
+    expect(html.startsWith("<!doctype html>")).toBe(true);
+    expect(html).toContain("recovery report");
+    expect(html).toContain("How the number was sized");
+    expect(html).toContain("m = (P · V) / (R · T)");
+    expect(html).not.toContain("<script"); // self-contained, no external/injected scripts
   });
 
   test("the header has a Ko-fi tip link", async ({ page }) => {
