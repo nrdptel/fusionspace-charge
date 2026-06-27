@@ -75,6 +75,31 @@ tube, your pressurized section, and how hard the airframe is to pull apart; it t
 a starting black-powder mass in grams. Then — and this is the point — you go ground-test
 it, and Charge helps you record what actually worked.
 
+### Information architecture (how the page is organized)
+
+The product grew a lot of features, so the page is deliberately ordered as one loop the
+flyer actually walks through, top to bottom:
+
+1. **Size** — the calculator (`#calculator`): controls, wells, results, ground-test ladder.
+2. **Take it to the field** — one consolidated panel (`#field`) gathering every share / pad /
+   export action: bench mode, copy/share link, the build & ground-test card, and the recovery
+   report. Previously these were two separate clusters; merging them keeps the calculation
+   flowing straight into something you can carry to the pad or file afterward.
+3. **Understand** — the methodology (`#methodology`), the math behind that number.
+4. **Test & validate** — the ground-test log (`#ground-test`), so the core size→test loop is
+   contiguous.
+5. **Companion tool** — altimeter vent ports (`#vent`), sitting *after* the loop behind a
+   "Companion tool" divider so it reads as a separate second tool (it's about the av-bay, not
+   the charge wells) rather than interrupting size→test, which is where it used to sit.
+6. **Your data & install** (`#data`), then the footer.
+
+Discoverability is handled by a collapsed **"What's in here"** overview (`FeatureGuide`) near
+the top: the four-step loop as numbered cards, then every feature grouped by purpose with a
+jump-link to each section — a tasteful table of contents that doesn't push the calculator down
+the page. It's a native `<details>` with in-page anchors, so it needs no client JS and stays
+accessible. The header subtitle and the JSON-LD/`featureList` were refreshed to describe the
+full tool rather than just the base calculator.
+
 ### The math (the standard HPR ideal-gas method)
 
 Everyone uses the same calculation; Charge will show it in full.

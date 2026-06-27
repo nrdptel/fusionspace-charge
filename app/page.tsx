@@ -1,6 +1,7 @@
 import Footer from "@/components/Footer";
 import ChargeApp from "@/components/ChargeApp";
 import DataBackup from "@/components/DataBackup";
+import FeatureGuide from "@/components/FeatureGuide";
 import InstallHint from "@/components/InstallHint";
 import FusionSpaceBadge from "@/components/FusionSpaceBadge";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -14,7 +15,17 @@ const JSON_LD = {
   operatingSystem: "Any",
   url: "https://charge.fusionspace.co",
   description:
-    "Black-powder ejection-charge calculator for high-power rocketry, with the full formula shown, altimeter vent-port sizing, and a ground-test log.",
+    "Black-powder ejection-charge calculator for high-power rocketry: size by target pressure or separation force for single or dual deploy, with redundant-altimeter backup charges, a ground-test log that calibrates to your results, altimeter vent-port sizing, and exportable bench cards and recovery reports. The full ideal-gas formula is shown.",
+  featureList: [
+    "Size by target pressure or separation force",
+    "Single and dual deploy",
+    "Redundant-altimeter backup charges",
+    "Ground-test log with calibration and validation",
+    "Altimeter vent-port sizing",
+    "Printable bench card and recovery report (HTML / PDF)",
+    "Bench mode for the pad",
+    "Works offline; installable",
+  ],
   isAccessibleForFree: true,
   publisher: { "@type": "Organization", name: "Fusion Space", url: "https://fusionspace.co" },
 };
@@ -31,8 +42,9 @@ export default function Page() {
           <FusionSpaceBadge className="mb-1.5" />
           <h1 className="text-2xl font-semibold tracking-tight">Charge</h1>
           <p className="mt-2 max-w-xl text-sm text-zinc-500 dark:text-zinc-400">
-            Black-powder ejection-charge calculator for high-power rocketry — size a
-            charge to separate your airframe and deploy recovery.
+            Black-powder ejection-charge calculator for high-power rocketry. Size a charge by
+            target pressure or separation force, ground-test it until it separates clean, and
+            take a bench card or cert report to the field.
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
@@ -56,6 +68,8 @@ export default function Page() {
           rules. Black powder is an explosive; handling and use are your responsibility.
         </p>
       </div>
+
+      <FeatureGuide />
 
       <ChargeApp />
       <DataBackup />

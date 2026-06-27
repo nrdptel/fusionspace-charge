@@ -56,8 +56,11 @@ export default function VentPorts() {
   const hasResult = result.perPortDiameterIn > 0;
 
   return (
-    <section className="mt-16">
-      <div className="flex items-baseline justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+    <section id="vent" className="mt-16 scroll-mt-8 border-t border-zinc-200 pt-12 dark:border-zinc-800">
+      <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+        Companion tool
+      </p>
+      <div className="mt-2 flex items-baseline justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
         <h2 className="text-lg font-semibold tracking-tight">Altimeter vent holes</h2>
         <span className="text-xs text-zinc-500 dark:text-zinc-400">static sampling ports</span>
       </div>

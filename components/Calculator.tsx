@@ -547,7 +547,7 @@ export default function Calculator({
   const slug = slugify(airframeName?.trim() || "plan");
 
   return (
-    <div className="mt-10 md:mt-14">
+    <div id="calculator" className="mt-10 scroll-mt-8 md:mt-14">
       <div className="mb-5">
         <SavedRockets
           current={state}
@@ -762,79 +762,96 @@ export default function Calculator({
         </p>
       )}
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={share}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500"
-        >
-          {copied ? "Link copied" : "Copy share link"}
-        </button>
-        {canShare && (
+      {/* Take it to the field — every share / pad / export action in one place, so the
+          calculation flows straight into something you can carry to the pad or file after. */}
+      <section
+        id="field"
+        className="mt-8 scroll-mt-8 rounded-xl border border-zinc-200 bg-zinc-50/60 p-5 dark:border-zinc-800 dark:bg-zinc-900/40"
+      >
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="text-base font-semibold tracking-tight">Take it to the field</h2>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">share · pad · export</span>
+        </div>
+        <p className="mt-1.5 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
+          Open a high-contrast pad view, print a build &amp; ground-test card, or save a full
+          recovery report for a cert package — and share the live setup as a link.
+        </p>
+
+        {/* Primary actions: the pad view and the shareable link. */}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={shareLink}
+            onClick={() => setBenchOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500"
+          >
+            Bench mode
+          </button>
+          <button
+            type="button"
+            onClick={share}
             className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
           >
-            Share
+            {copied ? "Link copied" : "Copy share link"}
           </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setBenchOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        >
-          Bench mode
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setState(DEFAULT_STATE);
-            onActiveRocketChange?.("");
-          }}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        >
-          Reset
-        </button>
-      </div>
+          {canShare && (
+            <button
+              type="button"
+              onClick={shareLink}
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            >
+              Share
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setState(DEFAULT_STATE);
+              onActiveRocketChange?.("");
+            }}
+            className="ml-auto text-sm font-medium text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+          >
+            Reset
+          </button>
+        </div>
 
-      {/* Exports — each artifact offered as HTML (download) or PDF (print → Save as PDF). */}
-      <div className="mt-4 space-y-2.5">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-zinc-500 dark:text-zinc-400">Build &amp; ground-test card</span>
-          <button type="button" aria-label="Download card as HTML" onClick={() => downloadHtml(buildCardHtml(printPlan, todayISO()), `charge-card-${slug}.html`)} className={EXPORT_BTN}>
-            HTML
-          </button>
-          <button type="button" aria-label="Print card to PDF" onClick={() => printHtml(buildCardHtml(printPlan, todayISO()))} className={EXPORT_BTN}>
-            PDF
-          </button>
-          <button type="button" onClick={copyPlan} className={EXPORT_BTN}>
-            {planCopied ? "Copied" : "Copy text"}
-          </button>
-          {canShareFiles && (
-            <button type="button" aria-label="Share card" onClick={() => shareFile(buildCardHtml(printPlan, todayISO()), `charge-card-${slug}.html`)} className={EXPORT_BTN}>
-              Share
+        {/* Exports — each artifact offered as HTML (download) or PDF (print → Save as PDF). */}
+        <div className="mt-4 space-y-2.5 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="min-w-[9rem] text-zinc-500 dark:text-zinc-400">Build &amp; ground-test card</span>
+            <button type="button" aria-label="Download card as HTML" onClick={() => downloadHtml(buildCardHtml(printPlan, todayISO()), `charge-card-${slug}.html`)} className={EXPORT_BTN}>
+              HTML
             </button>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-zinc-500 dark:text-zinc-400">Recovery report</span>
-          <button type="button" aria-label="Download report as HTML" onClick={() => downloadHtml(buildReportHtml(reportData()), `charge-report-${slug}.html`)} className={EXPORT_BTN}>
-            HTML
-          </button>
-          <button type="button" aria-label="Print report to PDF" onClick={() => printHtml(buildReportHtml(reportData()))} className={EXPORT_BTN}>
-            PDF
-          </button>
-          {canShareFiles && (
-            <button type="button" aria-label="Share report" onClick={() => shareFile(buildReportHtml(reportData()), `charge-report-${slug}.html`)} className={EXPORT_BTN}>
-              Share
+            <button type="button" aria-label="Print card to PDF" onClick={() => printHtml(buildCardHtml(printPlan, todayISO()))} className={EXPORT_BTN}>
+              PDF
             </button>
-          )}
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            full write-up for a cert package or build thread
-          </span>
+            <button type="button" onClick={copyPlan} className={EXPORT_BTN}>
+              {planCopied ? "Copied" : "Copy text"}
+            </button>
+            {canShareFiles && (
+              <button type="button" aria-label="Share card" onClick={() => shareFile(buildCardHtml(printPlan, todayISO()), `charge-card-${slug}.html`)} className={EXPORT_BTN}>
+                Share
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="min-w-[9rem] text-zinc-500 dark:text-zinc-400">Recovery report</span>
+            <button type="button" aria-label="Download report as HTML" onClick={() => downloadHtml(buildReportHtml(reportData()), `charge-report-${slug}.html`)} className={EXPORT_BTN}>
+              HTML
+            </button>
+            <button type="button" aria-label="Print report to PDF" onClick={() => printHtml(buildReportHtml(reportData()))} className={EXPORT_BTN}>
+              PDF
+            </button>
+            {canShareFiles && (
+              <button type="button" aria-label="Share report" onClick={() => shareFile(buildReportHtml(reportData()), `charge-report-${slug}.html`)} className={EXPORT_BTN}>
+                Share
+              </button>
+            )}
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              full write-up for a cert package or build thread
+            </span>
+          </div>
         </div>
-      </div>
+      </section>
 
       <Methodology state={state} drogue={drogue} />
       {benchOpen && (

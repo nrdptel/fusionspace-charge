@@ -18,6 +18,11 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
 
 ## What it does
 
+The page is built around one loop — **size → ground-test → validate → take it to the
+field** — and reads top to bottom in that order. A collapsible **"What's in here"** overview
+near the top lays out every feature grouped by what it's for, with a jump-link to each
+section, so the whole tool is discoverable at a glance.
+
 - Size by **target pressure**, or by **separation force** — shear pins (with editable
   presets for common nylon screws) plus friction.
 - A **safety margin** in either mode: it sizes the charge above the bare separation
