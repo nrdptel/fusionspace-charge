@@ -7,8 +7,8 @@ export default defineConfig({
     include: ["lib/**/*.test.ts", "app/**/*.test.ts", "app/**/*.test.tsx"],
     coverage: {
       provider: "v8",
-      include: ["lib/**/*.ts"],
-      exclude: ["**/*.test.ts"],
+      include: ["lib/**/*.ts", "app/**/*.ts", "app/**/*.tsx"],
+      exclude: ["**/*.test.ts", "**/*.test.tsx", "**/*.config.ts"],
       reporter: ["text"],
     },
   },
