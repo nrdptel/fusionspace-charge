@@ -328,6 +328,14 @@ whole tool is built around, made fully literal.
 
 ### Smaller touches
 
+- **Skip link** — a "Skip to the calculator" link is the first tab stop, hidden until focused.
+  It jumps keyboard and screen-reader users past the header, theme/tip controls, and the
+  overview straight to the tool (it targets `#calculator`, so the next Tab lands on the first
+  control). Pairs with the existing indigo focus-visible ring (WCAG 2.4.1 / 2.4.7).
+- **Private by default** — there is no backend, account, server, analytics, or tracking; saved
+  rockets and the test log live in `localStorage`, the configuration rides in the URL, and the
+  only third party is the optional Ko-fi tip *link* (no embedded script). The "Your data"
+  section says this plainly, so a privacy-minded flyer doesn't have to infer it.
 - **Native share** — where the browser supports the Web Share API (mostly mobile), a "Share"
   button pushes the configured link into the OS share sheet, and the card/report can be shared
   as a file where file-sharing is supported. Detected after mount and shown only when usable,
