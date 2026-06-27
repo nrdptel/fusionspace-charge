@@ -357,6 +357,8 @@ test.describe("Charge calculator", () => {
     expect(html).toContain("recovery report");
     expect(html).toContain("How the number was sized");
     expect(html).toContain("m = (P · V) / (R · T)");
+    expect(html).toContain("References &amp; sources"); // sources cited for cert docs
+    expect(html).toContain("vernk.com");
     expect(html).not.toContain("<script"); // self-contained, no external/injected scripts
   });
 

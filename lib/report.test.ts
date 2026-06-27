@@ -45,4 +45,22 @@ describe("recovery report", () => {
   it("escapeHtml handles the dangerous characters", () => {
     expect(escapeHtml(`<>&"'`)).toBe("&lt;&gt;&amp;&quot;&#39;");
   });
+
+  it("renders a references section with linked sources when provided", () => {
+    const html = buildReportHtml({
+      ...base,
+      references: [
+        { label: "Method", detail: "the ideal-gas method", url: "https://example.com/x" },
+        { label: "Pins", detail: "approximate single-shear values" },
+      ],
+    });
+    expect(html).toContain("References &amp; sources");
+    expect(html).toContain("the ideal-gas method");
+    expect(html).toContain('<a href="https://example.com/x">source</a>');
+    expect(html).toContain("approximate single-shear values");
+  });
+
+  it("omits the references section when there are none", () => {
+    expect(buildReportHtml(base)).not.toContain("References &amp; sources");
+  });
 });

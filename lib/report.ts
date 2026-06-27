@@ -25,6 +25,8 @@ export interface ReportData {
   tests: string[][];
   /** Validation / calibration summary, or a prompt to go test. */
   testsNote: string;
+  /** Where the values come from — citations for the cert/build documentation. */
+  references?: { label: string; detail: string; url?: string }[];
 }
 
 export function escapeHtml(s: string): string {
@@ -67,6 +69,17 @@ export function buildReportHtml(d: ReportData): string {
           .join("")}</tbody></table>`
       : "";
 
+  const references = d.references?.length
+    ? `<section><h2>References &amp; sources</h2><ul class="refs">${d.references
+        .map(
+          (r) =>
+            `<li><strong>${escapeHtml(r.label)}.</strong> ${escapeHtml(r.detail)}${
+              r.url ? ` <a href="${escapeHtml(r.url)}">source</a>` : ""
+            }</li>`,
+        )
+        .join("")}</ul></section>`
+    : "";
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -89,6 +102,9 @@ export function buildReportHtml(d: ReportData): string {
   table.grid th { background: #f4f4f5; font-weight: 600; }
   pre { background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 6px; padding: .75rem .9rem; overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
   .note { color: #3f3f46; font-size: .9rem; margin-top: .6rem; }
+  ul.refs { margin: .5rem 0 0; padding-left: 1.1rem; font-size: .9rem; color: #3f3f46; }
+  ul.refs li { margin: .35rem 0; }
+  a { color: #4f46e5; }
   footer { border-top: 2px solid #18181b; margin-top: 2rem; padding-top: .75rem; color: #52525b; font-size: .8rem; }
   footer strong { color: #18181b; }
   @media print { body { padding: 0; } a { color: inherit; text-decoration: none; } }
@@ -110,6 +126,7 @@ export function buildReportHtml(d: ReportData): string {
     ${testTable}
     <p class="note">${escapeHtml(d.testsNote)}</p>
   </section>
+  ${references}
 
   <footer>
     <strong>These charges are theoretical starting estimates, not numbers to fly unverified.</strong>

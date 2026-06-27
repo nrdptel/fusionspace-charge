@@ -517,6 +517,29 @@ export default function Calculator({
       testsHeader: ["Date", "Charge", "Result", "vs model", "Notes"],
       tests,
       testsNote,
+      references: [
+        {
+          label: "Ideal-gas method, R and T",
+          detail: `m = (P·V)/(R·T) with R = ${R_BP} ft·lbf/(lbm·°R) and T = ${T_BP} °R — the values used across HPR ejection references (Ted Apke's ejection-charge method, ROL INFOcentral; HARA's "How to size ejection charges").`,
+          url: "http://hararocketry.org/hara/resources/how-to-size-ejection-charge/",
+        },
+        {
+          label: "Backup charge (+20% or 0.5 g)",
+          detail:
+            'The "20% larger, or at least 0.5 g, whichever is greater" backup convention follows NASA\'s Student Launch handbook and common club practice.',
+        },
+        {
+          label: "Altimeter vent ports",
+          detail:
+            "The one-quarter-inch-port-per-100-in³ rule and its area form come from widely-used guidance such as Vern Knowles' port-sizing write-up and the broader community; your altimeter's own manual takes precedence.",
+          url: "https://www.vernk.com/AltimeterPortSizing.htm",
+        },
+        {
+          label: "Shear-pin forces",
+          detail:
+            "The nylon-screw presets are widely-cited single-shear approximations that vary by supplier and fit — starting points to verify, not authority.",
+        },
+      ],
     };
   };
 
