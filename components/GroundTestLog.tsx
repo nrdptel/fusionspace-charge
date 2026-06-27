@@ -84,9 +84,11 @@ export default function GroundTestLog({
     if (!pendingCharge) return;
     setCharge(pendingCharge.value);
     setDraftEstimate(pendingCharge.estimate);
+    // Honor a reduced-motion preference: jump instead of animating the scroll.
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     document
       .getElementById("ground-test")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }, [pendingCharge]);
 
   useEffect(() => {

@@ -330,6 +330,14 @@ test.describe("Charge calculator", () => {
     await expect(page.getByLabel("Charge tested")).toHaveValue("0.93");
   });
 
+  test("a ground-test plan step still works with reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/?mode=p&dep=s&mg=1");
+    // The scroll falls back to an instant jump, but the charge still pre-fills.
+    await page.getByRole("button", { name: /Estimate/ }).first().click();
+    await expect(page.getByLabel("Charge tested")).toHaveValue("0.93");
+  });
+
   test("tells the user it works offline and how to install", async ({ page }) => {
     await page.goto("/");
     await page.getByText("Use it offline & install it").click();
