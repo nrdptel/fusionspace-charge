@@ -5,6 +5,7 @@ import { Segmented } from "./ui";
 import { NumberField } from "./ui";
 import {
   calibrationFromEntries,
+  failureCauses,
   nextChargeSuggestion,
   validatedCharge,
   TESTLOG_STORAGE_KEY,
@@ -340,39 +341,53 @@ export default function GroundTestLog({
         </div>
       )}
       {next && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
-          <span aria-hidden className="shrink-0 text-base">
-            🎯
-          </span>
-          <p className="min-w-0 flex-1">
-            {next.kind === "increase" ? (
-              <>
-                Last test of {label}:{" "}
-                <span className="font-mono tabular-nums">{fmtMass(next.fromCharge)} g</span>,{" "}
-                {OUTCOME_LABEL[next.fromOutcome].toLowerCase()}. Step up — try{" "}
-                <span className="font-mono font-semibold tabular-nums">
-                  {fmtMass(next.suggested)} g
-                </span>{" "}
-                next.
-              </>
-            ) : (
-              <>
-                {label}&apos;s{" "}
-                <span className="font-mono tabular-nums">{fmtMass(next.fromCharge)} g</span>{" "}
-                test was clean. Repeat it once to confirm — then it&apos;s validated.
-              </>
-            )}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setCharge(next.suggested);
-              setDraftEstimate(0);
-            }}
-            className="shrink-0 rounded-lg border border-indigo-400/60 bg-white/70 px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:bg-white dark:bg-indigo-500/10 dark:text-indigo-200 dark:hover:bg-indigo-500/20"
-          >
-            Use {fmtMass(next.suggested)} g
-          </button>
+        <div className="mt-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
+          <div className="flex flex-wrap items-center gap-3">
+            <span aria-hidden className="shrink-0 text-base">
+              🎯
+            </span>
+            <p className="min-w-0 flex-1">
+              {next.kind === "increase" ? (
+                <>
+                  Last test of {label}:{" "}
+                  <span className="font-mono tabular-nums">{fmtMass(next.fromCharge)} g</span>,{" "}
+                  {OUTCOME_LABEL[next.fromOutcome].toLowerCase()}. Step up — try{" "}
+                  <span className="font-mono font-semibold tabular-nums">
+                    {fmtMass(next.suggested)} g
+                  </span>{" "}
+                  next.
+                </>
+              ) : (
+                <>
+                  {label}&apos;s{" "}
+                  <span className="font-mono tabular-nums">{fmtMass(next.fromCharge)} g</span>{" "}
+                  test was clean. Repeat it once to confirm — then it&apos;s validated.
+                </>
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setCharge(next.suggested);
+                setDraftEstimate(0);
+              }}
+              className="shrink-0 rounded-lg border border-indigo-400/60 bg-white/70 px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:bg-white dark:bg-indigo-500/10 dark:text-indigo-200 dark:hover:bg-indigo-500/20"
+            >
+              Use {fmtMass(next.suggested)} g
+            </button>
+          </div>
+          {next.kind === "increase" && (
+            <details className="mt-3 border-t border-indigo-500/20 pt-3">
+              <summary className="cursor-pointer select-none font-medium">
+                Why might it not have separated?
+              </summary>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {failureCauses(next.fromOutcome).map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 

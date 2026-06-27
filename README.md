@@ -40,8 +40,9 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
 - **Learns your calibration**: across the clean tests you log, it shows how much bigger your
   real charges run than the formula — your own correction, never an auto-applied trim.
 - **Coaches the bench loop**: after each test it suggests what to pack next (step up after a
-  failed or partial separation, repeat to confirm after a clean one), and marks a charge
-  **validated** once it's separated cleanly twice.
+  failed or partial separation, repeat to confirm after a clean one), explains the **likely
+  causes** when a test doesn't separate, and marks a charge **validated** once it's separated
+  cleanly twice.
 - **Build & ground-test card** — a one-page sheet with each well's charges and a grid to
   record results at the bench or the field. Export as **HTML**, **PDF**, or plain text.
 - **Recovery report** — a write-up of the configuration, the sizing rationale with the
@@ -49,7 +50,8 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   as **HTML** or **PDF**. Both exports are self-contained (no dependencies) and work offline.
 - A **dual-deploy sequence diagram** so beginners can see what each charge actually does in
   flight, common **tube-ID presets**, and a **field-elevation advisory** for thin-air launches.
-- Inputs live in the URL, so a configured calculation is a link you can share or bookmark.
+- Inputs live in the URL, so a configured calculation is a link you can share or bookmark —
+  via the OS **share sheet** on mobile, or a copied link anywhere.
 - Installable, and works **offline** once loaded — launches happen where there's no signal.
 - **Bench mode**: a full-screen, high-contrast, big-number view of the charges and test
   ladder for using your phone at the bench or the pad — bright sun, greasy hands. Tap a

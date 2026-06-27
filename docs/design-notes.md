@@ -247,13 +247,22 @@ confirm it; a "use it" button drops the suggestion straight into the form. It on
 steps *up* — it never proposes a smaller charge, the one dangerous move. Once an airframe has
 separated cleanly twice at the same charge it's marked **validated** (a badge in the log and
 on the calculator's proven-charge callout), and the suggestions stop — there's nothing left
-to chase. Both are pure helpers in `lib/testlog.ts` (`nextChargeSuggestion`,
+to chase. When a test fails or only partly separates, the coach also expands (collapsibly)
+into the **likely causes**, symptom-matched — charge too small, pins too strong, a leak past
+the bulkhead, tight wadding, a weak match — so a failed bench test becomes a checklist, not a
+shrug. The cause lists are pure data (`failureCauses` in `lib/testlog.ts`), informational
+only. Both are pure helpers in `lib/testlog.ts` (`nextChargeSuggestion`,
 `validatedCharge`), so the rules are testable on their own. Together with the proven-charge
 callout and the calibration insight, this is the estimate → test → *guide* → validate arc the
 whole tool is built around, made fully literal.
 
 ### Smaller touches
 
+- **Native share** — where the browser supports the Web Share API (mostly mobile), a "Share"
+  button pushes the configured link into the OS share sheet, and the card/report can be shared
+  as a file where file-sharing is supported. Detected after mount and shown only when usable,
+  so it never appears as a dead button; the copy-link and download paths stand in everywhere
+  else.
 - **Dual-deploy sequence diagram** — a labeled SVG (apogee → drogue, low altitude → main) in
   the measure-guide's house style, shown only for dual deploy, so a beginner can see what the
   two charges the calculator sizes actually do in flight. Education, not decoration.

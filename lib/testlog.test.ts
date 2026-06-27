@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   calibrationFromEntries,
+  failureCauses,
   nextChargeSuggestion,
   summarizeFor,
   validatedCharge,
@@ -157,5 +158,23 @@ describe("next-charge suggestion", () => {
       "X",
     );
     expect(done).toBeNull();
+  });
+});
+
+describe("failure causes", () => {
+  it("lists charge-size-first causes for no separation", () => {
+    const c = failureCauses("none");
+    expect(c.length).toBeGreaterThan(2);
+    expect(c[0].toLowerCase()).toContain("too small");
+  });
+
+  it("gives partial-specific causes", () => {
+    const c = failureCauses("partial");
+    expect(c.length).toBeGreaterThan(1);
+    expect(c.join(" ").toLowerCase()).toContain("light");
+  });
+
+  it("has nothing to say about a clean test", () => {
+    expect(failureCauses("clean")).toEqual([]);
   });
 });

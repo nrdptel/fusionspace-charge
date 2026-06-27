@@ -113,6 +113,30 @@ export function nextChargeSuggestion(entries: TestEntry[], label: string): NextC
   return { kind: "confirm", fromCharge: latest.charge, fromOutcome: "clean", suggested: latest.charge };
 }
 
+/**
+ * The usual causes of a failed bench test, matched to the symptom — so a "no separation" or
+ * "partial" becomes a checklist to work through rather than a shrug. Ordered roughly most- to
+ * least-common; charge size leads because it's the lever this tool sizes. Informational only.
+ */
+export function failureCauses(outcome: Outcome): string[] {
+  if (outcome === "none")
+    return [
+      "Charge too small — step up and re-test.",
+      "Shear pins or screws too strong, or too many of them.",
+      "Gas leaking past the bulkhead, or out the vent / sampling holes.",
+      "Wadding packed too tight, smothering the charge.",
+      "E-match didn't fully light the powder — poor contact, or too little BP packed around it.",
+    ];
+  if (outcome === "partial")
+    return [
+      "Charge a touch light — a small step up often does it.",
+      "Friction or binding in the coupler or nose cone.",
+      "One shear pin didn't break.",
+      "Some gas leaked before full pressure built.",
+    ];
+  return [];
+}
+
 export interface Calibration {
   /** Number of clean tests that carried a model estimate. */
   count: number;
