@@ -82,15 +82,3 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
-
-/* Print: show only the build & ground-test card. It's portalled to <body> and hidden on
-   screen; here we hide every other direct child of <body> and reveal the card so it prints
-   on its own clean page, regardless of the on-screen component tree. */
-@media print {
-  body > *:not(.print-card-root) {
-    display: none !important;
-  }
-  .print-card-root {
-    display: block !important;
-  }
-}
