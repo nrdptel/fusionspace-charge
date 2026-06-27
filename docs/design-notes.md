@@ -186,19 +186,25 @@ appears in the full save-a-rocket-then-test workflow, so it adds nothing for a o
 calculation. It's the whole thesis of the tool made literal: the estimate starts you, the
 test you logged is the answer.
 
-### The printable field card
+### The exports: field card and recovery report
 
 The tool's other half is *off the screen*. Launches happen at remote fields with no signal,
-and many ranges keep phones away from the pad — but everyone runs on paper. So "Print card"
-produces a one-page **build & ground-test card**: each well's charges (estimate, backup, and
-the proven tested charge if there is one) and a fill-in grid to record what each test did at
-the bench. It's a `PrintCard` component portalled to `<body>` and hidden on screen; a single
-`@media print` rule in `globals.css` hides every other direct child of the body and reveals
-just the card, so it prints clean regardless of the on-screen component tree (and "Save as
-PDF" from the dialog gives a digital copy). It carries the same safety framing the page does,
-because the card is what's actually in your hand at the pad. This is the offline ethos made
-physical — the calculation leaves the browser and goes to the bench. A one-click **"Copy
-plan"** gives the same summary as plain text, for a phone note or a club chat.
+and many ranges keep phones away from the pad — but everyone runs on paper. Two documents
+cover that, and each is offered as **HTML** (download a file) or **PDF** (print → Save as
+PDF), plus the card also as **plain text** (for a phone note or club chat):
+
+- the **build & ground-test card** — a one-page sheet of each well's charges (estimate,
+  backup, the proven charge if there is one) and a fill-in grid to record each bench test;
+- the **recovery report** — the documentation a cert flight (Tripoli/NAR L1–L3) or a build
+  writeup wants (see below).
+
+Both are built the same way: a **pure HTML generator** (`lib/card.ts`, `lib/report.ts`) turns
+the data into one self-contained document (inline CSS, zero dependencies). "HTML" downloads
+it as a file; "PDF" renders it into a hidden, same-origin `<iframe>` and calls the browser's
+print — no popup, no library, and it prints just the document rather than the whole app. This
+replaced an earlier print-only React card + `@media print` rule: one generator per artifact,
+two output buttons each, is simpler and consistent. Every user-supplied string is escaped, so
+a rocket name or a test note can't break — or inject into — the document.
 
 ### Bench mode (built for the physical context)
 
@@ -215,14 +221,10 @@ closes it, and it locks the page scroll behind itself while open.
 
 The field card answers "what do I do at the pad"; the report answers "how was this designed
 and validated" — the documentation a cert flight (Tripoli/NAR L1–L3) or a build writeup
-wants. "Download report" compiles what the tool already holds — the configuration, the
-sizing rationale *with the actual formula, constants, and a worked example*, and the logged
-ground-test results (with each test's ratio-to-model, plus validation and calibration) —
-into a single **self-contained HTML file**: inline CSS, zero dependencies, so it opens
-anywhere, prints to PDF, and survives offline. Downloading a file (rather than a print view)
-makes it archivable and shareable, and sidesteps the print-only card's `@media print` rule.
-The generator (`lib/report.ts`) is pure and escapes every user-supplied string, so a rocket
-name or a test note can't break — or inject into — the document.
+wants. It compiles what the tool already holds — the configuration, the sizing rationale
+*with the actual formula, constants, and a worked example*, and the logged ground-test
+results (with each test's ratio-to-model, plus validation and calibration). Same HTML/PDF
+export path as the card.
 
 ### Learning from your own data (calibration)
 

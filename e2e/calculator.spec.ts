@@ -216,24 +216,6 @@ test.describe("Charge calculator", () => {
     await expect(port).toHaveText("0.217");
   });
 
-  test("a printable build & ground-test card replaces the page on print", async ({
-    page,
-  }) => {
-    await page.goto("/?mode=p&dep=s&mg=1"); // single well ≈ 0.93 g
-    // On screen the card is hidden and the app is visible.
-    await expect(page.getByRole("button", { name: "Print card" })).toBeVisible();
-    await expect(page.getByText("Ejection charge & ground-test card")).toBeHidden();
-    // Under print media, only the card shows: the on-screen heading is hidden and the
-    // card's heading and ground-test grid appear.
-    await page.emulateMedia({ media: "print" });
-    await expect(page.getByText("Ejection charge & ground-test card")).toBeVisible();
-    await expect(page.getByText("☐ clean ☐ partial ☐ no sep.").first()).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Charge", exact: true, level: 1 }),
-    ).toBeHidden();
-    await page.emulateMedia({ media: "screen" });
-  });
-
   test("learns your calibration from clean tests planned via the ladder", async ({
     page,
   }) => {
@@ -301,8 +283,8 @@ test.describe("Charge calculator", () => {
   test("copies the plan as text to the clipboard", async ({ page }) => {
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/?dep=s&mg=1");
-    await page.getByRole("button", { name: "Copy plan" }).click();
-    await expect(page.getByRole("button", { name: "Plan copied" })).toBeVisible();
+    await page.getByRole("button", { name: "Copy text" }).click();
+    await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
     const text = await page.evaluate(() => navigator.clipboard.readText());
     expect(text).toContain("Ejection charge plan");
     expect(text).toContain("Ladder:");
@@ -334,20 +316,47 @@ test.describe("Charge calculator", () => {
     await expect(dialog).toBeHidden();
   });
 
-  test("downloads a self-contained recovery report", async ({ page }) => {
+  test("downloads the recovery report as a self-contained HTML file", async ({ page }) => {
     await page.goto("/?mode=p&dep=s&mg=1");
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.getByRole("button", { name: "Download report" }).click(),
+      page.getByRole("button", { name: "Download report as HTML" }).click(),
     ]);
     expect(download.suggestedFilename()).toMatch(/^charge-report-.*\.html$/);
-    const path = await download.path();
-    const html = fs.readFileSync(path, "utf8");
+    const html = fs.readFileSync(await download.path(), "utf8");
     expect(html.startsWith("<!doctype html>")).toBe(true);
     expect(html).toContain("recovery report");
     expect(html).toContain("How the number was sized");
     expect(html).toContain("m = (P · V) / (R · T)");
     expect(html).not.toContain("<script"); // self-contained, no external/injected scripts
+  });
+
+  test("downloads the build & ground-test card as a self-contained HTML file", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=p&dep=s&mg=1");
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download card as HTML" }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^charge-card-.*\.html$/);
+    const html = fs.readFileSync(await download.path(), "utf8");
+    expect(html.startsWith("<!doctype html>")).toBe(true);
+    expect(html).toContain("ground-test card");
+    expect(html).toContain("Charge (g)"); // the fill-in grid
+    expect(html).not.toContain("<script");
+  });
+
+  test("the card and report each offer an HTML and a PDF option", async ({ page }) => {
+    await page.goto("/");
+    for (const name of [
+      "Download card as HTML",
+      "Print card to PDF",
+      "Download report as HTML",
+      "Print report to PDF",
+    ]) {
+      await expect(page.getByRole("button", { name })).toBeVisible();
+    }
   });
 
   test("the header has a Ko-fi tip link", async ({ page }) => {

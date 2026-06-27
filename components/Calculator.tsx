@@ -35,15 +35,71 @@ import {
 } from "@/lib/charge";
 import { wellCautions } from "@/lib/checks";
 import { calibrationFromEntries, type TestEntry } from "@/lib/testlog";
-import { buildReportHtml } from "@/lib/report";
+import { buildReportHtml, type ReportData } from "@/lib/report";
+import { buildCardHtml, type PrintPlan } from "@/lib/card";
 import { fmt, fmtMass, round } from "@/lib/format";
 import { Chip, NumberField, Segmented } from "./ui";
 import Methodology from "./Methodology";
 import SavedRockets from "./SavedRockets";
 import MeasureGuide from "./MeasureGuide";
 import DeploySequence from "./DeploySequence";
-import PrintCard, { type PrintPlan } from "./PrintCard";
 import BenchMode, { type BenchWell } from "./BenchMode";
+
+// Client-only export helpers. "HTML" downloads the self-contained document; "PDF" renders
+// it in a hidden, same-origin iframe and invokes the browser's print → Save as PDF (no
+// popup, no dependency, prints just the document rather than the whole app).
+function downloadHtml(html: string, filename: string) {
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function printHtml(html: string) {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  Object.assign(iframe.style, {
+    position: "fixed",
+    right: "0",
+    bottom: "0",
+    width: "0",
+    height: "0",
+    border: "0",
+    visibility: "hidden",
+  });
+  document.body.appendChild(iframe);
+  const cw = iframe.contentWindow;
+  if (!cw) {
+    iframe.remove();
+    return;
+  }
+  cw.document.open();
+  cw.document.write(html);
+  cw.document.close();
+  // Let inline styles apply, then print; the doc is dependency-free so a short tick is enough.
+  window.setTimeout(() => {
+    cw.focus();
+    cw.print();
+    window.setTimeout(() => iframe.remove(), 1000);
+  }, 250);
+}
+
+const slugify = (s: string) =>
+  s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "plan";
+
+const todayISO = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const EXPORT_BTN =
+  "rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
 
 interface Computed {
   result: WellResult;
@@ -302,16 +358,13 @@ export default function Calculator({
     }
   };
 
-  // The documentation half of the tool: a self-contained HTML recovery report (config +
-  // sizing rationale with the formula + logged ground-test results) for a cert package or
-  // a build writeup. Downloaded as a file so it's archivable and shareable, fully offline.
-  const downloadReport = () => {
+  // The documentation half of the tool: the data for a recovery report (config + sizing
+  // rationale with the formula + logged ground-test results) for a cert package or a build
+  // writeup. The export buttons render it to HTML (download) or PDF (print).
+  const reportData = (): ReportData => {
     const lu = state.lengthUnit;
     const pu = state.pressureUnit;
     const fu = state.forceUnit;
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
     const summary: [string, string][] = [
       ["Deployment", state.deploy === "dual" ? "Dual (drogue + main)" : "Single"],
@@ -402,29 +455,20 @@ export default function Calculator({
       testsNote = parts.join(" ");
     }
 
-    const html = buildReportHtml({
+    return {
       title: airframeName?.trim() || "Ejection charge plan",
-      generatedAt: today,
+      generatedAt: todayISO(),
       summary,
       wells: wellBlocks,
       method,
       testsHeader: ["Date", "Charge", "Result", "vs model", "Notes"],
       tests,
       testsNote,
-    });
-    const slug =
-      (airframeName?.trim() || "plan").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") ||
-      "plan";
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `charge-report-${slug}.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    };
   };
+
+  // Filenames for the downloadable exports, keyed off the airframe name.
+  const slug = slugify(airframeName?.trim() || "plan");
 
   return (
     <div className="mt-10 md:mt-14">
@@ -643,27 +687,6 @@ export default function Calculator({
         </button>
         <button
           type="button"
-          onClick={copyPlan}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        >
-          {planCopied ? "Plan copied" : "Copy plan"}
-        </button>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        >
-          Print card
-        </button>
-        <button
-          type="button"
-          onClick={downloadReport}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        >
-          Download report
-        </button>
-        <button
-          type="button"
           onClick={() => {
             setState(DEFAULT_STATE);
             onActiveRocketChange?.("");
@@ -674,14 +697,35 @@ export default function Calculator({
         </button>
       </div>
 
-      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-        Print card prints a one-page build &amp; ground-test sheet for the bench or the field.
-        Download report saves a full recovery write-up (sizing rationale + your logged tests)
-        as an HTML file — for a cert package or a build thread, printable to PDF.
-      </p>
+      {/* Exports — each artifact offered as HTML (download) or PDF (print → Save as PDF). */}
+      <div className="mt-4 space-y-2.5">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-zinc-500 dark:text-zinc-400">Build &amp; ground-test card</span>
+          <button type="button" aria-label="Download card as HTML" onClick={() => downloadHtml(buildCardHtml(printPlan, todayISO()), `charge-card-${slug}.html`)} className={EXPORT_BTN}>
+            HTML
+          </button>
+          <button type="button" aria-label="Print card to PDF" onClick={() => printHtml(buildCardHtml(printPlan, todayISO()))} className={EXPORT_BTN}>
+            PDF
+          </button>
+          <button type="button" onClick={copyPlan} className={EXPORT_BTN}>
+            {planCopied ? "Copied" : "Copy text"}
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-zinc-500 dark:text-zinc-400">Recovery report</span>
+          <button type="button" aria-label="Download report as HTML" onClick={() => downloadHtml(buildReportHtml(reportData()), `charge-report-${slug}.html`)} className={EXPORT_BTN}>
+            HTML
+          </button>
+          <button type="button" aria-label="Print report to PDF" onClick={() => printHtml(buildReportHtml(reportData()))} className={EXPORT_BTN}>
+            PDF
+          </button>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            full write-up for a cert package or build thread
+          </span>
+        </div>
+      </div>
 
       <Methodology state={state} drogue={drogue} />
-      <PrintCard plan={printPlan} />
       {benchOpen && (
         <BenchMode
           wells={benchWells}
