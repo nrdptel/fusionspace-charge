@@ -1,54 +1,78 @@
-// Regenerates public/og.png — the 1200×630 social share card.
+// Pre-generate the Open Graph / Twitter card PNG at build time (public/og/default.png).
 //
-// Run locally to refresh the card (it's committed as a static asset, not built in
-// CI): `node scripts/gen-og.mjs`. Set PW_EXECUTABLE_PATH to point Playwright at a
-// pre-installed Chromium in sandboxed environments; otherwise it uses the default.
+// A static export can't render the dynamic next/og route at request time, so we render
+// it here in `prebuild` instead. This uses the EXACT shared card template from the HPR
+// Motor Finder (the family standard) via next/og's `ImageResponse` — same renderer, so
+// the output matches pixel-for-pixel: sparkle mark → product name → tagline → domain,
+// centered on the dark background with the soft indigo glow. The only per-tool changes
+// are the three strings below.
 //
-// The design matches the Fusion Space landing card (fusionspace.co): the brand mark
-// over the product name, a tagline, and the domain in mono, centered on the dark
-// background with the indigo radial glow. Rendered with Chromium (via Playwright)
-// because it renders the gradient mark and the radial glow faithfully.
-import { readFile, writeFile } from "node:fs/promises";
+// Imported via the explicit `next/og.js` specifier so it resolves from a plain node
+// script; the layout is written with React.createElement to keep this a dependency-free
+// .mjs, matching the sibling.
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium } from "@playwright/test";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const mark = await readFile(resolve(root, "public/brand/fusion-space-mark.svg"), "utf8");
+import React from "react";
+import { ImageResponse } from "next/og.js";
 
-const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  html,body{width:1200px;height:630px}
-  .card{width:1200px;height:630px;position:relative;background:#09090b;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    font-family:'Helvetica Neue',Helvetica,Arial,'Liberation Sans',sans-serif}
-  .glow{position:absolute;inset:0;background:radial-gradient(58% 58% at 50% 32%,
-    rgba(99,102,241,.24),rgba(99,102,241,0))}
-  .col{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center}
-  .mark{width:140px;height:140px}
-  .mark svg{width:140px;height:140px}
-  .name{font-size:104px;font-weight:700;letter-spacing:-.02em;color:#fafafa;margin-top:22px;line-height:1}
-  .tag{font-size:40px;font-weight:600;color:#e4e4e7;margin-top:34px}
-  .dom{font-family:'DejaVu Sans Mono','Liberation Mono',monospace;font-size:26px;color:#818cf8;margin-top:30px}
-</style></head><body>
-  <div class="card">
-    <div class="glow"></div>
-    <div class="col">
-      <div class="mark">${mark}</div>
-      <div class="name">Charge</div>
-      <div class="tag">Black-powder ejection-charge calculator</div>
-      <div class="dom">charge.fusionspace.co</div>
-    </div>
-  </div>
-</body></html>`;
+const here = dirname(fileURLToPath(import.meta.url));
+const ogDir = resolve(here, "..", "public", "og");
+const SIZE = { width: 1200, height: 630 };
+const h = React.createElement;
 
-const browser = await chromium.launch({
-  executablePath: process.env.PW_EXECUTABLE_PATH || undefined,
-});
-const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
-await page.setContent(html, { waitUntil: "networkidle" });
-await page.waitForTimeout(150);
-const buf = await page.locator(".card").screenshot();
-await writeFile(resolve(root, "public/og.png"), buf);
-await browser.close();
-console.log("gen-og: wrote public/og.png");
+// Shared default card — identical template to the Motor Finder's, so the family reads as
+// one. Only the name, tagline, and domain differ between tools.
+function defaultCard(markUri) {
+  return h(
+    "div",
+    {
+      style: {
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        textAlign: "center",
+        background: "#09090b",
+        backgroundImage:
+          "radial-gradient(56% 64% at 50% 31%, rgba(99,102,241,0.27) 0%, rgba(99,102,241,0) 76%)",
+        color: "#fafafa",
+        fontFamily: "sans-serif",
+      },
+    },
+    h("img", { src: markUri, width: 130, height: 120, style: { marginBottom: 40 } }),
+    h(
+      "div",
+      { style: { fontSize: 100, fontWeight: 800, lineHeight: 1.0, letterSpacing: "-0.03em" } },
+      "Charge",
+    ),
+    h(
+      "div",
+      { style: { fontSize: 40, fontWeight: 600, color: "#d4d4d8", marginTop: 32, maxWidth: 1040 } },
+      "Black-powder ejection-charge calculator",
+    ),
+    h(
+      "div",
+      { style: { fontSize: 26, color: "#818cf8", marginTop: 28, fontFamily: "monospace", letterSpacing: "0.02em" } },
+      "charge.fusionspace.co",
+    ),
+  );
+}
+
+async function main() {
+  // Extract the embedded sparkle-mark data URI (robust to formatting); shared verbatim
+  // with the Motor Finder.
+  const markSrc = await readFile(resolve(here, "..", "lib", "og-mark.ts"), "utf-8");
+  const markUri = markSrc.match(/data:image\/png;base64,[A-Za-z0-9+/=]+/)?.[0];
+  if (!markUri) throw new Error("gen-og: could not extract OG_MARK_PNG from lib/og-mark.ts");
+
+  await mkdir(ogDir, { recursive: true });
+  const resp = new ImageResponse(defaultCard(markUri), { ...SIZE });
+  await writeFile(resolve(ogDir, "default.png"), Buffer.from(await resp.arrayBuffer()));
+  console.log("gen-og: wrote public/og/default.png");
+}
+
+await main();
