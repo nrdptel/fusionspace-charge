@@ -63,6 +63,8 @@ section, so the whole tool is discoverable at a glance.
   via the OS **share sheet** on mobile, or a copied link anywhere.
 - **Back up & restore** your whole setup — saved rockets, ground-test log, and theme — as one
   file, so a cleared cache or a new device doesn't lose a season's work.
+- **Private by default**: everything stays in your browser. Nothing is uploaded, there's no
+  account or server, and no analytics or tracking of any kind.
 - Installable, and works **offline** once loaded — launches happen where there's no signal.
 - **Bench mode**: a full-screen, high-contrast, big-number view of the charges and test
   ladder for using your phone at the bench or the pad — bright sun, greasy hands. Tap a

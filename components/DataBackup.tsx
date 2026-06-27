@@ -77,9 +77,10 @@ export default function DataBackup() {
         Your data
       </h2>
       <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-        Your saved rockets and ground-test log live in this browser only. Back them up so a
-        cleared cache or a new device doesn&apos;t lose them — one file holds everything, and
-        restoring merges it with whatever&apos;s already here.
+        Your saved rockets and ground-test log live in this browser only — nothing is
+        uploaded, there&apos;s no account or server, and no analytics or tracking of any kind.
+        Back them up so a cleared cache or a new device doesn&apos;t lose them — one file holds
+        everything, and restoring merges it with whatever&apos;s already here.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <button

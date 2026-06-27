@@ -491,4 +491,22 @@ test.describe("Charge calculator", () => {
     );
     expect(serious).toEqual([]);
   });
+
+  test("a skip link jumps keyboard focus past the header to the calculator", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    // The skip link is the first tab stop and is revealed when focused.
+    await page.keyboard.press("Tab");
+    const skip = page.getByRole("link", { name: "Skip to the calculator" });
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeVisible();
+    // Activating it moves the focus start into the calculator, past the header controls.
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Tab");
+    const focusedInCalculator = await page.evaluate(
+      () => !!document.activeElement?.closest("#calculator"),
+    );
+    expect(focusedInCalculator).toBe(true);
+  });
 });
