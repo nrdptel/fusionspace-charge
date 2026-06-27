@@ -351,6 +351,19 @@ whole tool is built around, made fully literal.
   is a touch less efficient in thin air and to test toward the high end. Advisory only — it
   never changes the number, consistent with the no-derate stance. State floors at 0 and rides
   in the share URL like everything else.
+- **Offline at the pad** — the whole point of the service worker: launches happen where there's
+  no signal, so once loaded the calculator, saved rockets, and log keep working with none.
+  Navigations are network-first with a cached-shell fallback; other same-origin GETs are
+  stale-while-revalidate, so after a visit the SW cache holds the HTML shell *and* the JS/CSS/
+  fonts as a durable layer (verified: offline, the app hydrates and computes, not just a static
+  shell). The build's `_next/static` assets are also immutable-cached by the browser, so even a
+  cold first-visit-then-offline launch works — both layers cover it. Covered by an e2e test that
+  goes offline and asserts the calculator actually computes and stays reactive.
+- **Installable** — a web app manifest (`standalone`, `id`/`scope` `/`, the dark theme/splash
+  colors, and `any maskable` PNG icons so Android adaptive icons aren't letterboxed) plus the
+  iOS `mobile-web-app-capable` / apple title / status-bar metadata, so "Add to Home Screen"
+  launches full-screen with the right icon on every platform. `InstallHint` offers the one-tap
+  `beforeinstallprompt` where supported and per-platform steps otherwise.
 - **Update prompt** — an offline app can otherwise sit on a stale version forever, so the
   service worker no longer force-activates: a new build waits, and the page shows a small
   "new version available — Refresh" toast that calls `skipWaiting()` only when the user

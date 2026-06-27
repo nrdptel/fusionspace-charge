@@ -28,6 +28,13 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   applicationName: "Charge",
   manifest: "/manifest.webmanifest",
+  // iOS home-screen install: launch full-screen (standalone) with our own title,
+  // not the page <title>. Android/desktop get this from the manifest's display mode.
+  appleWebApp: {
+    capable: true,
+    title: "Charge",
+    statusBarStyle: "default",
+  },
   alternates: { canonical: "/" },
   icons: {
     icon: { url: "/icon.svg", type: "image/svg+xml" },
