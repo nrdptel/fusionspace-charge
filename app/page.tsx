@@ -33,6 +33,14 @@ const JSON_LD = {
 export default function Page() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6 md:py-10">
+      {/* Keyboard shortcut past the header, theme/tip controls, and the overview straight
+          to the tool. Hidden until focused (first tab stop), then shown. */}
+      <a
+        href="#calculator"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-lg"
+      >
+        Skip to the calculator
+      </a>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
