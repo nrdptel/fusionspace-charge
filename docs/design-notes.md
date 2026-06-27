@@ -108,6 +108,24 @@ the page. It's a native `<details>` with in-page anchors, so it needs no client 
 accessible. The header subtitle and the JSON-LD/`featureList` were refreshed to describe the
 full tool rather than just the base calculator.
 
+### Social card & metadata
+
+The Open Graph / Twitter card is rendered to a static PNG at `public/og/default.png` by
+`scripts/gen-og.mjs` in `prebuild` (a static export can't render the dynamic `next/og` route at
+request time). It deliberately shares the **Motor Finder's card template** so the two tools read
+as one family: the same `#09090b→#18181b` gradient, the same left-aligned eyebrow / title /
+subtitle type scale, and the same FusionSpace wordmark-plus-domain lockup in the corner — the
+wordmark PNG in `lib/og-logo.ts` is the exact asset the Motor Finder uses. The card is a build
+artifact, so `public/og/` is gitignored and regenerated on every build (matching the sibling).
+
+The metadata in `app/layout.tsx` mirrors the Motor Finder's conventions: a
+`NEXT_PUBLIC_SITE_URL`-overridable origin for fork deploys, `og:site_name` set to the tool's own
+name (`"Charge"`, not the umbrella brand), and card image URLs resolved absolutely against
+`metadataBase`. Charge keeps a few extras the single-page sibling layout doesn't need — an
+explicit canonical, the PWA manifest, and icon links — since they help SEO and installability.
+The title stays descriptive (`"Charge — HPR ejection-charge calculator"`) rather than the bare
+tool name, because "Charge" alone is too generic to be a useful page title.
+
 ### The math (the standard HPR ideal-gas method)
 
 Everyone uses the same calculation; Charge will show it in full.
