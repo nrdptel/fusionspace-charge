@@ -61,7 +61,7 @@ export default function VentPorts() {
         Companion tool
       </p>
       <div className="mt-2 flex items-baseline justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
-        <h2 className="text-lg font-semibold tracking-tight">Altimeter vent holes</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Altimeter vent ports</h2>
         <span className="text-xs text-zinc-500 dark:text-zinc-400">static sampling ports</span>
       </div>
 
