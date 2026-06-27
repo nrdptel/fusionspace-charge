@@ -49,6 +49,7 @@ export default function ChargeApp() {
 
   return (
     <>
+      {/* Core loop, top to bottom: size the charge → ground-test and validate it. */}
       <Calculator
         onActiveRocketChange={setActiveRocket}
         onPlanCharge={planCharge}
@@ -56,12 +57,14 @@ export default function ChargeApp() {
         airframeName={activeRocket}
         airframeTests={airframeTests}
       />
-      <VentPorts />
       <GroundTestLog
         defaultLabel={activeRocket}
         pendingCharge={pendingCharge}
         onEntriesChange={setLogEntries}
       />
+      {/* Companion tool — about the av-bay, not the charge wells. Sits after the loop so it
+          reads as a separate second tool rather than interrupting size → test. */}
+      <VentPorts />
     </>
   );
 }
