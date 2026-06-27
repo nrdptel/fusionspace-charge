@@ -51,6 +51,9 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   flight, common **tube-ID presets**, and a **field-elevation advisory** for thin-air launches.
 - Inputs live in the URL, so a configured calculation is a link you can share or bookmark.
 - Installable, and works **offline** once loaded — launches happen where there's no signal.
+- **Bench mode**: a full-screen, high-contrast, big-number view of the charges and test
+  ladder for using your phone at the bench or the pad — bright sun, greasy hands. Tap a
+  charge to start logging that test.
 
 ## How the math works
 

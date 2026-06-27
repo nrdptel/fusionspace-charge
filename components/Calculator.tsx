@@ -43,6 +43,7 @@ import SavedRockets from "./SavedRockets";
 import MeasureGuide from "./MeasureGuide";
 import DeploySequence from "./DeploySequence";
 import PrintCard, { type PrintPlan } from "./PrintCard";
+import BenchMode, { type BenchWell } from "./BenchMode";
 
 interface Computed {
   result: WellResult;
@@ -137,6 +138,7 @@ export default function Calculator({
   const [hydrated, setHydrated] = useState(false);
   const [copied, setCopied] = useState(false);
   const [planCopied, setPlanCopied] = useState(false);
+  const [benchOpen, setBenchOpen] = useState(false);
 
   // Load state from the URL on mount.
   useEffect(() => {
@@ -249,6 +251,32 @@ export default function Calculator({
         };
       }),
   };
+
+  // Data for the high-contrast bench view: each well's charges, big, with the ladder as
+  // large tap targets (the backup step carries no estimate, like elsewhere).
+  const benchWells: BenchWell[] = wells
+    .filter(({ data }) => data.result.mass > 0)
+    .map(({ title, data }) => {
+      const mass = data.result.mass;
+      return {
+        title,
+        primary: fmtMass(mass),
+        backup: state.redundant ? fmtMass(backupMass(mass, state.backupPct)) : undefined,
+        steps: [
+          { label: "Low −20%", grams: round(mass * 0.8, 2), estimate: mass },
+          { label: "Estimate", grams: round(mass, 2), estimate: mass },
+          { label: "High +20%", grams: round(mass * 1.2, 2), estimate: mass },
+          ...(state.redundant
+            ? [{ label: "Backup", grams: round(backupMass(mass, state.backupPct), 2), estimate: 0 }]
+            : []),
+        ],
+      };
+    });
+  const benchProven = testedSummary?.validated
+    ? { label: "Validated", charge: fmtMass(testedSummary.validated.charge) }
+    : testedSummary?.lastClean
+      ? { label: "Proven", charge: fmtMass(testedSummary.lastClean.charge) }
+      : null;
 
   // A plain-text version of the same plan, for pasting into phone notes, a flight log, or a
   // club chat — the portable sibling of the printable card.
@@ -608,6 +636,13 @@ export default function Calculator({
         </button>
         <button
           type="button"
+          onClick={() => setBenchOpen(true)}
+          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        >
+          Bench mode
+        </button>
+        <button
+          type="button"
           onClick={copyPlan}
           className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
         >
@@ -647,6 +682,17 @@ export default function Calculator({
 
       <Methodology state={state} drogue={drogue} />
       <PrintCard plan={printPlan} />
+      {benchOpen && (
+        <BenchMode
+          wells={benchWells}
+          proven={benchProven}
+          onPlan={(grams, estimate) => {
+            onPlanCharge?.(grams, estimate);
+            setBenchOpen(false);
+          }}
+          onClose={() => setBenchOpen(false)}
+        />
+      )}
     </div>
   );
 }

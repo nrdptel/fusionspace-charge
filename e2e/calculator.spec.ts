@@ -308,6 +308,32 @@ test.describe("Charge calculator", () => {
     expect(text).toContain("Ladder:");
   });
 
+  test("bench mode opens a focused view and hands a charge to the log", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s&mg=1"); // single well ≈ 0.93 g
+    await page.getByRole("button", { name: "Bench mode" }).click();
+    const dialog = page.getByRole("dialog", { name: /bench mode/i });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText("0.93").first()).toBeVisible();
+    // Tapping a step closes bench mode and pre-fills the log's charge.
+    await dialog.getByRole("button", { name: /Estimate/ }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByLabel("Charge tested")).toHaveValue("0.93");
+  });
+
+  test("bench mode closes on Done and on Escape", async ({ page }) => {
+    await page.goto("/");
+    const open = page.getByRole("button", { name: "Bench mode" });
+    const dialog = page.getByRole("dialog", { name: /bench mode/i });
+    await open.click();
+    await expect(dialog).toBeVisible();
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await open.click();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
   test("downloads a self-contained recovery report", async ({ page }) => {
     await page.goto("/?mode=p&dep=s&mg=1");
     const [download] = await Promise.all([
