@@ -183,6 +183,73 @@ export default function Methodology({
           to skip the test.
         </p>
       </Disclosure>
+
+      <Disclosure summary="References & sources">
+        <p>
+          Every value here comes from the high-power community&apos;s established references,
+          not from anything invented for this tool. The primary ones:
+        </p>
+        <dl className="space-y-3">
+          <div>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">
+              The ideal-gas method, R and T
+            </dt>
+            <dd>
+              The <span className="font-mono">m = (P·V)/(R·T)</span> method and the constants
+              ({R_BP} ft·lbf/(lbm·°R), {T_BP} °R) are the values used across HPR ejection
+              references — Ted Apke&apos;s ejection-charge method (ROL INFOcentral), and
+              guides like HARA&apos;s{" "}
+              <a
+                href="http://hararocketry.org/hara/resources/how-to-size-ejection-charge/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              >
+                How to size ejection charges
+              </a>
+              .
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">
+              Backup charge (+20% or 0.5 g)
+            </dt>
+            <dd>
+              The &ldquo;20% larger, or at least 0.5 g, whichever is greater&rdquo; backup
+              convention follows NASA&apos;s Student Launch handbook and common club practice.
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">
+              Altimeter vent ports
+            </dt>
+            <dd>
+              The one-¼″-port-per-100-in³ rule (and its area form) comes from widely-used
+              guidance such as{" "}
+              <a
+                href="https://www.vernk.com/AltimeterPortSizing.htm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              >
+                Vern Knowles&apos; port-sizing write-up
+              </a>{" "}
+              and the broader community. Your altimeter&apos;s own manual takes precedence.
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">Shear-pin forces</dt>
+            <dd>
+              The nylon-screw presets are widely-cited single-shear approximations that vary
+              by supplier and fit — starting points to verify, not authority.
+            </dd>
+          </div>
+        </dl>
+        <p>
+          These are references, not guarantees. The method is a model; the ground test is the
+          measurement. Where a source and your own bench disagree, the bench wins.
+        </p>
+      </Disclosure>
     </section>
   );
 }

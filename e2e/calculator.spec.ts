@@ -118,7 +118,7 @@ test.describe("Charge calculator", () => {
     await page.getByRole("button", { name: "Clear all" }).click();
     await expect(page.getByText("1.2 g")).toHaveCount(0);
 
-    await page.locator('input[type="file"]').setInputFiles(file);
+    await page.locator('#ground-test input[type="file"]').setInputFiles(file);
     await expect(page.getByText("1.2 g").first()).toBeVisible();
   });
 
@@ -386,6 +386,44 @@ test.describe("Charge calculator", () => {
     ]) {
       await expect(page.getByRole("button", { name })).toBeVisible();
     }
+  });
+
+  test("warns when a proven airframe's setup has drifted", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s&mg=1"); // single well ≈ 0.93 g
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Drift Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    // Log a clean test from the ladder (captures the model estimate it was planned at).
+    await page.getByRole("button", { name: /Estimate/ }).first().click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText(/proven Drift Bird/i)).toBeVisible();
+    // Change the geometry enough to drift the estimate — the proven callout flags it.
+    await page.getByRole("spinbutton", { name: /Pressurized length/ }).first().fill("24");
+    await expect(page.getByText(/re-test before trusting the proven charge/i)).toBeVisible();
+  });
+
+  test("backs up everything and restores it", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Backup Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Back up all (.json)" }).click(),
+    ]);
+    const path = await dl.path();
+    expect(fs.readFileSync(path, "utf8")).toContain("Backup Bird");
+    // Delete it, then restore from the backup — it comes back after the reload.
+    await page.getByRole("button", { name: "Delete Backup Bird" }).click();
+    await expect(page.getByRole("button", { name: "Backup Bird", exact: true })).toHaveCount(0);
+    await page.locator("#restore-file").setInputFiles(path);
+    await expect(page.getByRole("button", { name: "Backup Bird", exact: true })).toBeVisible();
+  });
+
+  test("the methodology cites its sources", async ({ page }) => {
+    await page.goto("/");
+    await page.getByText("References & sources").click();
+    await expect(page.getByRole("link", { name: /How to size ejection charges/i })).toBeVisible();
   });
 
   test("the header has a Ko-fi tip link", async ({ page }) => {

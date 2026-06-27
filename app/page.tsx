@@ -1,5 +1,6 @@
 import Footer from "@/components/Footer";
 import ChargeApp from "@/components/ChargeApp";
+import DataBackup from "@/components/DataBackup";
 import InstallHint from "@/components/InstallHint";
 import FusionSpaceBadge from "@/components/FusionSpaceBadge";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -57,6 +58,7 @@ export default function Page() {
       </div>
 
       <ChargeApp />
+      <DataBackup />
       <InstallHint />
       <Footer />
     </main>
