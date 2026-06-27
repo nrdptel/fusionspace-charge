@@ -40,6 +40,13 @@ export default function ChargeApp() {
     };
   }, [activeRocket, logEntries]);
 
+  // The active airframe's logged tests, for the downloadable recovery report.
+  const airframeTests = useMemo(() => {
+    const key = activeRocket.trim().toLowerCase();
+    if (!key) return [];
+    return logEntries.filter((e) => e.label.trim().toLowerCase() === key);
+  }, [activeRocket, logEntries]);
+
   return (
     <>
       <Calculator
@@ -47,6 +54,7 @@ export default function ChargeApp() {
         onPlanCharge={planCharge}
         testedSummary={testedSummary}
         airframeName={activeRocket}
+        airframeTests={airframeTests}
       />
       <VentPorts />
       <GroundTestLog

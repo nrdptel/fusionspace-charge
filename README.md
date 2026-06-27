@@ -44,6 +44,9 @@ rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
   **validated** once it's separated cleanly twice.
 - **Printable build & ground-test card** (and a one-click **plain-text plan**): a one-page
   sheet with each well's charges and a grid to record results at the bench or the field.
+- **Downloadable recovery report**: a self-contained HTML write-up — configuration, the
+  sizing rationale with the formula, and your logged ground-test results — for a cert
+  package or a build thread. Opens anywhere, prints to PDF, no dependencies.
 - A **dual-deploy sequence diagram** so beginners can see what each charge actually does in
   flight, common **tube-ID presets**, and a **field-elevation advisory** for thin-air launches.
 - Inputs live in the URL, so a configured calculation is a link you can share or bookmark.
