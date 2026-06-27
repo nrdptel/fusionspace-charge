@@ -5,6 +5,9 @@
 /.next
 /out
 
+# generated at build by scripts/gen-og.mjs (prebuild)
+/public/og/
+
 # production
 /build
 
