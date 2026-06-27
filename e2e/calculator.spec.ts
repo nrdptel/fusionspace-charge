@@ -247,6 +247,33 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText(/× est/).first()).toBeVisible();
   });
 
+  test("coaches the next charge to try after a failed test", async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Well / airframe").fill("Iter");
+    await page.getByLabel("Charge tested").fill("0.6");
+    await page.getByRole("button", { name: "None", exact: true }).click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    // A no-separation result suggests stepping up ~25% (0.6 → 0.75).
+    await expect(page.getByText(/try 0\.75 g next/i)).toBeVisible();
+    await page.getByRole("button", { name: "Use 0.75 g" }).click();
+    await expect(page.getByLabel("Charge tested")).toHaveValue("0.75");
+  });
+
+  test("marks a charge validated after two clean separations", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Val Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    // Two clean tests at the same charge for the active airframe.
+    await page.getByLabel("Charge tested").fill("1.5");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await page.getByLabel("Charge tested").fill("1.5");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    // The log calls it flight-ready and the calculator shows the validated badge.
+    await expect(page.getByText(/Val Bird is validated/)).toBeVisible();
+    await expect(page.getByText(/✓ Validated/)).toBeVisible();
+  });
+
   test("shows the dual-deploy sequence diagram only for dual deploy", async ({ page }) => {
     await page.goto("/?dep=d");
     await expect(page.getByText("How dual deployment works")).toBeVisible();
