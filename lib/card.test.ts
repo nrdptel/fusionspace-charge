@@ -43,6 +43,15 @@ describe("build & ground-test card HTML", () => {
     expect(html).toContain("Ejection charge");
   });
 
+  it("prompts instead of rendering an empty card when no well has a charge", () => {
+    const html = buildCardHtml({ ...plan, wells: [], tested: undefined }, "2026-06-27");
+    expect(html).toContain("No charge to size yet");
+    expect(html).not.toContain("Proven charge:");
+    // Header and footer safety copy still present.
+    expect(html).toContain("Ejection charge &amp; ground-test card");
+    expect(html).toContain("not numbers to fly unverified");
+  });
+
   it("escapes user-supplied text", () => {
     const html = buildCardHtml(
       { ...plan, title: "<script>x</script>" },

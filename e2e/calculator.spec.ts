@@ -500,6 +500,42 @@ test.describe("Charge calculator", () => {
     await expect(page.getByTestId("mass").first()).toBeVisible();
   });
 
+  test("warns when a ground test can't be saved to this device", async ({ page }) => {
+    // Simulate a full/blocked store: writes for the log key throw. The entry still shows in
+    // the list, so without this warning the user would think it saved and lose it on reload.
+    await page.addInitScript(() => {
+      const orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === "charge.testlog" && v && v !== "[]") throw new Error("QuotaExceededError");
+        return orig.call(this, k, v);
+      };
+    });
+    await page.goto("/");
+    await page.getByLabel("Charge tested").fill("1.5");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByRole("alert").filter({ hasText: /couldn't save to this device/i })).toBeVisible();
+  });
+
+  test("a field's hint is part of its accessible description", async ({ page }) => {
+    await page.goto("/"); // force mode default — margin hint mentions "+50%"
+    await expect(page.getByLabel("Safety margin")).toHaveAccessibleDescription(/1\.5 = \+50%/);
+  });
+
+  test("an empty configuration exports a card and report that prompt instead of a void", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=p&dep=s&dp=0"); // pressure 0 → no charge sized
+    const download = async (name: string) => {
+      const [dl] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("button", { name }).click(),
+      ]);
+      return fs.readFileSync(await dl.path(), "utf8");
+    };
+    expect(await download("Download card as HTML")).toContain("No charge to size yet");
+    expect(await download("Download report as HTML")).toContain("No charge well is sized yet");
+  });
+
   test("backs up everything and restores it", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Save current setup" }).click();

@@ -53,6 +53,12 @@ export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
     })
     .join("");
 
+  // When no well has a charge yet, print a clear prompt instead of a headerless empty page.
+  const body =
+    plan.wells.length > 0
+      ? wells
+      : `<p class="empty">No charge to size yet. Enter an inner diameter and a pressurized length (and a target pressure or separation force) for at least one well, then generate the card.</p>`;
+
   const proven = plan.tested
     ? `<p class="proven"><strong>Proven charge:</strong> ${escapeHtml(plan.tested)}. Fly the charge you tested.</p>`
     : "";
@@ -82,6 +88,7 @@ export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
   table.grid td:first-child { width: 8rem; font-variant-numeric: tabular-nums; }
   table.grid td:nth-child(2) { width: 16rem; }
   .dim { color: #71717a; font-size: .75rem; text-transform: uppercase; }
+  .empty { color: #3f3f46; font-size: .9rem; margin: 1.25rem 0; }
   footer { border-top: 2px solid #18181b; margin-top: 1.5rem; padding-top: .6rem; color: #52525b; font-size: .78rem; line-height: 1.5; }
   footer strong { color: #18181b; }
   @media print { body { padding: 0; } }
@@ -95,7 +102,7 @@ export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
   </header>
   <p class="sub"><strong>${escapeHtml(plan.title)}</strong> · ${escapeHtml(plan.meta)}</p>
   ${proven}
-  ${wells}
+  ${body}
   <footer>
     <strong>These are theoretical starting estimates, not numbers to fly unverified.</strong>
     Bench-test from the low charge up until separation is clean and energetic; fly the charge

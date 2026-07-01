@@ -37,6 +37,7 @@ export default function SavedRockets({
   const [loaded, setLoaded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
+  const [saveError, setSaveError] = useState(false);
 
   useEffect(() => {
     try {
@@ -54,8 +55,11 @@ export default function SavedRockets({
     if (!loaded) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(rockets));
+      setSaveError(false);
     } catch {
-      /* storage full/unavailable */
+      // Storage full or blocked: the chip appears but nothing was persisted. Flag it so a
+      // save that silently won't survive a reload doesn't look like it worked.
+      setSaveError(true);
     }
   }, [rockets, loaded]);
 
@@ -127,6 +131,21 @@ export default function SavedRockets({
           </button>
         )}
       </div>
+
+      {saveError && (
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+        >
+          <span aria-hidden className="mt-px shrink-0">
+            ⚠
+          </span>
+          <span>
+            Couldn&apos;t save to this device — storage may be full or blocked. This setup
+            won&apos;t survive a reload.
+          </span>
+        </p>
+      )}
 
       {rockets.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">

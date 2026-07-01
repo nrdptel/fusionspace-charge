@@ -408,6 +408,11 @@ export default function Calculator({
   const copyPlan = async () => {
     const lines = [`Ejection charge plan — ${printPlan.title}`, printPlan.meta];
     if (printPlan.tested) lines.push(`Proven: ${printPlan.tested}`);
+    if (printPlan.wells.length === 0)
+      lines.push(
+        "",
+        "No charge sized yet — enter a diameter and length (and a pressure or force) for a well.",
+      );
     for (const w of printPlan.wells) {
       lines.push("");
       lines.push(`${w.title} — ID ${w.idText}, length ${w.lenText}`);

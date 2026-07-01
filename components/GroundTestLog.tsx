@@ -61,9 +61,13 @@ export default function GroundTestLog({
 }) {
   const [entries, setEntries] = useState<TestEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   // Draft form
-  const [date, setDate] = useState(todayISO());
+  // Empty on the server; filled to today on mount. Initializing from todayISO() during render
+  // would bake the *build* date into the static HTML — a hydration mismatch, and a stale date
+  // shown in an offline shell opened days after the build. The client sets the real today below.
+  const [date, setDate] = useState("");
   const [label, setLabel] = useState("");
   const [charge, setCharge] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>("clean");
@@ -93,6 +97,9 @@ export default function GroundTestLog({
       ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }, [pendingCharge]);
 
+  // Default the new-test date to today, client-side only (see the date state note above).
+  useEffect(() => setDate(todayISO()), []);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(TESTLOG_STORAGE_KEY);
@@ -109,8 +116,12 @@ export default function GroundTestLog({
     if (!loaded) return;
     try {
       localStorage.setItem(TESTLOG_STORAGE_KEY, JSON.stringify(entries));
+      setSaveError(false);
     } catch {
-      /* storage may be full or unavailable */
+      // Storage full or blocked (private mode, quota). Surface it — otherwise the entry
+      // shows in the list and the counter ticks up, but nothing was written and a reload
+      // would silently lose it. Self-clears once a later write succeeds.
+      setSaveError(true);
     }
   }, [entries, loaded]);
 
@@ -210,6 +221,21 @@ export default function GroundTestLog({
           {entries.length} {entries.length === 1 ? "test" : "tests"} · saved on this device
         </span>
       </div>
+
+      {saveError && (
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+        >
+          <span aria-hidden className="mt-px shrink-0">
+            ⚠
+          </span>
+          <span>
+            Couldn&apos;t save to this device — storage may be full or blocked. Recent entries
+            aren&apos;t stored and will be lost on reload. Export the log to keep them.
+          </span>
+        </p>
+      )}
 
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         The charge that cleanly separated your airframe on the bench is the only number
