@@ -104,7 +104,7 @@ export default function SavedRockets({
           Saved rockets
         </h2>
         {adding ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input
               type="text"
               autoFocus

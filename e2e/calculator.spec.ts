@@ -133,6 +133,21 @@ test.describe("Charge calculator", () => {
     await expect(page.getByLabel("Well / airframe")).toHaveValue("Av-Bay 4");
   });
 
+  test("the layout doesn't scroll sideways on a narrow phone, even with the save form open", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 720 });
+    await page.goto("/");
+    // Opening the save form adds a fixed-width input + two buttons — the row must wrap, not
+    // push the page wider than the viewport.
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("A fairly long airframe name");
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1); // allow sub-pixel rounding
+  });
+
   test("closing the save form returns focus to the trigger, not the body", async ({ page }) => {
     await page.goto("/");
     const trigger = page.getByRole("button", { name: "Save current setup" });
