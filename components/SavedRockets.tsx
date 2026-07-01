@@ -41,7 +41,9 @@ export default function SavedRockets({
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setRockets(JSON.parse(raw));
+      const parsed = raw ? JSON.parse(raw) : null;
+      // Only trust an array — a corrupted or tampered store shouldn't crash the render.
+      if (Array.isArray(parsed)) setRockets(parsed);
     } catch {
       /* ignore malformed storage */
     }

@@ -123,6 +123,25 @@ describe("validated charge", () => {
     );
     expect(v).toEqual({ charge: 1.8, count: 2 });
   });
+
+  it("treats charges equal at display precision as the same (ladder-picked vs typed)", () => {
+    // One test picked from the ladder (already rounded) and one typed by hand with float
+    // slop must both count as 1.50 g — otherwise the flagship 'prove it twice' flow never
+    // earns the badge.
+    const v = validatedCharge(
+      [entry({ label: "X", charge: 1.5 }), entry({ label: "X", charge: 1.50000001 })],
+      "X",
+    );
+    expect(v).toEqual({ charge: 1.5, count: 2 });
+  });
+
+  it("handles the classic 0.1 + 0.2 float case as one charge", () => {
+    const v = validatedCharge(
+      [entry({ label: "X", charge: 0.3 }), entry({ label: "X", charge: 0.1 + 0.2 })],
+      "X",
+    );
+    expect(v).toEqual({ charge: 0.3, count: 2 });
+  });
 });
 
 describe("next-charge suggestion", () => {

@@ -67,7 +67,11 @@ export function validatedCharge(entries: TestEntry[], label: string): ValidatedC
   const counts = new Map<number, number>();
   for (const e of entries) {
     if (e.outcome === "clean" && e.charge > 0 && e.label.trim().toLowerCase() === key) {
-      counts.set(e.charge, (counts.get(e.charge) ?? 0) + 1);
+      // Key on the charge at display precision (0.01 g): a charge picked from the ladder
+      // (already rounded) and the same charge typed by hand (raw float) must count as the
+      // same weight, or two "1.50 g" tests would never earn the validated badge.
+      const c = round(e.charge, 2);
+      counts.set(c, (counts.get(c) ?? 0) + 1);
     }
   }
   let best: ValidatedCharge | null = null;

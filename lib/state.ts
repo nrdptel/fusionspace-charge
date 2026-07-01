@@ -108,7 +108,10 @@ export function decodeState(query: string): State {
     diameter: numOr(`${prefix}dia`, numOr("dia", d.diameter)),
     length: numOr(`${prefix}l`, d.length),
     pressure: numOr(`${prefix}p`, d.pressure),
-    pinCount: numOr(`${prefix}n`, d.pinCount),
+    // Pins are discrete: coerce to a non-negative integer so a hand-edited or shared
+    // link (e.g. `dn=2.7`) can't size the charge for a fractional pin count while the
+    // exported report rounds it to a different whole number.
+    pinCount: Math.max(0, Math.round(numOr(`${prefix}n`, d.pinCount))),
     pinForce: numOr(`${prefix}pf`, d.pinForce),
     friction: numOr(`${prefix}fr`, d.friction),
   });
