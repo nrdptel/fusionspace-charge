@@ -440,6 +440,66 @@ test.describe("Charge calculator", () => {
     await expect(dialog.getByText(/fly the charge you proved/i)).toBeHidden();
   });
 
+  test("a drifted setup drops the proven charge from the recovery report too", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s&mg=1");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Report Drift Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByRole("button", { name: /Estimate/ }).first().click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText(/proven Report Drift Bird/i)).toBeVisible();
+
+    const reportHtml = async () => {
+      const [dl] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("button", { name: "Download report as HTML" }).click(),
+      ]);
+      return fs.readFileSync(await dl.path(), "utf8");
+    };
+    // Before drift the report asserts the clean separation…
+    expect(await reportHtml()).toContain("Most recent clean separation");
+
+    // …after drift it must warn to re-test instead, matching the card/bench/on-screen guard.
+    await page.getByRole("spinbutton", { name: /Pressurized length/ }).first().fill("24");
+    await expect(page.getByText(/re-test before trusting the proven charge/i)).toBeVisible();
+    const drifted = await reportHtml();
+    expect(drifted).not.toContain("Most recent clean separation");
+    expect(drifted).toContain("Setup has changed since the last clean test");
+  });
+
+  test("the report's worked example uses a well that actually has a charge", async ({ page }) => {
+    // Dual deploy with an empty drogue (pressure 0 → mass 0) but a filled main. The drogue
+    // block is dropped; the worked example must derive from the main well, not print a
+    // zeroed drogue derivation for a well that isn't in the report.
+    await page.goto("/?mode=p&dep=d&mg=1&dp=0");
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download report as HTML" }).click(),
+    ]);
+    const html = fs.readFileSync(await dl.path(), "utf8");
+    expect(html).toContain("Worked example — main well");
+    expect(html).not.toContain("Worked example — drogue well");
+  });
+
+  test("loading a corrupt saved rocket doesn't crash the calculator", async ({ page }) => {
+    // A tampered/legacy store with a null well would crash a shallow-merge load at
+    // computeWell(state.drogue); normalizeState must rebuild it into a valid state.
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.setItem(
+        "charge.rockets",
+        JSON.stringify([
+          { id: "x", name: "Corrupt Bird", state: { mode: "force", drogue: null, main: "oops" } },
+        ]),
+      );
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Corrupt Bird", exact: true }).click();
+    // Still alive and computing — the heading renders and a mass is shown, no white-screen.
+    await expect(page.getByRole("heading", { name: "Charge", level: 1 })).toBeVisible();
+    await expect(page.getByTestId("mass").first()).toBeVisible();
+  });
+
   test("backs up everything and restores it", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Save current setup" }).click();
@@ -700,6 +760,11 @@ test.describe("Charge calculator", () => {
     await page.goto("/?mode=p&dep=s&mg=1");
     await page.getByRole("button", { name: "Copy share link" }).click();
     await expect(page.getByRole("button", { name: "Link copied" })).toBeVisible();
+    // The success is also announced to assistive tech via a live region, not just the
+    // button-label flip (which a screen reader won't re-read on a focused button).
+    await expect(page.getByRole("status").filter({ hasText: /copied to clipboard/i })).toHaveText(
+      /share link copied to clipboard/i,
+    );
     const text = await page.evaluate(() => navigator.clipboard.readText());
     expect(text).toContain("http");
     expect(text).toContain("mode=p");

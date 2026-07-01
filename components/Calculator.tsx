@@ -6,6 +6,7 @@ import {
   SHEAR_PIN_PRESETS,
   decodeState,
   encodeState,
+  normalizeState,
   type Deploy,
   type Mode,
   type State,
@@ -473,12 +474,17 @@ export default function Calculator({
       return { title, rows: rws };
     });
 
-    const r = drogue.result;
+    // Derive the worked example from a well that actually carries a charge — the same wells
+    // the report shows. Otherwise a dual setup with an empty drogue but a filled main would
+    // print a fully zeroed "drogue well" derivation for a well that isn't even in the report.
+    const example = wells.find(({ data }) => data.result.mass > 0) ?? wells[wells.length - 1];
+    const r = example.data.result;
+    const exampleLabel = state.deploy === "dual" ? `${example.key} well` : "ejection well";
     const method = [
       "m = (P · V) / (R · T)",
       `R = ${R_BP} ft·lbf/(lbm·°R)    T = ${T_BP} °R    psi → lbf/ft² ×${PSI_TO_PSF}    lbm → g ×${LBM_TO_G}`,
       "",
-      `Worked example — ${state.deploy === "dual" ? "drogue" : "ejection"} well:`,
+      `Worked example — ${exampleLabel}:`,
       `  V = ${fmt(r.volume, 2)} in³ = ${fmt(r.volume / IN3_PER_FT3, 5)} ft³`,
       `  P = ${fmt(r.pressure, 2)} psi × ${PSI_TO_PSF} = ${fmt(r.pressure * PSI_TO_PSF, 1)} lbf/ft²`,
       `  m = (${fmt(r.pressure * PSI_TO_PSF, 1)} × ${fmt(r.volume / IN3_PER_FT3, 5)}) / (${R_BP} × ${T_BP})`,
@@ -506,7 +512,14 @@ export default function Calculator({
         : "No ground tests logged yet. Save a setup as a named airframe and log its bench tests to attach them here.";
     } else {
       const parts: string[] = [];
-      if (testedSummary?.validated)
+      // Drift-gate the proven/validated assertion the same way the card and bench view do:
+      // if the current setup sizes far from what was tested, the cert document must not state
+      // a proven charge the rest of the tool is warning is no longer trustworthy.
+      if (drift)
+        parts.push(
+          `Setup has changed since the last clean test — it now sizes to ${fmtMass(drift.now)} g versus ${fmtMass(drift.then)} g when proven. Re-test before relying on the logged charge.`,
+        );
+      else if (testedSummary?.validated)
         parts.push(
           `Validated — ${testedSummary.validated.count} clean separations at ${fmtMass(testedSummary.validated.charge)} g.`,
         );
@@ -567,9 +580,10 @@ export default function Calculator({
       <div className="mb-5">
         <SavedRockets
           current={state}
-          // Merge over defaults so a setup saved before a field existed (e.g. the
-          // redundancy toggle) still loads with sane values for the new fields.
-          onLoad={(s) => setState({ ...DEFAULT_STATE, ...s })}
+          // Normalize on load: a setup saved before a field existed gets sane defaults for
+          // the new fields, and a corrupt/tampered store (e.g. a null well) is rebuilt into
+          // a valid State rather than reaching the compute path and crashing the render.
+          onLoad={(s) => setState(normalizeState(s))}
           onActivate={onActiveRocketChange}
         />
       </div>
@@ -837,6 +851,17 @@ export default function Calculator({
             Reset
           </button>
         </div>
+
+        {/* The copy buttons only flip their own label on success, which a screen reader
+            doesn't re-announce for a focused button. This off-screen live region speaks the
+            confirmation so a non-sighted user knows the copy worked. */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {copied
+            ? "Share link copied to clipboard."
+            : planCopied
+              ? "Plan text copied to clipboard."
+              : ""}
+        </p>
 
         {/* Exports — each artifact offered as HTML (download) or PDF (print → Save as PDF). */}
         <div className="mt-4 space-y-2.5 border-t border-zinc-200 pt-4 dark:border-zinc-800">

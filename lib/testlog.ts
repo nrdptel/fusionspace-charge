@@ -27,6 +27,26 @@ export const TESTLOG_STORAGE_KEY = "charge.testlog";
 const OUTCOMES = new Set<Outcome>(["clean", "partial", "none"]);
 
 /**
+ * Whether a string is a real yyyy-mm-dd calendar date. The "most recent clean" charge — the
+ * one the calculator surfaces as worth flying — is chosen by lexicographic date comparison,
+ * so an imported entry with a garbage date ("9999-99-99", "tomorrow") would sort above every
+ * real test and hijack that signal. Requiring a genuine ISO date keeps untrusted imports from
+ * poisoning it. Checks both the shape and that the parts form a valid date (e.g. not month 99).
+ */
+function isIsoDate(s: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  const [, y, mo, d] = m;
+  const dt = new Date(`${s}T00:00:00Z`);
+  return (
+    !Number.isNaN(dt.getTime()) &&
+    dt.getUTCFullYear() === Number(y) &&
+    dt.getUTCMonth() + 1 === Number(mo) &&
+    dt.getUTCDate() === Number(d)
+  );
+}
+
+/**
  * Normalize a raw array (from a JSON import or a whole-tool restore) into valid TestEntries:
  * drop non-objects, coerce field types, require a real charge (> 0), and give every entry a
  * stable id. Shared by the log's import and the backup restore so both surfaces agree on what
@@ -53,7 +73,7 @@ export function sanitizeEntries(
             : genId();
       return {
         id,
-        date: typeof x.date === "string" && x.date ? x.date : today,
+        date: typeof x.date === "string" && isIsoDate(x.date) ? x.date : today,
         label: typeof x.label === "string" && x.label ? x.label : "—",
         charge: Number(x.charge) || 0,
         outcome: OUTCOMES.has(x.outcome as Outcome) ? (x.outcome as Outcome) : "clean",

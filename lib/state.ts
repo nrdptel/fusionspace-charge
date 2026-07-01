@@ -61,6 +61,47 @@ export const DEFAULT_STATE: State = {
   main: { diameter: 4, length: 24, pressure: 12, pinCount: 4, pinForce: 32, friction: 0 },
 };
 
+// --- Normalization -----------------------------------------------------------------
+
+/**
+ * Rebuild a fully valid State from arbitrary/untrusted input — a saved rocket restored from
+ * localStorage, an imported backup, or a tampered store. Unlike a shallow `{...DEFAULT, ...raw}`
+ * merge, this guarantees every field (and both nested wells) has the right type and is clamped
+ * the same way `decodeState` clamps a shared link, so a corrupt `drogue: null` (or a missing
+ * well, or a string where a number belongs) can't reach the compute path and crash the render.
+ */
+export function normalizeState(raw: unknown): State {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const num = (v: unknown, fallback: number): number => {
+    const n = typeof v === "number" ? v : typeof v === "string" ? Number.parseFloat(v) : NaN;
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const well = (v: unknown, d: WellInput): WellInput => {
+    const w = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+    return {
+      diameter: num(w.diameter, d.diameter),
+      length: num(w.length, d.length),
+      pressure: num(w.pressure, d.pressure),
+      pinCount: Math.max(0, Math.round(num(w.pinCount, d.pinCount))),
+      pinForce: num(w.pinForce, d.pinForce),
+      friction: num(w.friction, d.friction),
+    };
+  };
+  return {
+    mode: o.mode === "pressure" || o.mode === "force" ? o.mode : DEFAULT_STATE.mode,
+    deploy: o.deploy === "single" || o.deploy === "dual" ? o.deploy : DEFAULT_STATE.deploy,
+    lengthUnit: o.lengthUnit === "mm" ? "mm" : "in",
+    pressureUnit: o.pressureUnit === "kPa" ? "kPa" : "psi",
+    forceUnit: o.forceUnit === "N" ? "N" : "lbf",
+    margin: Math.max(1, num(o.margin, DEFAULT_STATE.margin)),
+    redundant: o.redundant === true,
+    backupPct: Math.max(0, num(o.backupPct, DEFAULT_STATE.backupPct)),
+    elevation: Math.max(0, num(o.elevation, DEFAULT_STATE.elevation)),
+    drogue: well(o.drogue, DEFAULT_STATE.drogue),
+    main: well(o.main, DEFAULT_STATE.main),
+  };
+}
+
 // --- URL serialization -------------------------------------------------------------
 
 const MODE_TO: Record<Mode, string> = { pressure: "p", force: "f" };
