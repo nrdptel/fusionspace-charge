@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { State } from "@/lib/state";
 
 interface SavedRocket {
@@ -38,6 +38,23 @@ export default function SavedRockets({
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [saveError, setSaveError] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  // When the inline name form closes (save/cancel/Escape), the whole cluster unmounts and
+  // focus would fall to <body>. Return it to the trigger so a keyboard user keeps their place.
+  const refocusTrigger = useRef(false);
+
+  useEffect(() => {
+    if (!adding && refocusTrigger.current) {
+      refocusTrigger.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [adding]);
+
+  const closeForm = () => {
+    refocusTrigger.current = true;
+    setAdding(false);
+    setName("");
+  };
 
   useEffect(() => {
     try {
@@ -74,6 +91,7 @@ export default function SavedRockets({
     setRockets((r) => [...r, snapshot]);
     onActivate?.(trimmed);
     setName("");
+    refocusTrigger.current = true;
     setAdding(false);
   };
 
@@ -86,7 +104,7 @@ export default function SavedRockets({
           Saved rockets
         </h2>
         {adding ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input
               type="text"
               autoFocus
@@ -95,10 +113,7 @@ export default function SavedRockets({
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") save();
-                if (e.key === "Escape") {
-                  setAdding(false);
-                  setName("");
-                }
+                if (e.key === "Escape") closeForm();
               }}
               className="w-44 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none transition placeholder:text-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-600"
             />
@@ -112,10 +127,7 @@ export default function SavedRockets({
             </button>
             <button
               type="button"
-              onClick={() => {
-                setAdding(false);
-                setName("");
-              }}
+              onClick={closeForm}
               className="rounded-lg px-2 py-1.5 text-sm text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
             >
               Cancel
@@ -123,6 +135,7 @@ export default function SavedRockets({
           </div>
         ) : (
           <button
+            ref={triggerRef}
             type="button"
             onClick={() => setAdding(true)}
             className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 transition hover:text-indigo-500 dark:text-indigo-400"

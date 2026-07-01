@@ -96,7 +96,7 @@ export default function BenchMode({
       aria-label="Bench mode"
       className="fixed inset-0 z-50 overflow-auto bg-zinc-950 text-white"
     >
-      <div className="mx-auto max-w-2xl px-5 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div className="mx-auto max-w-2xl px-5 py-6 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm font-semibold uppercase tracking-widest text-zinc-400">
             Bench mode

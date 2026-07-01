@@ -89,6 +89,12 @@ export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
   table.grid td:nth-child(2) { width: 16rem; }
   .dim { color: #71717a; font-size: .75rem; text-transform: uppercase; }
   .empty { color: #3f3f46; font-size: .9rem; margin: 1.25rem 0; }
+  /* The fixed column widths lay the print grid out cleanly, but sum wider than a phone.
+     On a narrow screen (the card is also downloaded/shared as HTML) let them shrink to fit
+     instead of forcing the whole document to scroll sideways. */
+  @media screen and (max-width: 26rem) {
+    table.grid td:first-child, table.grid td:nth-child(2) { width: auto; }
+  }
   footer { border-top: 2px solid #18181b; margin-top: 1.5rem; padding-top: .6rem; color: #52525b; font-size: .78rem; line-height: 1.5; }
   footer strong { color: #18181b; }
   @media print { body { padding: 0; } }

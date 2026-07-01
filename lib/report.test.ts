@@ -31,6 +31,10 @@ describe("recovery report", () => {
     expect(html).toContain("Validated — 2 clean separations at 1.50 g.");
   });
 
+  it("guards against splitting well blocks and the formula across printed pages", () => {
+    expect(buildReportHtml(base)).toContain("page-break-inside: avoid");
+  });
+
   it("prompts instead of showing a headerless void when no well is sized", () => {
     const html = buildReportHtml({ ...base, wells: [] });
     expect(html).toContain("No charge well is sized yet");
