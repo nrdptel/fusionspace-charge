@@ -757,7 +757,10 @@ export default function Calculator({
               Fly the charge you tested — the estimate below is only a starting point.
             </p>
             {drift && (
-              <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+              <p
+                role="alert"
+                className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400"
+              >
                 <span aria-hidden className="mt-px shrink-0">
                   ⚠
                 </span>
@@ -783,7 +786,10 @@ export default function Calculator({
       </p>
 
       {state.elevation >= 3000 && (
-        <p className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400"
+        >
           <span aria-hidden className="mt-px shrink-0">
             ⛰
           </span>
@@ -1114,7 +1120,7 @@ function WellCard({
       </div>
 
       {cautions.length > 0 && (
-        <div className="mt-3 space-y-1.5">
+        <div role="alert" className="mt-3 space-y-1.5">
           {cautions.map((c) => (
             <p
               key={c.id}

@@ -133,6 +133,39 @@ test.describe("Charge calculator", () => {
     await expect(page.getByLabel("Well / airframe")).toHaveValue("Av-Bay 4");
   });
 
+  test("the layout doesn't scroll sideways on a narrow phone, even with the save form open", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 720 });
+    await page.goto("/");
+    // Opening the save form adds a fixed-width input + two buttons — the row must wrap, not
+    // push the page wider than the viewport.
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("A fairly long airframe name");
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1); // allow sub-pixel rounding
+  });
+
+  test("closing the save form returns focus to the trigger, not the body", async ({ page }) => {
+    await page.goto("/");
+    const trigger = page.getByRole("button", { name: "Save current setup" });
+    // Cancel returns focus to the trigger.
+    await trigger.click();
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(trigger).toBeFocused();
+    // So does Escape from the name field.
+    await trigger.click();
+    await page.getByPlaceholder("Name this setup").press("Escape");
+    await expect(trigger).toBeFocused();
+    // And so does a successful save.
+    await trigger.click();
+    await page.getByPlaceholder("Name this setup").fill("Focus Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(trigger).toBeFocused();
+  });
+
   test("surfaces the airframe's proven charge once a clean test is logged", async ({
     page,
   }) => {
@@ -198,6 +231,10 @@ test.describe("Charge calculator", () => {
     // A 98 in "inner diameter" is really 98 mm typed into an inches field.
     await dia.fill("98");
     await expect(page.getByText(/did you mean mm, or enter the outside diameter/i)).toBeVisible();
+    // The caution is an alert region so a screen reader announces it when it appears.
+    await expect(
+      page.getByRole("alert").filter({ hasText: /did you mean mm/i }),
+    ).toBeVisible();
     // Fixing it clears the caution.
     await dia.fill("4");
     await expect(page.getByText(/did you mean mm, or enter the outside diameter/i)).toHaveCount(0);
@@ -298,6 +335,8 @@ test.describe("Charge calculator", () => {
   }) => {
     await page.goto("/?el=6000");
     await expect(page.getByText(/the air is thinner/)).toBeVisible();
+    // Announced to assistive tech as it crosses the threshold.
+    await expect(page.getByRole("alert").filter({ hasText: /the air is thinner/i })).toBeVisible();
     await page.goto("/?el=0");
     await expect(page.getByText(/the air is thinner/)).toHaveCount(0);
   });

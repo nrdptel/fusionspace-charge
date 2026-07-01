@@ -43,6 +43,11 @@ describe("build & ground-test card HTML", () => {
     expect(html).toContain("Ejection charge");
   });
 
+  it("relaxes the fixed table widths on a narrow screen so the card doesn't scroll sideways", () => {
+    const html = buildCardHtml(plan, "2026-06-27");
+    expect(html).toContain("@media screen and (max-width: 26rem)");
+  });
+
   it("prompts instead of rendering an empty card when no well has a charge", () => {
     const html = buildCardHtml({ ...plan, wells: [], tested: undefined }, "2026-06-27");
     expect(html).toContain("No charge to size yet");

@@ -117,7 +117,12 @@ export function buildReportHtml(d: ReportData): string {
   a { color: #4f46e5; }
   footer { border-top: 2px solid #18181b; margin-top: 2rem; padding-top: .75rem; color: #52525b; font-size: .8rem; }
   footer strong { color: #18181b; }
-  @media print { body { padding: 0; } a { color: inherit; text-decoration: none; } }
+  @media print {
+    body { padding: 0; }
+    a { color: inherit; text-decoration: none; }
+    /* Keep a well block, the formula, and the test table from splitting across a page. */
+    section, pre, table.grid { page-break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
