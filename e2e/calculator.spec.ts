@@ -404,6 +404,42 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText(/re-test before trusting the proven charge/i)).toBeVisible();
   });
 
+  test("a drifted setup drops the proven charge from the printed card", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s&mg=1");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Card Drift Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByRole("button", { name: /Estimate/ }).first().click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText(/proven Card Drift Bird/i)).toBeVisible();
+
+    // Before drift, the card carries the proven charge line.
+    const cardHtml = async () => {
+      const [dl] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("button", { name: "Download card as HTML" }).click(),
+      ]);
+      return fs.readFileSync(await dl.path(), "utf8");
+    };
+    expect(await cardHtml()).toContain("Proven charge:");
+
+    // Before drift, bench mode also carries the proven callout.
+    await page.getByRole("button", { name: "Bench mode" }).click();
+    const dialog = page.getByRole("dialog", { name: /bench mode/i });
+    await expect(dialog.getByText(/fly the charge you proved/i)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+
+    // Drift the geometry — neither the card nor the bench view may assert a charge the
+    // on-screen guard is warning about.
+    await page.getByRole("spinbutton", { name: /Pressurized length/ }).first().fill("24");
+    await expect(page.getByText(/re-test before trusting the proven charge/i)).toBeVisible();
+    expect(await cardHtml()).not.toContain("Proven charge:");
+    await page.getByRole("button", { name: "Bench mode" }).click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/fly the charge you proved/i)).toBeHidden();
+  });
+
   test("backs up everything and restores it", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Save current setup" }).click();

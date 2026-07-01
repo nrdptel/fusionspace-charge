@@ -321,6 +321,19 @@ export default function Calculator({
         ]
       : [{ key: "drogue", title: "Ejection charge", sub: "Separates the airframe", data: drogue }];
 
+  // Setup-drift guard: a proven/validated charge is only proven for the geometry it was
+  // tested at. The clean test recorded the model estimate it was planned from; if the
+  // current configuration would now size very differently, the airframe likely changed —
+  // so the "proven" charge shouldn't be trusted until re-tested. Single-deploy only, where
+  // the one well maps unambiguously to the logged test; dual is left alone.
+  const driftFrom =
+    state.deploy === "single" ? testedSummary?.lastClean?.estimate : undefined;
+  const drift =
+    driftFrom && driftFrom > 0 && drogue.result.mass > 0 &&
+    Math.abs(drogue.result.mass / driftFrom - 1) > 0.15
+      ? { now: drogue.result.mass, then: driftFrom }
+      : null;
+
   // The plan for the printable build & ground-test card. Only wells with a real charge
   // are included; each gets the ground-test ladder as rows to fill in at the bench.
   const printPlan: PrintPlan = {
@@ -328,7 +341,10 @@ export default function Calculator({
     meta: `${state.deploy === "dual" ? "Dual deploy" : "Single deploy"} · sized by ${
       state.mode === "force" ? "separation force" : "target pressure"
     }`,
-    tested: testedSummary?.lastClean
+    // A proven charge is only printed as "proven" when the setup hasn't drifted from what
+    // was tested — otherwise the card would tell the builder to fly a charge the on-screen
+    // guard is warning them not to trust until re-tested.
+    tested: testedSummary?.lastClean && !drift
       ? `${fmtMass(testedSummary.lastClean.charge)} g — ${testedSummary.name} (${testedSummary.lastClean.date})`
       : undefined,
     wells: wells
@@ -374,27 +390,20 @@ export default function Calculator({
         ],
       };
     });
-  const benchProven = testedSummary?.validated
-    ? { label: "Validated", charge: fmtMass(testedSummary.validated.charge) }
-    : testedSummary?.lastClean
-      ? { label: "Proven", charge: fmtMass(testedSummary.lastClean.charge) }
-      : null;
-
-  // Setup-drift guard: a proven/validated charge is only proven for the geometry it was
-  // tested at. The clean test recorded the model estimate it was planned from; if the
-  // current configuration would now size very differently, the airframe likely changed —
-  // so the "proven" charge shouldn't be trusted until re-tested. Single-deploy only, where
-  // the one well maps unambiguously to the logged test; dual is left alone.
-  const driftFrom =
-    state.deploy === "single" ? testedSummary?.lastClean?.estimate : undefined;
-  const drift =
-    driftFrom && driftFrom > 0 && drogue.result.mass > 0 &&
-    Math.abs(drogue.result.mass / driftFrom - 1) > 0.15
-      ? { now: drogue.result.mass, then: driftFrom }
-      : null;
+  // Drift-gated like the printed card: on a drifted setup the bench view mustn't tell the
+  // user at the pad to "fly the charge you tested" when the on-screen guard says otherwise.
+  const benchProven =
+    drift
+      ? null
+      : testedSummary?.validated
+        ? { label: "Validated", charge: fmtMass(testedSummary.validated.charge) }
+        : testedSummary?.lastClean
+          ? { label: "Proven", charge: fmtMass(testedSummary.lastClean.charge) }
+          : null;
 
   // A plain-text version of the same plan, for pasting into phone notes, a flight log, or a
-  // club chat — the portable sibling of the printable card.
+  // club chat — the portable sibling of the printable card. Proven line follows printPlan.tested,
+  // which is already drift-gated, so a drifted setup won't paste a stale "Proven" charge either.
   const copyPlan = async () => {
     const lines = [`Ejection charge plan — ${printPlan.title}`, printPlan.meta];
     if (printPlan.tested) lines.push(`Proven: ${printPlan.tested}`);
@@ -440,7 +449,7 @@ export default function Calculator({
     if (state.elevation > 0) summary.push(["Field elevation", `${fmt(state.elevation, 0)} ft`]);
     summary.push(["Units", `${lu} · ${state.mode === "force" ? fu : pu}`]);
 
-    const wellBlocks = wells.map(({ key, title, data }) => {
+    const wellBlocks = wells.filter(({ data }) => data.result.mass > 0).map(({ key, title, data }) => {
       const w = state[key];
       const res = data.result;
       const rws: [string, string][] = [
