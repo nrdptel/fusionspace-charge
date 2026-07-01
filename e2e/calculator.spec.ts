@@ -499,6 +499,20 @@ test.describe("Charge calculator", () => {
     // …and stay reactive: switching to dual deploy adds a second well.
     await page.getByRole("button", { name: "Dual" }).click();
     await expect(page.getByTestId("mass")).toHaveCount(2);
+
+    // An asset requested only offline (never cached) degrades to a real 504 response
+    // rather than a hard SW error (respondWith would throw on undefined). Asserted here,
+    // where the SW is already proven to control the page, to avoid a flaky standalone test.
+    const status = await page.evaluate(async () => {
+      try {
+        const r = await fetch(`/never-cached-${Math.random().toString(36).slice(2)}.js`);
+        return r.status;
+      } catch {
+        return "threw";
+      }
+    });
+    expect(status).toBe(504);
+
     await context.setOffline(false);
   });
 
@@ -663,4 +677,51 @@ test.describe("Charge calculator", () => {
     await vent.getByRole("group", { name: "Length unit" }).getByRole("button", { name: "mm" }).click();
     await expect(dia).toHaveValue("101.6"); // 4 in → 101.6 mm
   });
+
+  test("a chosen theme survives a reload", async ({ page }) => {
+    await page.goto("/");
+    const toggle = page.getByRole("button", { name: /Color theme/ });
+    await toggle.click(); // System → Light
+    await toggle.click(); // Light → Dark
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await page.reload();
+    // The inline pre-paint script must re-apply the choice with no second click.
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.getByRole("button", { name: /Dark/ })).toBeVisible();
+  });
+
+  test("deleting a saved rocket removes it and it stays gone after reload", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Del Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Del Bird", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Delete Del Bird" }).click();
+    await expect(page.getByRole("button", { name: "Del Bird", exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Del Bird", exact: true })).toHaveCount(0);
+  });
+
+  test("every in-page jump-link resolves to a real anchor", async ({ page }) => {
+    await page.goto("/");
+    await page.getByText("What's in here").click(); // expand the overview so its links render
+    const hrefs = await page.locator('a[href^="#"]').evaluateAll((els) => [
+      ...new Set(els.map((e) => e.getAttribute("href")!).filter((h) => h.length > 1)),
+    ]);
+    expect(hrefs.length).toBeGreaterThan(3);
+    for (const href of hrefs) {
+      expect(await page.locator(href).count(), `${href} should exist`).toBeGreaterThan(0);
+    }
+  });
+
+  test("every new-tab link is safe (rel includes noopener)", async ({ page }) => {
+    await page.goto("/");
+    const unsafe = await page.locator('a[target="_blank"]').evaluateAll((els) =>
+      els
+        .filter((e) => !(e.getAttribute("rel") || "").includes("noopener"))
+        .map((e) => e.getAttribute("href")),
+    );
+    expect(unsafe).toEqual([]);
+  });
+
 });

@@ -10,7 +10,7 @@
 //     load instantly and refresh in the background.
 // The cache name is versioned; old caches are cleared on activate.
 
-const CACHE = "charge-v2";
+const CACHE = "charge-v3";
 const SHELL = "/";
 
 self.addEventListener("install", (event) => {
@@ -18,7 +18,11 @@ self.addEventListener("install", (event) => {
   // visit), the new worker waits so it can't swap assets out from under an open tab;
   // the page shows a "refresh" prompt and calls skipWaiting() via the message below.
   // On a first-ever visit there's no controller, so the browser activates immediately.
-  event.waitUntil(caches.open(CACHE).then((c) => c.add(SHELL)));
+  // Best-effort: a transient failure fetching the shell must not fail the whole install
+  // (the shell is re-cached on the first online navigation anyway).
+  event.waitUntil(
+    caches.open(CACHE).then((c) => c.add(SHELL)).catch(() => {}),
+  );
 });
 
 // The page posts this when the user accepts the update, letting the waiting worker
@@ -66,7 +70,9 @@ self.addEventListener("fetch", (event) => {
           }
           return res;
         })
-        .catch(() => cached);
+        // Offline and not cached: resolve to a real 504 Response rather than undefined,
+        // which would make respondWith throw and surface as an opaque network error.
+        .catch(() => cached || new Response("", { status: 504, statusText: "Offline" }));
       return cached || network;
     }),
   );

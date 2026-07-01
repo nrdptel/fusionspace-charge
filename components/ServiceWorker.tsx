@@ -31,17 +31,24 @@ export default function ServiceWorker() {
       }
     };
 
+    // Offer a worker once it's installed (or now, if it already is). Used for both a
+    // future update (updatefound) and an install already in flight when we register —
+    // that in-flight case could otherwise fire updatefound before this listener attaches.
+    const track = (worker: ServiceWorker | null) => {
+      if (!worker) return;
+      if (worker.state === "installed") offer(worker);
+      else
+        worker.addEventListener("statechange", () => {
+          if (worker.state === "installed") offer(worker);
+        });
+    };
+
     const register = async () => {
       try {
         const reg = await navigator.serviceWorker.register("/sw.js");
         offer(reg.waiting); // an update may already be waiting from a prior load
-        reg.addEventListener("updatefound", () => {
-          const installing = reg.installing;
-          if (!installing) return;
-          installing.addEventListener("statechange", () => {
-            if (installing.state === "installed") offer(installing);
-          });
-        });
+        track(reg.installing); // …or already installing when we registered (the race)
+        reg.addEventListener("updatefound", () => track(reg.installing));
       } catch {
         /* offline support is a progressive enhancement; ignore failures */
       }
