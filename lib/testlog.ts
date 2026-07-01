@@ -24,6 +24,46 @@ export interface TestEntry {
 
 export const TESTLOG_STORAGE_KEY = "charge.testlog";
 
+const OUTCOMES = new Set<Outcome>(["clean", "partial", "none"]);
+
+/**
+ * Normalize a raw array (from a JSON import or a whole-tool restore) into valid TestEntries:
+ * drop non-objects, coerce field types, require a real charge (> 0), and give every entry a
+ * stable id. Shared by the log's import and the backup restore so both surfaces agree on what
+ * a valid entry is — a restore must not be able to write an entry the import would reject
+ * (a negative/NaN/missing charge that would otherwise render as "NaN g" and poison the log).
+ * `genId` mints an id for an entry that has none; `today` backstops a missing date. Pure.
+ */
+export function sanitizeEntries(
+  raw: unknown[],
+  genId: () => string,
+  today: string,
+): TestEntry[] {
+  return raw
+    .filter((x): x is Record<string, unknown> => !!x && typeof x === "object")
+    .map((x): TestEntry => {
+      const rawId = x.id;
+      // Keep a stable id across re-imports: reuse a string id, stringify a numeric one
+      // (foreign files often use numeric ids), only mint a new id when there's none.
+      const id =
+        typeof rawId === "string" && rawId
+          ? rawId
+          : typeof rawId === "number" && Number.isFinite(rawId)
+            ? String(rawId)
+            : genId();
+      return {
+        id,
+        date: typeof x.date === "string" && x.date ? x.date : today,
+        label: typeof x.label === "string" && x.label ? x.label : "—",
+        charge: Number(x.charge) || 0,
+        outcome: OUTCOMES.has(x.outcome as Outcome) ? (x.outcome as Outcome) : "clean",
+        notes: typeof x.notes === "string" ? x.notes : "",
+        ...(typeof x.estimate === "number" && x.estimate > 0 ? { estimate: x.estimate } : {}),
+      };
+    })
+    .filter((e) => e.charge > 0);
+}
+
 export interface TestedSummary {
   /** How many clean, validated tests are recorded for this airframe. */
   cleanCount: number;

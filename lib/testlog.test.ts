@@ -3,10 +3,67 @@ import {
   calibrationFromEntries,
   failureCauses,
   nextChargeSuggestion,
+  sanitizeEntries,
   summarizeFor,
   validatedCharge,
   type TestEntry,
 } from "./testlog";
+
+describe("sanitizeEntries", () => {
+  const gen = () => "gen-id";
+  const today = "2026-07-01";
+
+  it("drops non-object items and entries without a real charge", () => {
+    const out = sanitizeEntries(
+      [
+        null,
+        7,
+        "x",
+        { id: "neg", charge: -5 },
+        { id: "nan", charge: "abc" },
+        { id: "zero", charge: 0 },
+        { id: "missing" },
+        { id: "ok", charge: 2, outcome: "clean", label: "Bird", notes: "n", date: "2026-06-01" },
+      ] as unknown[],
+      gen,
+      today,
+    );
+    expect(out).toEqual([
+      { id: "ok", date: "2026-06-01", label: "Bird", charge: 2, outcome: "clean", notes: "n" },
+    ]);
+  });
+
+  it("keeps a numeric charge string that coerces to a positive number", () => {
+    const out = sanitizeEntries([{ id: "a", charge: "1.5" }] as unknown[], gen, today);
+    expect(out[0].charge).toBe(1.5);
+  });
+
+  it("gives a stable id: reuse string ids, stringify numeric ids, mint only when missing", () => {
+    const out = sanitizeEntries(
+      [
+        { id: "keep", charge: 1 },
+        { id: 42, charge: 1 },
+        { charge: 1 },
+      ] as unknown[],
+      gen,
+      today,
+    );
+    expect(out.map((e) => e.id)).toEqual(["keep", "42", "gen-id"]);
+  });
+
+  it("defaults label/outcome/notes/date and only keeps a positive estimate", () => {
+    const out = sanitizeEntries(
+      [
+        { id: "a", charge: 1, outcome: "weird", estimate: 0 },
+        { id: "b", charge: 1, estimate: 0.9 },
+      ] as unknown[],
+      gen,
+      today,
+    );
+    expect(out[0]).toEqual({ id: "a", date: today, label: "—", charge: 1, outcome: "clean", notes: "" });
+    expect(out[1].estimate).toBe(0.9);
+  });
+});
 
 const entry = (p: Partial<TestEntry>): TestEntry => ({
   id: Math.random().toString(36).slice(2),
