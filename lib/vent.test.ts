@@ -52,4 +52,13 @@ describe("vent-port sizing", () => {
     expect(nearestPortBit(0.24)?.label).toBe('1/4"');
     expect(nearestPortBit(0)).toBeNull();
   });
+
+  it("returns no bit when the required port is larger than the biggest listed bit", () => {
+    // A big bay sized to too few ports can need a port well over 1/4". Suggesting "1/4"" for
+    // a 0.79" port would badly under-vent; the caller shows an add-ports hint instead.
+    expect(nearestPortBit(0.79)).toBeNull();
+    expect(nearestPortBit(0.26)).toBeNull();
+    // Exactly 1/4" still resolves to the 1/4" bit.
+    expect(nearestPortBit(0.25)?.label).toBe('1/4"');
+  });
 });
