@@ -72,9 +72,17 @@ export const COMMON_PORT_BITS: DrillBit[] = [
   { label: '1/4"', in: 1 / 4 },
 ];
 
-/** The common bit nearest a computed port diameter, for a practical drilling suggestion. */
+/**
+ * The common bit nearest a computed port diameter, for a practical drilling suggestion.
+ * Returns null when the required diameter is larger than the biggest listed bit (1/4"): a
+ * bay that needs a bigger single port than that should be split across more ports, and
+ * suggesting "1/4"" for a port that needs to be twice that would badly under-vent — the
+ * opposite of the "err small" guidance. The caller shows an add-ports hint instead.
+ */
 export function nearestPortBit(diameterIn: number): DrillBit | null {
   if (!(diameterIn > 0)) return null;
+  const largest = COMMON_PORT_BITS[COMMON_PORT_BITS.length - 1];
+  if (diameterIn > largest.in) return null;
   return COMMON_PORT_BITS.reduce((best, b) =>
     Math.abs(b.in - diameterIn) < Math.abs(best.in - diameterIn) ? b : best,
   );

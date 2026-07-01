@@ -1,5 +1,63 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_STATE, decodeState, encodeState, type State } from "./state";
+import {
+  DEFAULT_STATE,
+  decodeState,
+  encodeState,
+  normalizeState,
+  type State,
+} from "./state";
+
+describe("normalizeState (untrusted saved/imported state)", () => {
+  it("passes a valid state through unchanged", () => {
+    expect(normalizeState(DEFAULT_STATE)).toEqual(DEFAULT_STATE);
+  });
+
+  it("rebuilds a corrupt well instead of letting it reach the compute path", () => {
+    // The crash case: a tampered/legacy store with a null well. A shallow merge would keep
+    // null and blow up at computeWell(state.drogue); normalizeState restores the default well.
+    const s = normalizeState({ ...DEFAULT_STATE, drogue: null, main: "oops" });
+    expect(s.drogue).toEqual(DEFAULT_STATE.drogue);
+    expect(s.main).toEqual(DEFAULT_STATE.main);
+  });
+
+  it("coerces string numbers and fills missing well fields from defaults", () => {
+    const s = normalizeState({ drogue: { diameter: "3.9", length: "18" } });
+    expect(s.drogue.diameter).toBe(3.9);
+    expect(s.drogue.length).toBe(18);
+    expect(s.drogue.pressure).toBe(DEFAULT_STATE.drogue.pressure);
+  });
+
+  it("rounds and floors pin count, and floors margin/backup/elevation", () => {
+    const s = normalizeState({
+      margin: 0.5,
+      backupPct: -10,
+      elevation: -100,
+      drogue: { ...DEFAULT_STATE.drogue, pinCount: 2.7 },
+    });
+    expect(s.margin).toBe(1);
+    expect(s.backupPct).toBe(0);
+    expect(s.elevation).toBe(0);
+    expect(s.drogue.pinCount).toBe(3);
+  });
+
+  it("falls back to defaults for bad enums and non-object input", () => {
+    const s = normalizeState({ mode: "nonsense", deploy: 7, lengthUnit: "furlong" });
+    expect(s.mode).toBe(DEFAULT_STATE.mode);
+    expect(s.deploy).toBe(DEFAULT_STATE.deploy);
+    expect(s.lengthUnit).toBe("in");
+    expect(normalizeState(null)).toEqual(DEFAULT_STATE);
+    expect(normalizeState("not an object")).toEqual(DEFAULT_STATE);
+  });
+
+  it("neutralizes non-finite numeric fields to their defaults", () => {
+    const s = normalizeState({
+      margin: Infinity,
+      drogue: { ...DEFAULT_STATE.drogue, diameter: NaN },
+    });
+    expect(s.margin).toBe(DEFAULT_STATE.margin);
+    expect(s.drogue.diameter).toBe(DEFAULT_STATE.drogue.diameter);
+  });
+});
 
 describe("URL state", () => {
   it("returns defaults for an empty query", () => {

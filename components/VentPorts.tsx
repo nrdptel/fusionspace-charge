@@ -156,11 +156,15 @@ export default function VentPorts() {
                 value={`${fmt(result.bayVolumeIn3, 1)} in³ · ${fmt(in3ToCc(result.bayVolumeIn3), 0)} cc`}
               />
               <Chip label="Total vent area" value={`${fmt(result.totalAreaIn2, 3)} in²`} />
-              {bit && (
+              {bit ? (
                 <Chip
                   label="Nearest bit"
                   value={`${bit.label} · ${fmt(fromInches(bit.in, "mm"), 1)} mm`}
                 />
+              ) : (
+                hasResult && (
+                  <Chip label="Nearest bit" value={`larger than 1/4" — add more ports`} />
+                )
               )}
             </div>
           </div>

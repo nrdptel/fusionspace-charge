@@ -63,6 +63,22 @@ describe("sanitizeEntries", () => {
     expect(out[0]).toEqual({ id: "a", date: today, label: "—", charge: 1, outcome: "clean", notes: "" });
     expect(out[1].estimate).toBe(0.9);
   });
+
+  it("replaces a non-ISO or impossible date with today so it can't hijack 'most recent'", () => {
+    // "most recent clean" is chosen by lexicographic date order, so "9999-99-99" or a
+    // free-text date would sort above every real test and become the surfaced charge.
+    const out = sanitizeEntries(
+      [
+        { id: "a", charge: 1, date: "9999-99-99" },
+        { id: "b", charge: 1, date: "tomorrow" },
+        { id: "c", charge: 1, date: "2026-02-30" }, // Feb 30 — not a real day
+        { id: "d", charge: 1, date: "2026-06-15" }, // valid, kept
+      ] as unknown[],
+      gen,
+      today,
+    );
+    expect(out.map((e) => e.date)).toEqual([today, today, today, "2026-06-15"]);
+  });
 });
 
 const entry = (p: Partial<TestEntry>): TestEntry => ({
