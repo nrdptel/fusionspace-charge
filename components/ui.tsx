@@ -119,6 +119,12 @@ export function NumberField({
   const [text, setText] = useState(() => display(value));
   const last = useRef(value);
   const unitId = useId();
+  const hintId = useId();
+  // Point the input at both its unit suffix and its hint, so a screen reader reads the
+  // load-bearing guidance ("1.5 = +50%", "doesn't change the estimate") that sighted users
+  // see under the field — not just the unit.
+  const describedBy =
+    [unit ? unitId : null, hint ? hintId : null].filter(Boolean).join(" ") || undefined;
 
   useEffect(() => {
     if (value !== last.current) {
@@ -140,7 +146,7 @@ export function NumberField({
           min={min}
           value={text}
           placeholder={placeholder}
-          aria-describedby={unit ? unitId : undefined}
+          aria-describedby={describedBy}
           onChange={(e) => {
             const t = e.target.value;
             setText(t);
@@ -161,7 +167,7 @@ export function NumberField({
         )}
       </div>
       {hint && (
-        <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
+        <span id={hintId} className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
           {hint}
         </span>
       )}

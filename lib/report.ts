@@ -54,12 +54,15 @@ function safeHref(url: string): string | null {
 }
 
 export function buildReportHtml(d: ReportData): string {
-  const wells = d.wells
-    .map(
-      (w) =>
-        `<section><h2>${escapeHtml(w.title)}</h2><table class="kv">${rows(w.rows)}</table></section>`,
-    )
-    .join("");
+  const wells =
+    d.wells.length > 0
+      ? d.wells
+          .map(
+            (w) =>
+              `<section><h2>${escapeHtml(w.title)}</h2><table class="kv">${rows(w.rows)}</table></section>`,
+          )
+          .join("")
+      : `<section><h2>Charge wells</h2><p class="note">No charge well is sized yet. Enter an inner diameter and a pressurized length (and a target pressure or separation force) for at least one well.</p></section>`;
 
   const method = `<section><h2>How the number was sized</h2><pre>${d.method
     .map(escapeHtml)
