@@ -42,9 +42,22 @@ export default function SavedRockets({
   // re-writing another tab's value and lets the cross-tab sync tell an external change from us.
   const lastPersisted = useRef<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   // When the inline name form closes (save/cancel/Escape), the whole cluster unmounts and
   // focus would fall to <body>. Return it to the trigger so a keyboard user keeps their place.
   const refocusTrigger = useRef(false);
+  // Index of a just-deleted chip, so focus can move to a neighbouring delete button instead
+  // of falling to <body> — otherwise deleting several in a row dumps a keyboard user each time.
+  const focusAfterDelete = useRef<number | null>(null);
+
+  useEffect(() => {
+    const idx = focusAfterDelete.current;
+    if (idx == null) return;
+    focusAfterDelete.current = null;
+    const btns = listRef.current?.querySelectorAll<HTMLButtonElement>("[data-delete]");
+    if (btns && btns.length > 0) btns[Math.min(idx, btns.length - 1)].focus();
+    else triggerRef.current?.focus();
+  }, [rockets]);
 
   useEffect(() => {
     if (!adding && refocusTrigger.current) {
@@ -121,7 +134,10 @@ export default function SavedRockets({
     setAdding(false);
   };
 
-  const remove = (id: string) => setRockets((r) => r.filter((x) => x.id !== id));
+  const remove = (id: string) => {
+    focusAfterDelete.current = rockets.findIndex((x) => x.id === id);
+    setRockets((r) => r.filter((x) => x.id !== id));
+  };
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
@@ -187,7 +203,7 @@ export default function SavedRockets({
       )}
 
       {rockets.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-2">
+        <ul ref={listRef} className="mt-3 flex flex-wrap gap-2">
           {rockets.map((r) => (
             <li
               key={r.id}
@@ -206,6 +222,7 @@ export default function SavedRockets({
               </button>
               <button
                 type="button"
+                data-delete
                 onClick={() => remove(r.id)}
                 aria-label={`Delete ${r.name}`}
                 className="px-2 py-1 text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"

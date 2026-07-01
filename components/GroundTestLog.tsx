@@ -66,6 +66,11 @@ export default function GroundTestLog({
   // re-writing a value another tab just wrote (which would ping-pong storage events), and
   // lets the cross-tab sync below tell a real external change from our own echo.
   const lastPersisted = useRef<string | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // Index of a just-deleted entry, so focus moves to a neighbouring Delete button (or the
+  // heading when the last one goes) instead of falling to <body> on a repeated action.
+  const focusAfterDelete = useRef<number | null>(null);
 
   // Draft form
   // Empty on the server; filled to today on mount. Initializing from todayISO() during render
@@ -176,7 +181,19 @@ export default function GroundTestLog({
     setDraftEstimate(0);
   };
 
-  const remove = (id: string) => setEntries((e) => e.filter((x) => x.id !== id));
+  const remove = (id: string) => {
+    focusAfterDelete.current = entries.findIndex((x) => x.id === id);
+    setEntries((e) => e.filter((x) => x.id !== id));
+  };
+
+  useEffect(() => {
+    const idx = focusAfterDelete.current;
+    if (idx == null) return;
+    focusAfterDelete.current = null;
+    const btns = listRef.current?.querySelectorAll<HTMLButtonElement>("[data-delete]");
+    if (btns && btns.length > 0) btns[Math.min(idx, btns.length - 1)].focus();
+    else headingRef.current?.focus();
+  }, [entries]);
 
   const exportText = async () => {
     const lines = entries.map(
@@ -243,7 +260,9 @@ export default function GroundTestLog({
   return (
     <section id="ground-test" className="mt-16 scroll-mt-8">
       <div className="flex items-baseline justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
-        <h2 className="text-lg font-semibold tracking-tight">Ground-test log</h2>
+        <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">
+          Ground-test log
+        </h2>
         <span className="text-xs text-zinc-500 dark:text-zinc-400">
           {entries.length} {entries.length === 1 ? "test" : "tests"} · saved on this device
         </span>
@@ -436,7 +455,7 @@ export default function GroundTestLog({
       {/* Entries */}
       {entries.length > 0 && (
         <div className="mt-5">
-          <ul className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+          <ul ref={listRef} className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
             {entries.map((e) => (
               <li
                 key={e.id}
@@ -478,6 +497,7 @@ export default function GroundTestLog({
                 </div>
                 <button
                   type="button"
+                  data-delete
                   onClick={() => remove(e.id)}
                   aria-label="Delete entry"
                   className="shrink-0 rounded-md px-2 py-1 text-xs text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
