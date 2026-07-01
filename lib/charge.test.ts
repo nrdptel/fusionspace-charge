@@ -6,8 +6,42 @@ import {
   blackPowderMass,
   sizeByPressure,
   sizeByForce,
+  IN3_PER_FT3,
+  LBM_TO_G,
+  PSI_TO_PSF,
+  R_BP,
+  T_BP,
 } from "./charge";
 import { toInches, toPsi, in3ToCc } from "./units";
+import { round } from "./format";
+
+// The Methodology panel shows a worked example: it re-derives the mass from the same
+// intermediates (pressure×144, volume÷1728, ÷(R·T), ×LBM_TO_G). This locks that displayed
+// chain to what the lib actually computes, so a future edit to either can't silently drift.
+describe("worked-example self-consistency (Methodology ↔ lib)", () => {
+  for (const [dia, len, psi] of [
+    [4, 12, 15],
+    [3, 24, 12],
+    [6, 36, 10],
+  ] as const) {
+    it(`reconciles for ${dia}"x${len}" at ${psi} psi`, () => {
+      const r = sizeByPressure({ diameterIn: dia, lengthIn: len, pressurePsi: psi });
+      const pressurePsf = r.pressure * PSI_TO_PSF;
+      const volumeFt3 = r.volume / IN3_PER_FT3;
+      const massLbm = (pressurePsf * volumeFt3) / (R_BP * T_BP);
+      // The chain the panel prints must round to the same 2-dp gram value as r.mass.
+      expect(round(massLbm * LBM_TO_G, 2)).toBe(round(r.mass, 2));
+    });
+  }
+
+  it("recovers the raw target from the sized pressure and margin (pressure mode)", () => {
+    // Methodology prints "(your <target> psi x <margin> margin)" as r.pressure / margin.
+    const target = 12;
+    const margin = 1.5;
+    const r = sizeByPressure({ diameterIn: 4, lengthIn: 12, pressurePsi: target * margin });
+    expect(round(r.pressure / margin, 2)).toBe(target);
+  });
+});
 
 describe("geometry", () => {
   it("computes bore area of a 4 in tube", () => {

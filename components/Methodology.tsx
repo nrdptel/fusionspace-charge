@@ -67,7 +67,9 @@ export default function Methodology({
             Combustion (flame) temperature, {T_BP} °R (≈ 1837 K).
           </Row>
           <Row term="·144">psi → lbf/ft², so pressure and volume share units.</Row>
-          <Row term="·453.6">pounds-mass → grams, the unit you actually weigh on a scale.</Row>
+          <Row term={`·${LBM_TO_G}`}>
+            pounds-mass → grams, the unit you actually weigh on a scale.
+          </Row>
         </dl>
       </Disclosure>
 
