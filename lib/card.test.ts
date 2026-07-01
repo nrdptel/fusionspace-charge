@@ -33,6 +33,16 @@ describe("build & ground-test card HTML", () => {
     expect(html).toContain("Proven charge:");
   });
 
+  it("omits the proven line when no tested charge is set", () => {
+    // The calculator drops plan.tested when the setup has drifted from what was proven,
+    // so the printed card must not assert a proven charge the on-screen guard is warning about.
+    const html = buildCardHtml({ ...plan, tested: undefined }, "2026-06-27");
+    expect(html).not.toContain("Proven charge:");
+    expect(html).not.toContain("Fly the charge you tested");
+    // The rest of the card is unaffected.
+    expect(html).toContain("Ejection charge");
+  });
+
   it("escapes user-supplied text", () => {
     const html = buildCardHtml(
       { ...plan, title: "<script>x</script>" },
