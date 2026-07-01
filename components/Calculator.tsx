@@ -160,7 +160,9 @@ function computeWell(s: State, w: WellInput): Computed {
       requiredForceLbf: 0,
     };
   }
-  const pinsLbf = nn(w.pinCount) * nn(toLbf(w.pinForce, s.forceUnit));
+  // Pins are discrete: round to a whole count so a live-typed "2.7" sizes the charge for the
+  // same number the report prints (fmt(pinCount, 0)) — matching the coercion decodeState does.
+  const pinsLbf = Math.round(nn(w.pinCount)) * nn(toLbf(w.pinForce, s.forceUnit));
   const frictionLbf = nn(toLbf(w.friction, s.forceUnit));
   const requiredForceLbf = (pinsLbf + frictionLbf) * clampMargin(s.margin);
   return {

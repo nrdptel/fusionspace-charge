@@ -530,4 +530,137 @@ test.describe("Charge calculator", () => {
     );
     expect(focusedInCalculator).toBe(true);
   });
+
+  test("bench mode traps focus and restores it to the trigger on close", async ({ page }) => {
+    await page.goto("/?mode=p&dep=d&mg=1");
+    const open = page.getByRole("button", { name: "Bench mode" });
+    await open.focus();
+    await open.click();
+    const dialog = page.getByRole("dialog", { name: /bench mode/i });
+    await expect(dialog).toBeVisible();
+    // Tab repeatedly — focus must stay inside the dialog (not reach the page behind).
+    for (let i = 0; i < 10; i++) {
+      await page.keyboard.press("Tab");
+      const inside = await page.evaluate(
+        () => !!document.activeElement?.closest('[role="dialog"]'),
+      );
+      expect(inside).toBe(true);
+    }
+    // Escape closes and returns focus to the trigger (WCAG 2.4.3).
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(open).toBeFocused();
+  });
+
+  test("a fractional pin count sizes the same as its rounded whole number", async ({ page }) => {
+    await page.goto("/?mode=f&dep=s&mg=1");
+    const pins = page.getByLabel("Shear pins").first();
+    const mass = page.getByTestId("mass").first();
+    await pins.fill("3");
+    const at3 = (await mass.textContent())!.trim();
+    // 2.7 pins must size the charge as 3 pins — matching the report's rounded display.
+    await pins.fill("2.7");
+    await expect(mass).toHaveText(at3);
+  });
+
+  test("switching pressure units converts the target without changing the charge", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=p&dep=s&mg=1");
+    // Wait for the URL decode to settle into pressure mode before reading the charge.
+    await expect(page.getByLabel("Target pressure").first()).toBeVisible();
+    const mass = page.getByTestId("mass").first();
+    const before = (await mass.textContent())!.trim();
+    await page
+      .getByRole("group", { name: "Pressure unit" })
+      .getByRole("button", { name: "kPa" })
+      .click();
+    // The entered target is now shown in kPa, but the sized charge is unchanged.
+    await expect(page.getByText(/kPa/).first()).toBeVisible();
+    await expect(mass).toHaveText(before);
+  });
+
+  test("choosing redundant altimeters reveals the backup charge and its controls", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=p&dep=s&mg=1");
+    await expect(page.getByTestId("backup-mass")).toHaveCount(0);
+    await page
+      .getByRole("group", { name: "Altimeter configuration" })
+      .getByRole("button", { name: "Redundant" })
+      .click();
+    await expect(page.getByTestId("backup-mass").first()).toBeVisible();
+    await expect(page.getByLabel("Backup charge uplift")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Backup/ }).first()).toBeVisible();
+  });
+
+  test("the recovery report embeds the airframe's logged ground tests", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s&mg=1");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Report Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    // Log a clean test at the ladder estimate (0.93 g) for the active airframe.
+    await page.getByRole("button", { name: /Estimate/ }).first().click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download report as HTML" }).click(),
+    ]);
+    const html = fs.readFileSync(await dl.path(), "utf8");
+    expect(html).toContain("Report Bird");
+    expect(html).toContain("Ground-test results");
+    expect(html).toContain("0.93 g");
+    expect(html).toContain("Clean");
+  });
+
+  test("a malformed ground-test import is rejected without altering the log", async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Charge tested").fill("1.5");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText("1.5 g").first()).toBeVisible();
+    page.on("dialog", (d) => d.accept());
+    await page.locator('#ground-test input[type="file"]').setInputFiles({
+      name: "not-charge.json",
+      mimeType: "application/json",
+      buffer: Buffer.from('{"foo":1}'),
+    });
+    // The existing entry is untouched — a bad import can't corrupt or clear the log.
+    await expect(page.getByText("1.5 g").first()).toBeVisible();
+  });
+
+  test("deleting a ground-test entry removes just that row and persists", async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Charge tested").fill("1.1");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await page.getByLabel("Charge tested").fill("2.2");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText("1.1 g")).toBeVisible();
+    await expect(page.getByText("2.2 g")).toBeVisible();
+    // Entries are newest-first, so the first Delete removes the 2.2 g entry.
+    await page.getByRole("button", { name: "Delete entry" }).first().click();
+    await expect(page.getByText("2.2 g")).toHaveCount(0);
+    await expect(page.getByText("1.1 g")).toBeVisible();
+    await page.reload();
+    await expect(page.getByText("2.2 g")).toHaveCount(0);
+    await expect(page.getByText("1.1 g")).toBeVisible();
+  });
+
+  test("copies the share link to the clipboard", async ({ page }) => {
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.goto("/?mode=p&dep=s&mg=1");
+    await page.getByRole("button", { name: "Copy share link" }).click();
+    await expect(page.getByRole("button", { name: "Link copied" })).toBeVisible();
+    const text = await page.evaluate(() => navigator.clipboard.readText());
+    expect(text).toContain("http");
+    expect(text).toContain("mode=p");
+  });
+
+  test("the vent-port tool converts bay dimensions on a unit switch", async ({ page }) => {
+    await page.goto("/");
+    const vent = page.locator("#vent");
+    const dia = vent.getByLabel("Bay inner diameter");
+    await expect(dia).toHaveValue("4"); // default 4 in
+    await vent.getByRole("group", { name: "Length unit" }).getByRole("button", { name: "mm" }).click();
+    await expect(dia).toHaveValue("101.6"); // 4 in → 101.6 mm
+  });
 });

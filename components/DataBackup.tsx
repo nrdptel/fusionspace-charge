@@ -2,12 +2,27 @@
 
 import { useRef } from "react";
 import { buildBackup, readBackup, mergeById } from "@/lib/backup";
+import { sanitizeEntries } from "@/lib/testlog";
 
 const KEYS = {
   rockets: "charge.rockets",
   testlog: "charge.testlog",
   theme: "charge.theme",
 } as const;
+
+function newId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+  }
+}
+
+function todayISO(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 function readArray(key: string): { id?: unknown }[] {
   try {
@@ -57,9 +72,12 @@ export default function DataBackup() {
         KEYS.rockets,
         JSON.stringify(mergeById(readArray(KEYS.rockets), parsed.rockets as { id?: unknown }[])),
       );
+      // Sanitize the incoming log the same way the log's own importer does, so a restore
+      // can't write an entry with a negative/NaN/missing charge that would render as "NaN g".
+      const cleanTestlog = sanitizeEntries(parsed.testlog, newId, todayISO());
       localStorage.setItem(
         KEYS.testlog,
-        JSON.stringify(mergeById(readArray(KEYS.testlog), parsed.testlog as { id?: unknown }[])),
+        JSON.stringify(mergeById(readArray(KEYS.testlog), cleanTestlog)),
       );
       if (parsed.theme) localStorage.setItem(KEYS.theme, parsed.theme);
     } catch {

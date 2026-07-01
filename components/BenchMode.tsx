@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fmtMass } from "@/lib/format";
 
 export interface BenchStep {
@@ -35,22 +35,62 @@ export default function BenchMode({
   onPlan: (grams: number, estimate: number) => void;
   onClose: () => void;
 }) {
-  // Escape closes; lock the page behind so a swipe doesn't scroll it under the overlay.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // Capture whatever opened the dialog on the first render — the lazy initializer runs during
+  // render, before autoFocus moves focus to "Done" — so focus can be restored on close (2.4.3).
+  const [opener] = useState<HTMLElement | null>(() =>
+    typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null,
+  );
+
   useEffect(() => {
+    const dialog = dialogRef.current;
+    const focusable = () =>
+      dialog
+        ? Array.from(
+            dialog.querySelectorAll<HTMLElement>(
+              'button, [href], input, [tabindex]:not([tabindex="-1"])',
+            ),
+          ).filter((el) => !el.hasAttribute("disabled"))
+        : [];
+
+    // Escape closes; Tab is trapped so focus can't reach the (aria-modal-hidden) page behind.
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !dialog?.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !dialog?.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     document.addEventListener("keydown", onKey);
+    // Lock the page behind so a swipe doesn't scroll it under the overlay.
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      // Restore focus to the trigger so keyboard flow resumes where it left off.
+      opener?.focus?.();
     };
-  }, [onClose]);
+  }, [onClose, opener]);
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Bench mode"

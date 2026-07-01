@@ -7,6 +7,7 @@ import {
   calibrationFromEntries,
   failureCauses,
   nextChargeSuggestion,
+  sanitizeEntries,
   validatedCharge,
   TESTLOG_STORAGE_KEY,
   type Outcome,
@@ -184,22 +185,8 @@ export default function GroundTestLog({
       const data = JSON.parse(await file.text());
       const incoming: unknown = Array.isArray(data) ? data : data?.entries;
       if (!Array.isArray(incoming)) throw new Error("no entries");
-      const valid: TestEntry[] = incoming
-        .filter((x): x is Record<string, unknown> => !!x && typeof x === "object")
-        .map((x): TestEntry => ({
-          id: typeof x.id === "string" ? x.id : newId(),
-          date: typeof x.date === "string" ? x.date : todayISO(),
-          label: typeof x.label === "string" && x.label ? x.label : "—",
-          charge: Number(x.charge) || 0,
-          outcome:
-            x.outcome === "partial" || x.outcome === "none" ? x.outcome : "clean",
-          notes: typeof x.notes === "string" ? x.notes : "",
-          ...(typeof x.estimate === "number" && x.estimate > 0
-            ? { estimate: x.estimate }
-            : {}),
-        }))
-        // Same rule the add form enforces: a test has a real charge weight.
-        .filter((e) => e.charge > 0);
+      // Same normalization + charge>0 rule as the add form and the whole-tool restore.
+      const valid = sanitizeEntries(incoming, newId, todayISO());
       setEntries((cur) => {
         const seen = new Set(cur.map((c) => c.id));
         return [...valid.filter((v) => !seen.has(v.id)), ...cur];
