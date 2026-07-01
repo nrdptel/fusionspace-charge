@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { buildBackup, readBackup, mergeById, BACKUP_VERSION } from "./backup";
+import { buildBackup, readBackup, mergeById, BACKUP_VERSION, MAX_IMPORT_ITEMS } from "./backup";
+
+describe("import size cap", () => {
+  it("caps each list so a pathologically large file can't freeze the tab", () => {
+    const huge = Array.from({ length: MAX_IMPORT_ITEMS + 500 }, (_, i) => ({ id: `r${i}` }));
+    const r = readBackup(JSON.stringify({ rockets: huge, testlog: huge }));
+    expect(r?.rockets.length).toBe(MAX_IMPORT_ITEMS);
+    expect(r?.testlog.length).toBe(MAX_IMPORT_ITEMS);
+  });
+});
 
 describe("backup file", () => {
   it("builds a tagged, versioned document", () => {

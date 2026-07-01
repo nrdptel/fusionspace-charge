@@ -6,6 +6,7 @@
  */
 
 import { round } from "./format";
+import { MAX_IMPORT_ITEMS } from "./backup";
 
 export type Outcome = "clean" | "partial" | "none";
 
@@ -61,6 +62,8 @@ export function sanitizeEntries(
 ): TestEntry[] {
   return raw
     .filter((x): x is Record<string, unknown> => !!x && typeof x === "object")
+    // Bound the import so a pathologically large file can't freeze the tab or blow quota.
+    .slice(0, MAX_IMPORT_ITEMS)
     .map((x): TestEntry => {
       const rawId = x.id;
       // Keep a stable id across re-imports: reuse a string id, stringify a numeric one

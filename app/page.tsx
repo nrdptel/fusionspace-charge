@@ -47,7 +47,9 @@ export default function Page() {
       </a>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        // Escape "<" so a "</script>" in any field couldn't break out of the tag. Every field
+        // is a static literal today, but this keeps the serialization safe by construction.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD).replace(/</g, "\\u003c") }}
       />
       <header className="flex items-start justify-between gap-4 border-b border-zinc-200 pb-6 dark:border-zinc-800">
         <div>

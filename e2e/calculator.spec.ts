@@ -539,6 +539,30 @@ test.describe("Charge calculator", () => {
     await expect(page.getByTestId("mass").first()).toBeVisible();
   });
 
+  test("saved rockets sync across tabs without one clobbering the other", async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/");
+    const tabB = await context.newPage();
+    await tabB.goto("/");
+
+    // Save in tab A — tab B adopts it through the storage event.
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Tab A Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(tabB.getByRole("button", { name: "Tab A Bird", exact: true })).toBeVisible();
+
+    // Now save in tab B. Because B synced A's rocket first, its write carries both — so tab A
+    // ends up with A's *and* B's, instead of B's stale empty list wiping A's rocket.
+    await tabB.getByRole("button", { name: "Save current setup" }).click();
+    await tabB.getByPlaceholder("Name this setup").fill("Tab B Bird");
+    await tabB.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Tab A Bird", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tab B Bird", exact: true })).toBeVisible();
+    await tabB.close();
+  });
+
   test("warns when a ground test can't be saved to this device", async ({ page }) => {
     // Simulate a full/blocked store: writes for the log key throw. The entry still shows in
     // the list, so without this warning the user would think it saved and lose it on reload.

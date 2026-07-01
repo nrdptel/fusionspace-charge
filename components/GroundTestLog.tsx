@@ -62,6 +62,10 @@ export default function GroundTestLog({
   const [entries, setEntries] = useState<TestEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  // The exact string last read from or written to storage. Guards the persist effect from
+  // re-writing a value another tab just wrote (which would ping-pong storage events), and
+  // lets the cross-tab sync below tell a real external change from our own echo.
+  const lastPersisted = useRef<string | null>(null);
 
   // Draft form
   // Empty on the server; filled to today on mount. Initializing from todayISO() during render
@@ -103,6 +107,7 @@ export default function GroundTestLog({
   useEffect(() => {
     try {
       const raw = localStorage.getItem(TESTLOG_STORAGE_KEY);
+      lastPersisted.current = raw;
       const parsed = raw ? JSON.parse(raw) : null;
       // Only trust an array — a corrupted or tampered store shouldn't crash the render.
       if (Array.isArray(parsed)) setEntries(parsed);
@@ -114,8 +119,13 @@ export default function GroundTestLog({
 
   useEffect(() => {
     if (!loaded) return;
+    const serialized = JSON.stringify(entries);
+    // Skip the write when nothing actually changed — in particular when this update came from
+    // another tab's write (synced in below), so the two tabs don't bounce writes back and forth.
+    if (serialized === lastPersisted.current) return;
     try {
-      localStorage.setItem(TESTLOG_STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(TESTLOG_STORAGE_KEY, serialized);
+      lastPersisted.current = serialized;
       setSaveError(false);
     } catch {
       // Storage full or blocked (private mode, quota). Surface it — otherwise the entry
@@ -124,6 +134,23 @@ export default function GroundTestLog({
       setSaveError(true);
     }
   }, [entries, loaded]);
+
+  // Keep multiple open tabs in sync: when another tab writes the log, adopt its value instead
+  // of letting this tab's stale in-memory copy overwrite it on the next edit (silent data loss).
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== TESTLOG_STORAGE_KEY || e.newValue === lastPersisted.current) return;
+      lastPersisted.current = e.newValue;
+      try {
+        const parsed = e.newValue ? JSON.parse(e.newValue) : [];
+        if (Array.isArray(parsed)) setEntries(parsed);
+      } catch {
+        /* ignore a malformed write from another tab */
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // Surface the entries to the parent (once loaded, and on every change) so the
   // calculator can show the airframe's tested charge alongside the estimate.

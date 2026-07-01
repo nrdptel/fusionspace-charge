@@ -7,6 +7,11 @@
 
 export const BACKUP_VERSION = 1;
 
+/** Upper bound on items pulled from an imported file, per list. Far above any real flyer's
+ *  handful of airframes or season of tests, but low enough that a pathologically large or
+ *  hand-crafted file can't freeze the tab or blow the localStorage quota on restore. */
+export const MAX_IMPORT_ITEMS = 5000;
+
 export interface BackupFile {
   tool: "charge";
   type: "backup";
@@ -52,7 +57,8 @@ export function readBackup(text: string): RestoredBackup | null {
   const o = d as Record<string, unknown>;
   // Drop non-object items up front: a hand-edited or partially-corrupted backup can carry a
   // stray null/number/string, which has no business in the saved-rockets or log arrays.
-  const asObjects = (v: unknown[]) => v.filter((x) => !!x && typeof x === "object");
+  const asObjects = (v: unknown[]) =>
+    v.filter((x) => !!x && typeof x === "object").slice(0, MAX_IMPORT_ITEMS);
   const rockets = Array.isArray(o.rockets) ? asObjects(o.rockets) : null;
   const testlog = Array.isArray(o.testlog) ? asObjects(o.testlog) : null;
   // Must carry at least one of our arrays, so a random JSON file is rejected.
