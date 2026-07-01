@@ -64,6 +64,11 @@ describe("sanitizeEntries", () => {
     expect(out[1].estimate).toBe(0.9);
   });
 
+  it("caps a pathologically large import", () => {
+    const huge = Array.from({ length: 6000 }, () => ({ charge: 1 }));
+    expect(sanitizeEntries(huge as unknown[], gen, today).length).toBe(5000);
+  });
+
   it("replaces a non-ISO or impossible date with today so it can't hijack 'most recent'", () => {
     // "most recent clean" is chosen by lexicographic date order, so "9999-99-99" or a
     // free-text date would sort above every real test and become the surfaced charge.

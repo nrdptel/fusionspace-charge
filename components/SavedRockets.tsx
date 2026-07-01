@@ -38,6 +38,9 @@ export default function SavedRockets({
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [saveError, setSaveError] = useState(false);
+  // The exact string last read from / written to storage — guards the persist effect from
+  // re-writing another tab's value and lets the cross-tab sync tell an external change from us.
+  const lastPersisted = useRef<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   // When the inline name form closes (save/cancel/Escape), the whole cluster unmounts and
   // focus would fall to <body>. Return it to the trigger so a keyboard user keeps their place.
@@ -59,6 +62,7 @@ export default function SavedRockets({
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
+      lastPersisted.current = raw;
       const parsed = raw ? JSON.parse(raw) : null;
       // Only trust an array — a corrupted or tampered store shouldn't crash the render.
       if (Array.isArray(parsed)) setRockets(parsed);
@@ -70,8 +74,13 @@ export default function SavedRockets({
 
   useEffect(() => {
     if (!loaded) return;
+    const serialized = JSON.stringify(rockets);
+    // Skip a no-op write — notably when this update came from another tab (synced below), so
+    // the two tabs don't ping-pong storage events.
+    if (serialized === lastPersisted.current) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(rockets));
+      localStorage.setItem(STORAGE_KEY, serialized);
+      lastPersisted.current = serialized;
       setSaveError(false);
     } catch {
       // Storage full or blocked: the chip appears but nothing was persisted. Flag it so a
@@ -79,6 +88,23 @@ export default function SavedRockets({
       setSaveError(true);
     }
   }, [rockets, loaded]);
+
+  // Keep multiple open tabs in sync: adopt another tab's write instead of clobbering it with
+  // this tab's stale list on the next save.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY || e.newValue === lastPersisted.current) return;
+      lastPersisted.current = e.newValue;
+      try {
+        const parsed = e.newValue ? JSON.parse(e.newValue) : [];
+        if (Array.isArray(parsed)) setRockets(parsed);
+      } catch {
+        /* ignore a malformed write from another tab */
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const save = () => {
     const trimmed = name.trim();
