@@ -63,4 +63,20 @@ describe("recovery report", () => {
   it("omits the references section when there are none", () => {
     expect(buildReportHtml(base)).not.toContain("References &amp; sources");
   });
+
+  it("never emits a non-http reference URL as a live href (defense in depth)", () => {
+    const html = buildReportHtml({
+      ...base,
+      references: [
+        { label: "Bad", detail: "script scheme", url: "javascript:alert(document.domain)" },
+        { label: "Data", detail: "data scheme", url: "data:text/html,<script>x</script>" },
+        { label: "Good", detail: "normal source", url: "https://example.com/ok" },
+      ],
+    });
+    expect(html).not.toContain("javascript:");
+    expect(html).not.toContain('href="data:');
+    // the safe one is still linked, and the unsafe details still render as text
+    expect(html).toContain('<a href="https://example.com/ok">source</a>');
+    expect(html).toContain("script scheme");
+  });
 });

@@ -50,8 +50,11 @@ export function readBackup(text: string): RestoredBackup | null {
   }
   if (!d || typeof d !== "object") return null;
   const o = d as Record<string, unknown>;
-  const rockets = Array.isArray(o.rockets) ? o.rockets : null;
-  const testlog = Array.isArray(o.testlog) ? o.testlog : null;
+  // Drop non-object items up front: a hand-edited or partially-corrupted backup can carry a
+  // stray null/number/string, which has no business in the saved-rockets or log arrays.
+  const asObjects = (v: unknown[]) => v.filter((x) => !!x && typeof x === "object");
+  const rockets = Array.isArray(o.rockets) ? asObjects(o.rockets) : null;
+  const testlog = Array.isArray(o.testlog) ? asObjects(o.testlog) : null;
   // Must carry at least one of our arrays, so a random JSON file is rejected.
   if (rockets === null && testlog === null) return null;
   const theme = typeof o.theme === "string" ? o.theme : null;
@@ -59,8 +62,20 @@ export function readBackup(text: string): RestoredBackup | null {
 }
 
 /** Merge incoming items into existing, skipping any whose id already exists — non-destructive,
- *  so restoring onto a device that already has data combines rather than clobbers. */
+ *  so restoring onto a device that already has data combines rather than clobbers. Malformed
+ *  (null / non-object) items are skipped rather than throwing, and duplicate ids are collapsed
+ *  across BOTH lists, so one bad entry can't abort a whole restore or double-write an id. */
 export function mergeById<T extends { id?: unknown }>(existing: T[], incoming: T[]): T[] {
-  const ids = new Set(existing.map((e) => e.id).filter((x) => x != null));
-  return [...existing, ...incoming.filter((i) => i.id == null || !ids.has(i.id))];
+  const seen = new Set<unknown>();
+  const out: T[] = [];
+  for (const item of [...existing, ...incoming]) {
+    if (!item || typeof item !== "object") continue;
+    const id = (item as { id?: unknown }).id;
+    if (id != null) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+    }
+    out.push(item);
+  }
+  return out;
 }
