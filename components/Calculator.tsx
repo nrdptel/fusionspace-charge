@@ -202,6 +202,9 @@ export default function Calculator({
   const [copied, setCopied] = useState(false);
   const [planCopied, setPlanCopied] = useState(false);
   const [benchOpen, setBenchOpen] = useState(false);
+  // Spoken to assistive tech when a bench-mode step queues a charge into the log below —
+  // otherwise closing the dialog just returns focus to the trigger with no sign anything happened.
+  const [benchAnnounce, setBenchAnnounce] = useState("");
   // Native share sheet, where the browser supports it (mostly mobile). Detected after mount
   // so the buttons only appear when usable; otherwise the copy/download paths stand in.
   const [canShare, setCanShare] = useState(false);
@@ -871,7 +874,7 @@ export default function Calculator({
             ? "Share link copied to clipboard."
             : planCopied
               ? "Plan text copied to clipboard."
-              : ""}
+              : benchAnnounce}
         </p>
 
         {/* Exports — each artifact offered as HTML (download) or PDF (print → Save as PDF). */}
@@ -921,6 +924,8 @@ export default function Calculator({
           onPlan={(grams, estimate) => {
             onPlanCharge?.(grams, estimate);
             setBenchOpen(false);
+            setBenchAnnounce(`Queued ${fmtMass(grams)} g in the ground-test log below.`);
+            setTimeout(() => setBenchAnnounce(""), 3000);
           }}
           onClose={() => setBenchOpen(false)}
         />
