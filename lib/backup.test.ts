@@ -37,6 +37,13 @@ describe("backup file", () => {
       theme: null,
     });
   });
+
+  it("drops non-object junk from the arrays (a corrupted backup restores the good items)", () => {
+    const r = readBackup(
+      JSON.stringify({ rockets: [1, "x", null, { id: "ok" }], testlog: [null, { id: "t" }] }),
+    );
+    expect(r).toEqual({ rockets: [{ id: "ok" }], testlog: [{ id: "t" }], theme: null });
+  });
 });
 
 describe("mergeById", () => {
@@ -50,5 +57,20 @@ describe("mergeById", () => {
 
   it("keeps items without an id (can't dedup them)", () => {
     expect(mergeById<{ id?: string; v: number }>([], [{ v: 1 }, { v: 2 }])).toHaveLength(2);
+  });
+
+  it("skips null / non-object items instead of throwing (one bad entry can't abort a restore)", () => {
+    expect(
+      mergeById<{ id?: string }>([], [null as never, 1 as never, { id: "a" }]),
+    ).toEqual([{ id: "a" }]);
+  });
+
+  it("dedupes duplicate ids WITHIN the incoming list, not just against existing", () => {
+    const merged = mergeById<{ id?: string; v: number }>(
+      [],
+      [{ id: "a", v: 1 }, { id: "a", v: 2 }],
+    );
+    expect(merged).toHaveLength(1);
+    expect(merged[0].v).toBe(1); // first occurrence wins
   });
 });

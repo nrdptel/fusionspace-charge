@@ -71,3 +71,43 @@ describe("URL state", () => {
     expect(decodeState("el=-100").elevation).toBe(0);
   });
 });
+
+describe("URL state — hostile & edge input", () => {
+  it("falls back to defaults for non-numeric, empty, or non-finite numeric params", () => {
+    for (const q of ["ddia=abc", "ddia=", "ddia=Infinity", "ddia=1e999", "ddia=NaN", "ddia=%00"]) {
+      expect(decodeState(q).drogue.diameter).toBe(DEFAULT_STATE.drogue.diameter);
+    }
+    expect(decodeState("mg=abc").margin).toBe(DEFAULT_STATE.margin);
+    expect(decodeState("el=1e999").elevation).toBe(DEFAULT_STATE.elevation);
+  });
+
+  it("coerces pin count to a non-negative integer (pins are discrete)", () => {
+    // A fractional/negative count from a hand-edited link would otherwise size the charge
+    // for e.g. 2.7 pins while the exported report rounds it to '3'.
+    expect(decodeState("mode=f&dn=2.7").drogue.pinCount).toBe(3);
+    expect(decodeState("mode=f&dn=2.2").drogue.pinCount).toBe(2);
+    expect(decodeState("mode=f&dn=-5").drogue.pinCount).toBe(0);
+  });
+
+  it("passes raw physical inputs through decode unchanged (clamped later at compute)", () => {
+    // decode doesn't floor diameter/length/pressure/friction — nn() zeroes negatives at
+    // computeWell, the safe direction. This pins the division of responsibility.
+    expect(decodeState("ddia=-4").drogue.diameter).toBe(-4);
+    expect(decodeState("dl=-12").drogue.length).toBe(-12);
+  });
+
+  it("does not hang or overflow on an absurdly long numeric param", () => {
+    const s = decodeState("ddia=" + "9".repeat(500));
+    expect(Number.isFinite(s.drogue.diameter)).toBe(true);
+  });
+
+  it("single deploy intentionally drops the main well on encode (documented asymmetry)", () => {
+    const single: State = {
+      ...DEFAULT_STATE,
+      deploy: "single",
+      main: { ...DEFAULT_STATE.main, diameter: 99 },
+    };
+    // The main is unused in single deploy, so it isn't encoded and comes back at default.
+    expect(decodeState(encodeState(single)).main.diameter).toBe(DEFAULT_STATE.main.diameter);
+  });
+});

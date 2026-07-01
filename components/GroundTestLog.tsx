@@ -95,7 +95,9 @@ export default function GroundTestLog({
   useEffect(() => {
     try {
       const raw = localStorage.getItem(TESTLOG_STORAGE_KEY);
-      if (raw) setEntries(JSON.parse(raw));
+      const parsed = raw ? JSON.parse(raw) : null;
+      // Only trust an array — a corrupted or tampered store shouldn't crash the render.
+      if (Array.isArray(parsed)) setEntries(parsed);
     } catch {
       /* ignore malformed storage */
     }

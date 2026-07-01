@@ -46,6 +46,13 @@ const rows = (pairs: [string, string][]): string =>
     )
     .join("");
 
+// Only emit a link for a safe, non-scripting scheme. Reference URLs are hardcoded today,
+// but this guarantees a `javascript:`/`data:` URL can never become a live link in the
+// downloaded document even if a URL ever comes from data. Returns null to drop the href.
+function safeHref(url: string): string | null {
+  return /^(https?:\/\/|#|\/)/i.test(url.trim()) ? url : null;
+}
+
 export function buildReportHtml(d: ReportData): string {
   const wells = d.wells
     .map(
@@ -71,12 +78,12 @@ export function buildReportHtml(d: ReportData): string {
 
   const references = d.references?.length
     ? `<section><h2>References &amp; sources</h2><ul class="refs">${d.references
-        .map(
-          (r) =>
-            `<li><strong>${escapeHtml(r.label)}.</strong> ${escapeHtml(r.detail)}${
-              r.url ? ` <a href="${escapeHtml(r.url)}">source</a>` : ""
-            }</li>`,
-        )
+        .map((r) => {
+          const href = r.url ? safeHref(r.url) : null;
+          return `<li><strong>${escapeHtml(r.label)}.</strong> ${escapeHtml(r.detail)}${
+            href ? ` <a href="${escapeHtml(href)}">source</a>` : ""
+          }</li>`;
+        })
         .join("")}</ul></section>`
     : "";
 
