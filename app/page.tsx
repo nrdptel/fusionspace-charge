@@ -7,13 +7,17 @@ import FusionSpaceBadge from "@/components/FusionSpaceBadge";
 import ThemeToggle from "@/components/ThemeToggle";
 import KofiButton from "@/components/KofiButton";
 
+// Mirror the origin the rest of the site derives (layout metadataBase, sitemap, robots) so a
+// fork setting NEXT_PUBLIC_SITE_URL gets structured data pointing at its own domain too.
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://charge.fusionspace.co";
+
 const JSON_LD = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: "Charge",
   applicationCategory: "UtilitiesApplication",
   operatingSystem: "Any",
-  url: "https://charge.fusionspace.co",
+  url: siteUrl,
   description:
     "Black-powder ejection-charge calculator for high-power rocketry: size by target pressure or separation force for single or dual deploy, with redundant-altimeter backup charges, a ground-test log that calibrates to your results, altimeter vent-port sizing, and exportable bench cards and recovery reports. The full ideal-gas formula is shown.",
   featureList: [

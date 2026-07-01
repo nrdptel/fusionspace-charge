@@ -31,6 +31,14 @@ describe("recovery report", () => {
     expect(html).toContain("Validated — 2 clean separations at 1.50 g.");
   });
 
+  it("prompts instead of showing a headerless void when no well is sized", () => {
+    const html = buildReportHtml({ ...base, wells: [] });
+    expect(html).toContain("No charge well is sized yet");
+    // The rest of the document still renders.
+    expect(html).toContain("Configuration");
+    expect(html).toContain("Ground-test results");
+  });
+
   it("escapes user-supplied text", () => {
     const html = buildReportHtml({
       ...base,
