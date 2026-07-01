@@ -902,6 +902,42 @@ test.describe("Charge calculator", () => {
     await expect(page.getByRole("button", { name: "Del Bird", exact: true })).toHaveCount(0);
   });
 
+  test("deleting a saved rocket keeps focus in the list, not on the body", async ({ page }) => {
+    await page.goto("/");
+    for (const n of ["Bird One", "Bird Two"]) {
+      await page.getByRole("button", { name: "Save current setup" }).click();
+      await page.getByPlaceholder("Name this setup").fill(n);
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+    }
+    // Deleting the first chip moves focus to the neighbour's delete control, so a keyboard
+    // user can delete several without being dumped to the top each time.
+    await page.getByRole("button", { name: "Delete Bird One" }).click();
+    await expect(page.getByRole("button", { name: "Delete Bird Two" })).toBeFocused();
+  });
+
+  test("deleting a ground-test entry keeps focus on a delete control", async ({ page }) => {
+    await page.goto("/");
+    for (const c of ["1.20", "1.50"]) {
+      await page.getByLabel("Charge tested").fill(c);
+      await page.getByRole("button", { name: "Log test", exact: true }).click();
+    }
+    const deletes = page.getByRole("button", { name: "Delete entry" });
+    await expect(deletes).toHaveCount(2);
+    await deletes.first().click();
+    // One entry left; focus landed on its delete control rather than falling to <body>.
+    await expect(page.getByRole("button", { name: "Delete entry" })).toBeFocused();
+  });
+
+  test("tapping a bench-mode step announces the queued charge", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s&mg=1"); // single well ≈ 0.93 g
+    await page.getByRole("button", { name: "Bench mode" }).click();
+    const dialog = page.getByRole("dialog", { name: /bench mode/i });
+    await dialog.getByRole("button", { name: /Estimate/ }).click();
+    await expect(page.getByRole("status").filter({ hasText: /queued/i })).toHaveText(
+      /Queued 0\.93 g in the ground-test log/i,
+    );
+  });
+
   test("every in-page jump-link resolves to a real anchor", async ({ page }) => {
     await page.goto("/");
     await page.getByText("What's in here").click(); // expand the overview so its links render
