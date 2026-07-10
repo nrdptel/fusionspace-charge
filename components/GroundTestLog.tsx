@@ -301,7 +301,7 @@ export default function GroundTestLog({
             <span className="font-mono font-semibold tabular-nums">
               {fmt(calibration.mean, 2)}×
             </span>{" "}
-            the ideal-gas estimate (range {fmt(calibration.min, 2)}–{fmt(calibration.max, 2)}×).
+            the model&apos;s estimate (range {fmt(calibration.min, 2)}–{fmt(calibration.max, 2)}×).
             That&apos;s your own data, not the formula&apos;s — expect to ground-test toward the
             higher end. It never trims the estimate down; testing larger is the safe direction.
           </p>
