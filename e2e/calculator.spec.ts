@@ -1040,4 +1040,35 @@ test.describe("Charge calculator", () => {
     expect(html).not.toContain("<script");
   });
 
+  test("switching units in Fetter mode converts the compartment, not the charge", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x");
+    const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
+    await expect(dia).toHaveValue("3"); // 3 in
+    const mass = page.getByTestId("fetter-mass");
+    const before = (await mass.textContent())!.trim();
+    // Switch to mm: the physical geometry — and the charge — must not change, only the units.
+    // Scope to the calculator's unit group (the vent-port tool has its own "Length unit" group).
+    await page
+      .locator("#calculator")
+      .getByRole("group", { name: "Length unit" })
+      .getByRole("button", { name: "mm" })
+      .click();
+    await expect(dia).toHaveValue("76.2"); // 3 in → 76.2 mm, not a silent 3 mm
+    await expect(mass).toHaveText(before);
+  });
+
+  test("the Fetter mode has no serious accessibility violations", async ({ page }) => {
+    // The default-mode axe scan doesn't reach the Fetter UI (the screw <select>, the
+    // attribution box, the envelope alert), so it gets its own scan.
+    await page.goto("/?mode=x");
+    await expect(page.getByTestId("fetter-mass")).toBeVisible();
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+    const serious = results.violations.filter(
+      (v) => v.impact === "serious" || v.impact === "critical",
+    );
+    expect(serious).toEqual([]);
+  });
+
 });
