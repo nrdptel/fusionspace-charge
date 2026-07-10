@@ -8,7 +8,7 @@ import {
   T_BP,
   type WellResult,
 } from "@/lib/charge";
-import { FETTER, FETTER_LINKS, type FetterResult } from "@/lib/fetter";
+import { FETTER, FETTER_LINKS, withinAltitudeEnvelope, type FetterResult } from "@/lib/fetter";
 import { fmt, fmtMass } from "@/lib/format";
 import type { State } from "@/lib/state";
 import { Disclosure } from "./ui";
@@ -264,6 +264,9 @@ export default function Methodology({
  *  ideal-gas modes get: the mechanism, every constant, a worked comparison, and the credit. */
 function FetterMethodology({ state, fetter }: { state: State; fetter: FetterResult }) {
   const f = state.fetter;
+  // Outside the envelope the compartment card withholds the charge; the worked comparison below
+  // must not print it either, or a confused user scrolls here and finds the number anyway.
+  const outOfEnvelope = !withinAltitudeEnvelope(f.deployAlt);
   return (
     <section id="methodology" className="mt-10 scroll-mt-8">
       <h2 className="text-lg font-semibold tracking-tight">Where the numbers come from</h2>
@@ -322,29 +325,39 @@ function FetterMethodology({ state, fetter }: { state: State; fetter: FetterResu
       </Disclosure>
 
       <Disclosure summary="Worked comparison — your compartment">
-        <p>The current inputs, run through both models at the same required pressure:</p>
-        <dl className="space-y-2">
-          <Row term="Volume">
-            {fmt(fetter.volumeIn3, 2)} in³
-          </Row>
-          <Row term="Absorption">
-            {fmt(f.packing, 2)} packing → A_H = {fmt(fetter.absorption, 3)} ({fmt(fetter.absorption * 100, 0)}%)
-          </Row>
-          <Row term="Pressure">
-            {fmt(fetter.pressurePsi, 2)} psi to shear the screws (+{fmt(f.safety * 100, 0)}% safety)
-          </Row>
-          <Row term="Traditional">
-            ideal-gas at that pressure = {fmtMass(fetter.traditionalMass)} g
-          </Row>
-          <Row term="Fetter">
-            <strong>{fmtMass(fetter.mass)} g</strong>
-            {fetter.ratio > 0 && <> — {fmt(fetter.ratio, 2)}× the traditional charge</>}
-          </Row>
-        </dl>
-        <p>
-          The gap is the powder the traditional model omits because it ignores the protector. This
-          is why the two numbers are shown side by side: so you can see which model produced which.
-        </p>
+        {outOfEnvelope ? (
+          <p>
+            This deployment is outside the model&apos;s envelope (a sea-level model, not for
+            deployment near or above 20,000 ft), so no charge is sized here. Size it with the
+            target-pressure or separation-force modes, and ground-test in flight configuration.
+          </p>
+        ) : (
+          <>
+            <p>The current inputs, run through both models at the same required pressure:</p>
+            <dl className="space-y-2">
+              <Row term="Volume">
+                {fmt(fetter.volumeIn3, 2)} in³
+              </Row>
+              <Row term="Absorption">
+                {fmt(f.packing, 2)} packing → A_H = {fmt(fetter.absorption, 3)} ({fmt(fetter.absorption * 100, 0)}%)
+              </Row>
+              <Row term="Pressure">
+                {fmt(fetter.pressurePsi, 2)} psi to shear the screws (+{fmt(f.safety * 100, 0)}% safety)
+              </Row>
+              <Row term="Traditional">
+                ideal-gas at that pressure = {fmtMass(fetter.traditionalMass)} g
+              </Row>
+              <Row term="Fetter">
+                <strong>{fmtMass(fetter.mass)} g</strong>
+                {fetter.ratio > 0 && <> — {fmt(fetter.ratio, 2)}× the traditional charge</>}
+              </Row>
+            </dl>
+            <p>
+              Both numbers are shown side by side so you can see which model produced which, and
+              why they differ: the gap is the powder the traditional model omits for the protector.
+            </p>
+          </>
+        )}
       </Disclosure>
 
       <Disclosure summary="Why there's no extra safety margin">
