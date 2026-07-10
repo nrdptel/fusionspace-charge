@@ -282,6 +282,13 @@ export default function Calculator({
         diameter: conv(s.main.diameter),
         length: conv(s.main.length),
       },
+      // The Fetter compartment's diameter and length are lengths too — convert them so a unit
+      // switch in Fetter mode leaves the physical geometry (and the charge) unchanged.
+      fetter: {
+        ...s.fetter,
+        diameter: conv(s.fetter.diameter),
+        length: conv(s.fetter.length),
+      },
     }));
   };
   const setPressureUnit = (pu: PressureUnit) => {
@@ -302,6 +309,9 @@ export default function Calculator({
       forceUnit: fu,
       drogue: { ...s.drogue, pinForce: conv(s.drogue.pinForce), friction: conv(s.drogue.friction) },
       main: { ...s.main, pinForce: conv(s.main.pinForce), friction: conv(s.main.friction) },
+      // The Fetter compartment's nosecone friction is a force too — convert it so a unit
+      // switch in Fetter mode doesn't silently change the friction (and the charge).
+      fetter: { ...s.fetter, friction: conv(s.fetter.friction) },
     }));
   };
 
