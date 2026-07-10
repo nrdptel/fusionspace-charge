@@ -548,7 +548,12 @@ export default function Calculator({
       ]);
     if (!isFetter && state.elevation > 0) summary.push(["Field elevation", `${fmt(state.elevation, 0)} ft`]);
     if (isFetter && state.fetter.deployAlt > 0)
-      summary.push(["Deployment altitude", `${fmt(state.fetter.deployAlt, 0)} ft`]);
+      summary.push([
+        "Deployment altitude",
+        `${fmt(state.fetter.deployAlt, 0)} ft — ${
+          fetterOutOfEnvelope ? "outside the model's sea-level envelope" : "within the model's sea-level envelope"
+        }`,
+      ]);
     summary.push(["Units", `${lu} · ${state.mode === "force" || isFetter ? fu : pu}`]);
 
     // A Fetter report carries the one compartment (with its own rows); the ideal-gas modes map

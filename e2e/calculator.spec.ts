@@ -1059,6 +1059,25 @@ test.describe("Charge calculator", () => {
     await expect(mass).toHaveText(before);
   });
 
+  test("deployment altitude reads as an envelope check and never changes the charge below the limit", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x");
+    // Framed as a validity check in its own "Model envelope" panel, not a sizing knob.
+    await expect(page.getByText("Model envelope")).toBeVisible();
+    await expect(page.getByText(/within envelope/i)).toBeVisible();
+    const mass = page.getByTestId("fetter-mass");
+    await expect(mass).toHaveText("2.01");
+    // Changing it below the limit does not change the charge — the model is fixed at sea level.
+    await page.getByLabel("Deployment altitude").fill("10000");
+    await expect(mass).toHaveText("2.01");
+    await expect(page.getByText(/within envelope/i)).toBeVisible();
+    // At the limit the status flips and the number is withheld.
+    await page.getByLabel("Deployment altitude").fill("25000");
+    await expect(page.getByText(/out of envelope/i)).toBeVisible();
+    await expect(mass).toHaveCount(0);
+  });
+
   test("out of the envelope, no surface recites a charge — not the report, not the methodology", async ({
     page,
   }) => {
