@@ -88,9 +88,8 @@ export default function FetterCard({
           .
         </p>
         <p className="mt-1.5 text-indigo-800/80 dark:text-indigo-300/80">
-          It assumes a chute protector / recovery blanket, does not model a piston (a piston
-          needs less powder), and is a sea-level model — not for deployment near or above{" "}
-          {fmt(FETTER_ALT_LIMIT_FT / 1000, 0)}k ft.
+          It assumes a chute protector / recovery blanket and does not model a piston (a piston
+          needs less powder). Its sea-level altitude envelope is checked below.
         </p>
       </div>
 
@@ -197,19 +196,45 @@ export default function FetterCard({
           min={0}
           hint="The model's own margin for an energetic deployment — Fetter's testing settled on 40%. This is built in; no separate multiplier is applied."
         />
-        <NumberField
-          label="Deployment altitude"
-          value={input.deployAlt}
-          onChange={(deployAlt) => onChange({ deployAlt })}
-          unit="ft"
-          step={1000}
-          min={0}
-          placeholder="0"
-          hint={`Altitude the charge fires at. The model is sea-level; above ~${fmt(
-            FETTER_ALT_LIMIT_FT / 1000,
-            0,
-          )}k ft it doesn't apply.`}
-        />
+      </div>
+
+      {/* The altitude is not a sizing input — it never enters the math (the model is fixed at
+          sea level). It's the model's validity gate: above the limit the model is withheld
+          entirely. Setting it apart as an envelope check, rather than a knob among the inputs,
+          keeps it from reading like something that changes the charge. */}
+      <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <span className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Model envelope
+          </span>
+          <span
+            className={
+              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold " +
+              (inEnvelope
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400")
+            }
+          >
+            {inEnvelope ? "✓ within envelope" : "✗ out of envelope"}
+          </span>
+        </div>
+        <p className="mt-1.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+          Sea-level model, valid below ~{fmt(FETTER_ALT_LIMIT_FT / 1000, 0)}k ft. This is a
+          validity check, not a sizing input — it doesn&apos;t change the charge; above the limit
+          the model is withheld entirely.
+        </p>
+        <div className="mt-3 max-w-[13rem]">
+          <NumberField
+            label="Deployment altitude"
+            value={input.deployAlt}
+            onChange={(deployAlt) => onChange({ deployAlt })}
+            unit="ft"
+            step={1000}
+            min={0}
+            placeholder="0"
+            hint="Where the charge fires — a drogue at apogee, a main down low. Leave at sea level (0) unless you deploy high."
+          />
+        </div>
       </div>
 
       {/* Diameter sanity — a likely unit or outside-diameter mix-up, flagged like the ideal-gas
