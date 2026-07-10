@@ -1059,6 +1059,45 @@ test.describe("Charge calculator", () => {
     await expect(mass).toHaveText(before);
   });
 
+  test("out of the envelope, no surface recites a charge — not the report, not the methodology", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x&xalt=25000");
+    // On-screen: the compartment card withholds the number…
+    await expect(page.getByTestId("fetter-mass")).toHaveCount(0);
+    // …and the methodology's worked comparison must not print it either.
+    await page.getByText("Worked comparison — your compartment").click();
+    await expect(
+      page.locator("#methodology").getByText(/no charge is sized here/i),
+    ).toBeVisible();
+    // The downloaded recovery report — the durable, shareable artifact — must not size one.
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download report as HTML" }).click(),
+    ]);
+    const html = fs.readFileSync(await dl.path(), "utf8");
+    expect(html).not.toContain("Fetter charge"); // the method's charge line is gone
+    expect(html).toContain("outside the model"); // replaced by the envelope note (apostrophe escaped)
+  });
+
+  test("Fetter mode flags a diameter that looks like a unit or OD mix-up", async ({ page }) => {
+    await page.goto("/?mode=x");
+    const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
+    await dia.fill("98"); // 98 "inches" is really 98 mm typed into an inches field
+    await expect(page.getByText(/did you mean mm, or enter the outside diameter/i)).toBeVisible();
+    await dia.fill("3");
+    await expect(page.getByText(/did you mean mm, or enter the outside diameter/i)).toHaveCount(0);
+  });
+
+  test("Fetter packing factor is clamped to its physical range on entry", async ({ page }) => {
+    // Start below full so the clamp changes the value (and the field visibly resyncs).
+    await page.goto("/?mode=x&xpk=0.5");
+    const pk = page.getByLabel("Parachute packing factor");
+    await expect(pk).toHaveValue("0.5");
+    await pk.fill("3"); // nonsensical; clamps to the full-tube maximum of 1
+    await expect(pk).toHaveValue("1");
+  });
+
   test("the Fetter mode has no serious accessibility violations", async ({ page }) => {
     // The default-mode axe scan doesn't reach the Fetter UI (the screw <select>, the
     // attribution box, the envelope alert), so it gets its own scan.

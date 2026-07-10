@@ -26,6 +26,9 @@ export interface PrintPlan {
   meta: string;
   wells: PlanWell[];
   tested?: string;
+  /** Overrides the default "no charge sized yet" copy when there are no wells for a reason
+   *  other than empty inputs — e.g. a Fetter deployment outside the model's altitude envelope. */
+  emptyNote?: string;
 }
 
 export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
@@ -57,7 +60,10 @@ export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
   const body =
     plan.wells.length > 0
       ? wells
-      : `<p class="empty">No charge to size yet. Enter an inner diameter and a pressurized length (and a target pressure or separation force) for at least one well, then generate the card.</p>`;
+      : `<p class="empty">${escapeHtml(
+          plan.emptyNote ??
+            "No charge to size yet. Enter an inner diameter and a pressurized length (and a target pressure or separation force) for at least one well, then generate the card.",
+        )}</p>`;
 
   const proven = plan.tested
     ? `<p class="proven"><strong>Proven charge:</strong> ${escapeHtml(plan.tested)}. Fly the charge you tested.</p>`
