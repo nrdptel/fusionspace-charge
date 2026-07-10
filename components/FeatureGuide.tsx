@@ -38,6 +38,7 @@ const GROUPS: { id: string; title: string; blurb: string; points: string[] }[] =
     blurb: "The core calculator — how much black powder to separate your airframe.",
     points: [
       "Size by target pressure or by separation force (shear pins + friction)",
+      "Or the Fetter model — the research-backed method for parachute deployment, shown against the traditional result with the ratio",
       "Single or dual deploy, with a diameter and length per well",
       "Redundant-altimeter backup charge (+20%, or +0.5 g, whichever is larger)",
       "Safety margin, field-elevation advisory, unit toggles, size & pin presets",

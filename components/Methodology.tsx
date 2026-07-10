@@ -8,7 +8,8 @@ import {
   T_BP,
   type WellResult,
 } from "@/lib/charge";
-import { fmt } from "@/lib/format";
+import { FETTER, FETTER_LINKS, type FetterResult } from "@/lib/fetter";
+import { fmt, fmtMass } from "@/lib/format";
 import type { State } from "@/lib/state";
 import { Disclosure } from "./ui";
 
@@ -24,10 +25,13 @@ function Row({ term, children }: { term: string; children: React.ReactNode }) {
 export default function Methodology({
   state,
   drogue,
+  fetter,
 }: {
   state: State;
   drogue: { result: WellResult; requiredForceLbf: number };
+  fetter: FetterResult;
 }) {
+  if (state.mode === "fetter") return <FetterMethodology state={state} fetter={fetter} />;
   const r = drogue.result;
   const margin = Math.max(1, state.margin);
   const volumeFt3 = r.volume / IN3_PER_FT3;
@@ -250,6 +254,167 @@ export default function Methodology({
         <p>
           These are references, not guarantees. The method is a model; the ground test is the
           measurement. Where a source and your own bench disagree, the bench wins.
+        </p>
+      </Disclosure>
+    </section>
+  );
+}
+
+/** The "Where the numbers come from" panel for the Fetter model — the same transparency the
+ *  ideal-gas modes get: the mechanism, every constant, a worked comparison, and the credit. */
+function FetterMethodology({ state, fetter }: { state: State; fetter: FetterResult }) {
+  const f = state.fetter;
+  return (
+    <section id="methodology" className="mt-10 scroll-mt-8">
+      <h2 className="text-lg font-semibold tracking-tight">Where the numbers come from</h2>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+        This mode uses Tom Fetter&apos;s deployment model rather than the ideal-gas method. The
+        model, its constants, and a worked comparison are all shown below so the number is never
+        a black box — and, as always, the ground test is the real answer.
+      </p>
+
+      <Disclosure summary="The model, and why it needs more powder" defaultOpen>
+        <p>
+          The traditional ideal-gas method sizes powder from a target pressure and volume alone.
+          Fetter&apos;s pressure-chamber and deployment-fixture testing showed that under-predicts
+          the powder a parachute actually needs — often by 1–4× — because a Nomex chute protector
+          or recovery blanket <em>absorbs</em> much of the combustion energy before it can
+          pressurize the tube.
+        </p>
+        <p>
+          So instead of pressure alone, the model solves an energy and pressure balance: the
+          combustion energy of the powder, minus the fraction the protector absorbs, heats the air
+          already in the compartment and the combustion gas, and builds the pressure needed to
+          shear the pins (plus friction) with an energetic margin. The absorbed fraction grows with
+          how full the tube is packed:
+        </p>
+        <p className="rounded-md bg-white px-3 py-2 font-mono text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+          A_H = 0.951 · (1 − e^(−4.491 · Pf))
+        </p>
+        <p>
+          where <span className="font-mono">Pf</span> is the packing factor (0 empty, 1 full). At
+          your {fmt(f.packing, 2)} it absorbs {fmt(fetter.absorption * 100, 0)}% — the high-absorption
+          curve is used throughout, the conservative choice, so the model doesn&apos;t under-size.
+        </p>
+      </Disclosure>
+
+      <Disclosure summary="The constants">
+        <p>
+          Every value the model uses, in the paper&apos;s USCS-native unit system, verified against
+          the paper. The powder mass is the positive root of the resulting quadratic.
+        </p>
+        <dl className="space-y-2">
+          <Row term="M_gas">Molar mass of the combustion gas, {FETTER.MBPcpgas} lb/mol.</Row>
+          <Row term="M_air">Molar mass of air, {FETTER.Mair} lb/mol.</Row>
+          <Row term="M_BP">Molar mass of black powder, {FETTER.MBP} lb/mol.</Row>
+          <Row term={`Ru = ${FETTER.Ru}`}>
+            Universal gas constant, (lb·ft²)/(s²·K·mol) — 8.314 J/(mol·K) in native units.
+          </Row>
+          <Row term={`cv_gas = ${FETTER.cvBPcp}`}>
+            Specific heat of the combustion products, ft²/(s²·K).
+          </Row>
+          <Row term={`cv_air = ${FETTER.cvair}`}>Specific heat of air, ft²/(s²·K).</Row>
+          <Row term="ΔH_BP">Delta enthalpy of black powder, {FETTER.deltaHBP} (lb·ft²)/(s²·mol).</Row>
+          <Row term={`T_amb = ${FETTER.Tamb}`}>Ambient temperature (70 °F), K.</Row>
+          <Row term={`P_atm = ${FETTER.Patm}`}>Sea-level ambient pressure (14.7 psi), lb/(ft·s²).</Row>
+          <Row term="Nylon SS">Shear strength, {FETTER.nylonShearMinPsi} psi (min) — the shear force follows from this and the screw&apos;s minor diameter.</Row>
+        </dl>
+      </Disclosure>
+
+      <Disclosure summary="Worked comparison — your compartment">
+        <p>The current inputs, run through both models at the same required pressure:</p>
+        <dl className="space-y-2">
+          <Row term="Volume">
+            {fmt(fetter.volumeIn3, 2)} in³
+          </Row>
+          <Row term="Absorption">
+            {fmt(f.packing, 2)} packing → A_H = {fmt(fetter.absorption, 3)} ({fmt(fetter.absorption * 100, 0)}%)
+          </Row>
+          <Row term="Pressure">
+            {fmt(fetter.pressurePsi, 2)} psi to shear the screws (+{fmt(f.safety * 100, 0)}% safety)
+          </Row>
+          <Row term="Traditional">
+            ideal-gas at that pressure = {fmtMass(fetter.traditionalMass)} g
+          </Row>
+          <Row term="Fetter">
+            <strong>{fmtMass(fetter.mass)} g</strong>
+            {fetter.ratio > 0 && <> — {fmt(fetter.ratio, 2)}× the traditional charge</>}
+          </Row>
+        </dl>
+        <p>
+          The gap is the powder the traditional model omits because it ignores the protector. This
+          is why the two numbers are shown side by side: so you can see which model produced which.
+        </p>
+      </Disclosure>
+
+      <Disclosure summary="Why there's no extra safety margin">
+        <p>
+          The two ideal-gas modes carry a separate safety-margin multiplier. This one does not, on
+          purpose. Fetter&apos;s{" "}
+          <span className="font-mono">{fmt(f.safety * 100, 0)}%</span> safety factor <em>is</em> the
+          model&apos;s margin — the extra powder his testing found was needed to go from just
+          shearing the pins to an energetic deployment. Stacking Charge&apos;s own margin on top of
+          a model that already runs 1–4× hot would double-count it, and an over-sized charge can
+          tear an airframe apart as surely as an under-sized one fails to open it.
+        </p>
+        <p className="font-medium text-zinc-700 dark:text-zinc-300">
+          So the number you see already includes the margin. Raise the safety factor if a large,
+          heavy nosecone deploys sluggishly; otherwise leave it — and let the ground test set the
+          final charge.
+        </p>
+      </Disclosure>
+
+      <Disclosure summary="Envelope & assumptions">
+        <p>The model is fit to a specific set of conditions. Outside them, use the ideal-gas modes and a ground test:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>It <strong>assumes a chute protector / recovery blanket</strong> — that absorption is the whole point of the model.</li>
+          <li>It <strong>does not model a piston.</strong> A piston generally needs less powder, so this over-estimates for one.</li>
+          <li>It is a <strong>sea-level model</strong> and is not intended for high-altitude deployment (~20,000 ft and up), where black powder stops burning completely.</li>
+        </ul>
+      </Disclosure>
+
+      <Disclosure summary="Credit & references">
+        <p>
+          The model is Tom Fetter&apos;s (NAR 15551). The math here is a clean-room reimplementation
+          of his published equations that reproduces the paper&apos;s deployment-test results; his
+          spreadsheet, prose, and layout are not copied.
+        </p>
+        <dl className="space-y-3">
+          <div>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">The paper</dt>
+            <dd>
+              &ldquo;Using Black Powder for Parachute Deployment&rdquo; (Rev 1.2, prepared for
+              NARCON-2025) —{" "}
+              <a
+                href={FETTER_LINKS.paper}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              >
+                read it on speedmotionrockets.com
+              </a>
+              .
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">The talk</dt>
+            <dd>
+              His{" "}
+              <a
+                href={FETTER_LINKS.video}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              >
+                NARCON-2025 presentation
+              </a>{" "}
+              on the @SpeedmotionRockets channel.
+            </dd>
+          </div>
+        </dl>
+        <p>
+          The number is a starting recommendation, never a verdict. Ground-test in full flight
+          configuration — chute, recovery blanket, and shock cord — and fly what you prove.
         </p>
       </Disclosure>
     </section>

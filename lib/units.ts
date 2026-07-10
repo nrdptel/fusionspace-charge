@@ -8,6 +8,7 @@ export const MM_PER_IN = 25.4;
 export const KPA_PER_PSI = 6.894757;
 export const N_PER_LBF = 4.4482216;
 export const CC_PER_IN3 = 16.387064;
+export const GR_PER_G = 15.432358; // grains per gram
 
 export type LengthUnit = "in" | "mm";
 export type PressureUnit = "psi" | "kPa";
@@ -33,3 +34,8 @@ export const fromLbf = (lbf: number, unit: ForceUnit): number =>
 
 // Volume — canonical: in³
 export const in3ToCc = (in3: number): number => in3 * CC_PER_IN3;
+
+// Mass — canonical: grams. Black powder is always reported in grams, but many powder
+// scales and dippers are marked in grains, so a grains equivalent is offered alongside.
+export const gToGrains = (g: number): number => g * GR_PER_G;
+export const grainsToG = (grains: number): number => grains / GR_PER_G;

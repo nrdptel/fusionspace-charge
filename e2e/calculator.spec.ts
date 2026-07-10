@@ -951,13 +951,93 @@ test.describe("Charge calculator", () => {
   });
 
   test("every new-tab link is safe (rel includes noopener)", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/?mode=x"); // fetter mode surfaces the paper/talk links too
     const unsafe = await page.locator('a[target="_blank"]').evaluateAll((els) =>
       els
         .filter((e) => !(e.getAttribute("rel") || "").includes("noopener"))
         .map((e) => e.getAttribute("href")),
     );
     expect(unsafe).toEqual([]);
+  });
+
+  test("the Fetter model reproduces the reference charge and shows the traditional delta", async ({
+    page,
+  }) => {
+    // Default Fetter compartment (3"×15", 2×2-56, full chute, 40% safety) → ~2.01 g, versus the
+    // traditional ideal-gas ~0.67 g at the same pressure — the delta the mode exists to show.
+    await page.goto("/?mode=x");
+    await expect(page.getByTestId("fetter-mass")).toHaveText("2.01");
+    await expect(page.getByTestId("fetter-traditional")).toContainText("0.67");
+    await expect(page.getByTestId("fetter-ratio")).toContainText("×");
+    // The margin/backup panel and deployment toggle don't apply here and are hidden.
+    await expect(page.getByLabel("Safety margin")).toHaveCount(0);
+    await expect(page.getByRole("group", { name: "Deployment" })).toHaveCount(0);
+    // The mode is credited at the mode, with the paper linked (not buried in a footer).
+    await expect(page.getByRole("link", { name: /Read the paper/i })).toBeVisible();
+  });
+
+  test("the Fetter safety factor is the model's margin — no separate multiplier", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x");
+    // The mode exposes Fetter's own safety factor as a percent, defaulting to 40%…
+    await expect(page.getByLabel("Safety factor")).toHaveValue("40");
+    // …framed as built-in, so no separate multiplier is layered on…
+    await expect(page.getByLabel("Safety factor")).toHaveAccessibleDescription(
+      /no separate multiplier/i,
+    );
+    // …and Charge's ×-multiplier "Safety margin" control is absent entirely.
+    await expect(page.getByLabel("Safety margin")).toHaveCount(0);
+  });
+
+  test("outside the altitude envelope the Fetter mode withholds a number", async ({ page }) => {
+    await page.goto("/?mode=x&xalt=25000");
+    // No charge is presented; instead a redirect to the traditional modes + a ground test.
+    await expect(page.getByTestId("fetter-mass")).toHaveCount(0);
+    await expect(
+      page.getByRole("alert").filter({ hasText: /Outside the Fetter model.s envelope/i }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: /target-pressure or separation-force modes/i })).toBeVisible();
+    // Bringing it back into the envelope restores the number.
+    await page.getByLabel("Deployment altitude").fill("5000");
+    await expect(page.getByTestId("fetter-mass")).toHaveText("2.01");
+  });
+
+  test("a Fetter charge is loggable from the ground-test ladder", async ({ page }) => {
+    await page.goto("/?mode=x");
+    // Tapping the Estimate step pre-fills the log's charge field, closing the loop.
+    await page.getByRole("button", { name: /Estimate/ }).first().click();
+    await expect(page.getByLabel("Charge tested")).toHaveValue("2.01");
+  });
+
+  test("switching to the Fetter model writes it to the shareable URL", async ({ page }) => {
+    await page.goto("/?dep=s");
+    await page
+      .getByRole("group", { name: "Sizing method" })
+      .getByRole("button", { name: "Fetter model" })
+      .click();
+    await expect(page).toHaveURL(/mode=x/);
+    await expect(page).toHaveURL(/xdia=3/);
+    await expect(page.getByTestId("fetter-mass")).toBeVisible();
+  });
+
+  test("the Fetter recovery report carries the model, the delta, and the credit", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x");
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download report as HTML" }).click(),
+    ]);
+    const html = fs.readFileSync(await dl.path(), "utf8");
+    expect(html.startsWith("<!doctype html>")).toBe(true);
+    expect(html).toContain("Fetter model"); // the sizing method
+    expect(html).toContain("Traditional ideal-gas"); // the delta is shown alongside
+    expect(html).toContain("Tom Fetter"); // credited, with the paper linked
+    expect(html).toContain("speedmotionrockets.com");
+    // The model's own margin — never Charge's separate multiplier stacked on top.
+    expect(html).toContain("no separate multiplier");
+    expect(html).not.toContain("<script");
   });
 
 });

@@ -2,9 +2,35 @@
  *  calculation a shareable link — the same convention the Motor Finder uses. */
 
 import type { LengthUnit, PressureUnit, ForceUnit } from "./units";
+import { type ScrewSize, isScrewSize } from "./fetter";
 
-export type Mode = "pressure" | "force";
+export type Mode = "pressure" | "force" | "fetter";
 export type Deploy = "single" | "dual";
+
+/**
+ * Inputs for the Fetter deployment model (mode "fetter"). Unlike the two ideal-gas modes, this
+ * sizes a single parachute compartment and derives the shear force from the screw geometry
+ * itself, so it carries a screw size, a parachute packing factor, and the model's own safety
+ * factor. See lib/fetter.ts for the math and the attribution.
+ */
+export interface FetterInput {
+  /** Body-tube inner diameter, in the active length unit. */
+  diameter: number;
+  /** Parachute compartment inner length, in the active length unit. */
+  length: number;
+  /** Shear screw size (drives the shear force via the nylon shear strength). */
+  screw: ScrewSize;
+  /** Number of shear screws across the joint (0 = friction-only deployment). */
+  pinCount: number;
+  /** Nosecone / coupler friction beyond the pins, in the active force unit. */
+  friction: number;
+  /** Parachute packing factor: fraction of the compartment the chute + protector fill (0–1). */
+  packing: number;
+  /** Fetter's safety factor as a fraction (0.4 = 40%) — the model's own margin. */
+  safety: number;
+  /** Deployment altitude, ft — drives the envelope guard only; never the math. */
+  deployAlt: number;
+}
 
 export interface WellInput {
   /** Tube inner diameter for this well, in the active length unit. */
@@ -37,6 +63,9 @@ export interface State {
   elevation: number;
   drogue: WellInput;
   main: WellInput;
+  /** The Fetter-model compartment (mode "fetter"). Kept separate from the ideal-gas wells so
+   *  switching modes never disturbs the other's inputs. */
+  fetter: FetterInput;
 }
 
 /** Common nylon shear screws. Values are widely-cited single-shear approximations and
@@ -59,6 +88,19 @@ export const DEFAULT_STATE: State = {
   elevation: 0,
   drogue: { diameter: 4, length: 12, pressure: 12, pinCount: 2, pinForce: 32, friction: 0 },
   main: { diameter: 4, length: 24, pressure: 12, pinCount: 4, pinForce: 32, friction: 0 },
+  // Fetter's own 3"×15" test-rocket geometry: a full chute (packing 1), two 2-56 screws, and
+  // the 40% safety factor his testing settled on. Sizes to ~2 g, versus ~0.7 g the traditional
+  // model would give — the delta the model exists to correct.
+  fetter: {
+    diameter: 3,
+    length: 15,
+    screw: "2-56",
+    pinCount: 2,
+    friction: 0,
+    packing: 1,
+    safety: 0.4,
+    deployAlt: 0,
+  },
 };
 
 // --- Normalization -----------------------------------------------------------------
@@ -87,8 +129,28 @@ export function normalizeState(raw: unknown): State {
       friction: num(w.friction, d.friction),
     };
   };
+  const fetter = (v: unknown, d: FetterInput): FetterInput => {
+    const w = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+    return {
+      diameter: num(w.diameter, d.diameter),
+      length: num(w.length, d.length),
+      screw: isScrewSize(w.screw) ? w.screw : d.screw,
+      pinCount: Math.max(0, Math.round(num(w.pinCount, d.pinCount))),
+      friction: num(w.friction, d.friction),
+      // Packing factor is a fraction; clamp to [0,1] so a tampered value can't drive the
+      // absorption term out of range.
+      packing: Math.min(1, Math.max(0, num(w.packing, d.packing))),
+      // Safety factor is the model's own margin; floor at 0 so it can never scale the charge
+      // below the bare shear+friction requirement.
+      safety: Math.max(0, num(w.safety, d.safety)),
+      deployAlt: Math.max(0, num(w.deployAlt, d.deployAlt)),
+    };
+  };
   return {
-    mode: o.mode === "pressure" || o.mode === "force" ? o.mode : DEFAULT_STATE.mode,
+    mode:
+      o.mode === "pressure" || o.mode === "force" || o.mode === "fetter"
+        ? o.mode
+        : DEFAULT_STATE.mode,
     deploy: o.deploy === "single" || o.deploy === "dual" ? o.deploy : DEFAULT_STATE.deploy,
     lengthUnit: o.lengthUnit === "mm" ? "mm" : "in",
     pressureUnit: o.pressureUnit === "kPa" ? "kPa" : "psi",
@@ -99,13 +161,14 @@ export function normalizeState(raw: unknown): State {
     elevation: Math.max(0, num(o.elevation, DEFAULT_STATE.elevation)),
     drogue: well(o.drogue, DEFAULT_STATE.drogue),
     main: well(o.main, DEFAULT_STATE.main),
+    fetter: fetter(o.fetter, DEFAULT_STATE.fetter),
   };
 }
 
 // --- URL serialization -------------------------------------------------------------
 
-const MODE_TO: Record<Mode, string> = { pressure: "p", force: "f" };
-const MODE_FROM: Record<string, Mode> = { p: "pressure", f: "force" };
+const MODE_TO: Record<Mode, string> = { pressure: "p", force: "f", fetter: "x" };
+const MODE_FROM: Record<string, Mode> = { p: "pressure", f: "force", x: "fetter" };
 const DEPLOY_TO: Record<Deploy, string> = { single: "s", dual: "d" };
 const DEPLOY_FROM: Record<string, Deploy> = { s: "single", d: "dual" };
 
@@ -130,6 +193,20 @@ export function encodeState(s: State): string {
   };
   well("d", s.drogue);
   if (s.deploy === "dual") well("m", s.main);
+  // The Fetter compartment is encoded only in its own mode — like the main well in dual
+  // deploy — so pressure/force links stay exactly as they were and existing shared links
+  // don't change. The keys are all "x"-prefixed to avoid colliding with the well params.
+  if (s.mode === "fetter") {
+    const f = s.fetter;
+    p.set("xdia", String(f.diameter));
+    p.set("xl", String(f.length));
+    p.set("xsc", f.screw);
+    p.set("xn", String(f.pinCount));
+    p.set("xfr", String(f.friction));
+    p.set("xpk", String(f.packing));
+    p.set("xsf", String(f.safety));
+    p.set("xalt", String(f.deployAlt));
+  }
   return p.toString();
 }
 
@@ -161,6 +238,21 @@ export function decodeState(query: string): State {
   const pu = (p.get("pu") as PressureUnit) || DEFAULT_STATE.pressureUnit;
   const fu = (p.get("fu") as ForceUnit) || DEFAULT_STATE.forceUnit;
 
+  const fd = DEFAULT_STATE.fetter;
+  const scParam = p.get("xsc");
+  const fetter: FetterInput = {
+    diameter: numOr("xdia", fd.diameter),
+    length: numOr("xl", fd.length),
+    screw: isScrewSize(scParam) ? scParam : fd.screw,
+    pinCount: Math.max(0, Math.round(numOr("xn", fd.pinCount))),
+    friction: numOr("xfr", fd.friction),
+    // Same clamps as normalizeState: packing to [0,1], safety floored at 0, so a hand-edited
+    // link can't push the absorption out of range or size below the bare requirement.
+    packing: Math.min(1, Math.max(0, numOr("xpk", fd.packing))),
+    safety: Math.max(0, numOr("xsf", fd.safety)),
+    deployAlt: Math.max(0, numOr("xalt", fd.deployAlt)),
+  };
+
   return {
     mode: MODE_FROM[p.get("mode") ?? ""] ?? DEFAULT_STATE.mode,
     deploy: DEPLOY_FROM[p.get("dep") ?? ""] ?? DEFAULT_STATE.deploy,
@@ -177,5 +269,6 @@ export function decodeState(query: string): State {
     elevation: Math.max(0, numOr("el", DEFAULT_STATE.elevation)),
     drogue: well("d", DEFAULT_STATE.drogue),
     main: well("m", DEFAULT_STATE.main),
+    fetter,
   };
 }
