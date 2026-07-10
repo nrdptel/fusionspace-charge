@@ -19,9 +19,10 @@ const JSON_LD = {
   operatingSystem: "Any",
   url: siteUrl,
   description:
-    "Black-powder ejection-charge calculator for high-power rocketry: size by target pressure or separation force for single or dual deploy, with redundant-altimeter backup charges, a ground-test log that calibrates to your results, altimeter vent-port sizing, and exportable bench cards and recovery reports. The full ideal-gas formula is shown.",
+    "Black-powder ejection-charge calculator for high-power rocketry: size by target pressure, separation force, or Tom Fetter's parachute-deployment model, for single or dual deploy, with redundant-altimeter backup charges, a ground-test log that calibrates to your results, altimeter vent-port sizing, and exportable bench cards and recovery reports. The full formula and constants are shown.",
   featureList: [
     "Size by target pressure or separation force",
+    "Fetter parachute-deployment model, shown against the traditional result",
     "Single and dual deploy",
     "Redundant-altimeter backup charges",
     "Ground-test log with calibration and validation",

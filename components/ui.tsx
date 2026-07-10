@@ -53,6 +53,48 @@ export function Segmented<T extends string>({
   );
 }
 
+/** A labelled dropdown, matching NumberField's frame — for a small fixed set of choices
+ *  (like the shear-screw size) where a segmented control would be too wide. */
+export function Select<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+  hint,
+}: {
+  label: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: Option<T>[];
+  hint?: React.ReactNode;
+}) {
+  const hintId = useId();
+  return (
+    <label className="block">
+      <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
+      <div className="mt-1.5 flex items-center rounded-lg border border-zinc-300 bg-white transition focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900">
+        <select
+          value={value}
+          aria-describedby={hint ? hintId : undefined}
+          onChange={(e) => onChange(e.target.value as T)}
+          className="w-full bg-transparent px-3 py-2 text-sm outline-none dark:[color-scheme:dark]"
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {hint && (
+        <span id={hintId} className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
+          {hint}
+        </span>
+      )}
+    </label>
+  );
+}
+
 /** A small labelled value, used for the result read-outs (volume, pressure, …). */
 export function Chip({ label, value }: { label: string; value: string }) {
   return (
