@@ -27,11 +27,15 @@ export interface BenchWell {
 export default function BenchMode({
   wells,
   proven,
+  emptyNote,
   onPlan,
   onClose,
 }: {
   wells: BenchWell[];
   proven: { label: string; charge: string } | null;
+  /** Shown in place of the default "enter an airframe" prompt when there are no charges for a
+   *  reason other than empty inputs — e.g. a Fetter deployment outside the altitude envelope. */
+  emptyNote?: string;
   onPlan: (grams: number, estimate: number) => void;
   onClose: () => void;
 }) {
@@ -121,7 +125,7 @@ export default function BenchMode({
 
         {wells.length === 0 && (
           <p className="mt-8 text-lg text-zinc-400">
-            Enter an airframe to see its charges here.
+            {emptyNote ?? "Enter an airframe to see its charges here."}
           </p>
         )}
 

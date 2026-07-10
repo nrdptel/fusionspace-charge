@@ -1099,6 +1099,16 @@ test.describe("Charge calculator", () => {
     expect(html).toContain("outside the model"); // replaced by the envelope note (apostrophe escaped)
   });
 
+  test("out of envelope, bench mode explains the envelope instead of 'enter an airframe'", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x&xalt=25000");
+    await page.getByRole("button", { name: "Bench mode" }).click();
+    const dialog = page.getByRole("dialog", { name: "Bench mode" });
+    await expect(dialog.getByText(/outside the Fetter model.s envelope/i)).toBeVisible();
+    await expect(dialog.getByText(/Enter an airframe to see its charges/i)).toHaveCount(0);
+  });
+
   test("Fetter mode flags a diameter that looks like a unit or OD mix-up", async ({ page }) => {
     await page.goto("/?mode=x");
     const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
