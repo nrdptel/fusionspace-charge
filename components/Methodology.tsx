@@ -299,6 +299,15 @@ function FetterMethodology({ state, fetter }: { state: State; fetter: FetterResu
           your {fmt(f.packing, 2)} it absorbs {fmt(fetter.absorption * 100, 0)}% — the high-absorption
           curve is used throughout, the conservative choice, so the model doesn&apos;t under-size.
         </p>
+        {fetter.ratio > 0 && fetter.ratio < 1 && (
+          <p>
+            The 1–4× figure is for a packed chute — the usual case. At your low packing the
+            protector absorbs little, so the model here sizes <em>below</em> the traditional
+            number ({fmt(fetter.ratio, 2)}×), not above it. That&apos;s expected for a sparse
+            tube, and both numbers are shown so you can see it — but a real recovery bay is
+            rarely this empty, so double-check the packing factor, and ground-test regardless.
+          </p>
+        )}
       </Disclosure>
 
       <Disclosure summary="The constants">

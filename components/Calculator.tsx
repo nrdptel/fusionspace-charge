@@ -1120,6 +1120,7 @@ export default function Calculator({
         <BenchMode
           wells={benchWells}
           proven={benchProven}
+          emptyNote={emptyNote}
           onPlan={(grams, estimate) => {
             onPlanCharge?.(grams, estimate);
             setBenchOpen(false);
