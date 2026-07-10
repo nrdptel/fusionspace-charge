@@ -11,7 +11,7 @@ import {
 import type { FetterInput, State } from "@/lib/state";
 import { fromLbf, fromPsi, in3ToCc, gToGrains, type LengthUnit } from "@/lib/units";
 import { fmt, fmtMass, round } from "@/lib/format";
-import { LARGE_CHARGE_G } from "@/lib/checks";
+import { LARGE_CHARGE_G, wellCautions } from "@/lib/checks";
 import { NumberField, Select, Chip } from "./ui";
 
 const SCREW_OPTIONS = FETTER_SCREWS.map((s) => ({ value: s.label, label: s.label }));
@@ -46,6 +46,14 @@ export default function FetterCard({
   const inEnvelope = withinAltitudeEnvelope(input.deployAlt);
   const mass = result.mass;
   const grains = gToGrains(mass);
+  // The same diameter sanity check the ideal-gas wells get — a bore that reads like a mm/inch
+  // mix-up or an outside diameter. Passing mass 0 asks only for the diameter cautions; the
+  // large-charge caution is rendered separately below with the Fetter number.
+  const dimCautions = wellCautions(
+    state,
+    { diameter: input.diameter, length: input.length, pressure: 0, pinCount: 0, pinForce: 0, friction: input.friction },
+    { mass: 0 },
+  );
 
   return (
     <div className="mt-5 flex flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
@@ -147,7 +155,9 @@ export default function FetterCard({
           <NumberField
             label="Parachute packing factor"
             value={input.packing}
-            onChange={(packing) => onChange({ packing })}
+            // Clamp to the physical range [0,1] on entry, so a stray "3" can't render as
+            // "3.00 packing" in the report while the absorption term quietly clamps to 1.
+            onChange={(packing) => onChange({ packing: Math.min(1, Math.max(0, packing)) })}
             unit="0–1"
             step={0.05}
             min={0}
@@ -201,6 +211,22 @@ export default function FetterCard({
           )}k ft it doesn't apply.`}
         />
       </div>
+
+      {/* Diameter sanity — a likely unit or outside-diameter mix-up, flagged like the ideal-gas
+          wells. Shown regardless of the envelope, since it's about the input, not the charge. */}
+      {dimCautions.length > 0 && (
+        <div role="alert" className="mt-3 space-y-1.5">
+          {dimCautions.map((c) => (
+            <p
+              key={c.id}
+              className="flex items-start gap-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400"
+            >
+              <span aria-hidden className="mt-px shrink-0">⚠</span>
+              <span>{c.message}</span>
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* Result — or, outside the envelope, a redirect instead of a number. */}
       {!inEnvelope ? (

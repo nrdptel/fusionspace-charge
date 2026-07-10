@@ -434,9 +434,17 @@ export default function Calculator({
     : `${state.deploy === "dual" ? "Dual deploy" : "Single deploy"} · sized by ${
         state.mode === "force" ? "separation force" : "target pressure"
       }`;
+  // When Fetter mode is out of its altitude envelope there are no wells, but not because the
+  // inputs are empty — so the carried artifacts explain the envelope rather than telling the
+  // user to "enter a pressure or force" they don't have in this mode.
+  const emptyNote =
+    isFetter && fetterOutOfEnvelope
+      ? `Outside the Fetter model's envelope: at ${fmt(state.fetter.deployAlt, 0)} ft (~20,000 ft and up) the model doesn't apply. Size this with the target-pressure or separation-force modes, and ground-test in flight configuration.`
+      : undefined;
   const printPlan: PrintPlan = {
     title: airframeName?.trim() || "Ejection charge plan",
     meta: modeMeta,
+    emptyNote,
     // A proven charge is only printed as "proven" when the setup hasn't drifted from what
     // was tested — otherwise the card would tell the builder to fly a charge the on-screen
     // guard is warning them not to trust until re-tested.
@@ -491,7 +499,8 @@ export default function Calculator({
     if (printPlan.wells.length === 0)
       lines.push(
         "",
-        "No charge sized yet — enter a diameter and length (and a pressure or force) for a well.",
+        printPlan.emptyNote ??
+          "No charge sized yet — enter a diameter and length (and a pressure or force) for a well.",
       );
     for (const w of printPlan.wells) {
       lines.push("");
@@ -567,7 +576,7 @@ export default function Calculator({
                 ["Charge (Fetter)", `${fmtMass(fetter.mass)} g · ${fmt(gToGrains(fetter.mass), 1)} gr`],
                 [
                   "Traditional ideal-gas (same pressure)",
-                  `${fmtMass(fetter.traditionalMass)} g — Fetter is ${fmt(fetter.ratio, 2)}× larger`,
+                  `${fmtMass(fetter.traditionalMass)} g — Fetter is ${fmt(fetter.ratio, 2)}× the traditional charge`,
                 ],
                 ["Volume", `${fmt(fetter.volumeIn3, 1)} in³ · ${fmt(in3ToCc(fetter.volumeIn3), 0)} cc`],
               ],
@@ -599,7 +608,18 @@ export default function Calculator({
         });
 
     let method: string[];
-    if (isFetter) {
+    if (isFetter && fetterOutOfEnvelope) {
+      // Outside the envelope the on-screen guard withholds the charge; the report's "how it was
+      // sized" section must not recite one either. Explain the envelope instead of a number.
+      method = [
+        "Fetter model — black powder for parachute deployment.",
+        "",
+        `At ${fmt(state.fetter.deployAlt, 0)} ft this deployment is outside the model's envelope —`,
+        "a sea-level model, not intended for high-altitude deployment (~20,000 ft and up), where",
+        "black powder no longer burns completely. No charge is sized. Size this deployment with the",
+        "target-pressure or separation-force modes, and ground-test in full flight configuration.",
+      ];
+    } else if (isFetter) {
       method = [
         "Fetter model — black powder for parachute deployment.",
         "",
@@ -614,7 +634,7 @@ export default function Calculator({
         "",
         `  Fetter charge         ${fmt(fetter.mass, 2)} g`,
         `  Traditional ideal-gas ${fmt(fetter.traditionalMass, 2)} g at the same pressure and volume`,
-        `  Model delta           ${fmt(fetter.ratio, 2)}× — the powder the traditional model omits for the protector`,
+        `  Model delta           ${fmt(fetter.ratio, 2)}× (Fetter vs. traditional at the same pressure)`,
         "",
         "The model is Tom Fetter's; see the references below. It assumes a chute protector /",
         "recovery blanket, does not model a piston, and is a sea-level model (not for deployment",
