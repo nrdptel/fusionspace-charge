@@ -28,6 +28,12 @@ section, so the whole tool is discoverable at a glance.
 
 - Size by **target pressure**, or by **separation force** — shear pins (with editable
   presets for common nylon screws) plus friction.
+- Or by the **Fetter model** — Tom Fetter's research-backed method for parachute deployment,
+  which accounts for the energy a chute protector / recovery blanket absorbs (the reason the
+  traditional model under-predicts). The Fetter charge is shown **alongside the traditional
+  result with the ratio**, so you can see which model produced which number and why they
+  differ. Its own safety factor is built in — no separate margin is applied — and the model's
+  envelope (chute protector assumed, no piston, sea level) is enforced in the UI.
 - A **safety margin** in either mode: it sizes the charge above the bare separation
   force, or above your target pressure so a leaky real well still reaches it.
 - **Single and dual-deploy**: separate drogue and main wells.
@@ -77,6 +83,28 @@ constant and flame temperature every HPR reference uses. The result is a theoret
 starting point, not a guarantee — the full derivation and its assumptions are laid out in
 the app under "Where the numbers come from". The physics lives in `lib/charge.ts` as pure
 functions with tests in `lib/charge.test.ts`.
+
+The Fetter model is a separate method in `lib/fetter.ts`, a clean-room reimplementation of
+the published equations (not a copy of the spreadsheet). `lib/fetter.test.ts` is a fixture
+that asserts the implementation reproduces Fetter's published numbers — the deployment-test
+results (paper Table 16-1), the shear-pin table (Table 17-2), and the reference
+spreadsheet's worked example — within a stated tolerance.
+
+## The Fetter model — credit
+
+The parachute-deployment model is **Tom Fetter's** (NAR 15551). Only the math is
+reimplemented here; his paper, spreadsheet, prose, and layout are not redistributed. His
+research found the traditional model under-predicts the black powder a parachute needs — by
+1–4× for small-to-medium high-power rockets — because a Nomex chute protector / recovery
+blanket absorbs much of the combustion energy. His work:
+
+- **Paper** — "Using Black Powder for Parachute Deployment" (Rev 1.2), on
+  [speedmotionrockets.com](http://speedmotionrockets.com/Papers.html).
+- **Talk** — his [NARCON-2025 presentation](https://www.youtube.com/watch?v=KEiH5g9ek8s) on
+  the @SpeedmotionRockets channel.
+
+As with the ideal-gas modes, the Fetter number is a starting recommendation. Ground-test in
+full flight configuration — chute, recovery blanket, and shock cord — and fly what you prove.
 
 ## Running locally
 

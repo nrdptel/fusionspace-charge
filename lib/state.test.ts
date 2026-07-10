@@ -169,3 +169,49 @@ describe("URL state — hostile & edge input", () => {
     expect(decodeState(encodeState(single)).main.diameter).toBe(DEFAULT_STATE.main.diameter);
   });
 });
+
+describe("URL state — Fetter mode", () => {
+  it("round-trips a customized Fetter compartment", () => {
+    const custom: State = {
+      ...DEFAULT_STATE,
+      mode: "fetter",
+      fetter: {
+        diameter: 4,
+        length: 24,
+        screw: "4-40",
+        pinCount: 4,
+        friction: 3,
+        packing: 0.5,
+        safety: 0.6,
+        deployAlt: 8000,
+      },
+    };
+    expect(decodeState(encodeState(custom))).toEqual(custom);
+  });
+
+  it("only encodes the Fetter compartment in Fetter mode (documented asymmetry)", () => {
+    // Like the main well in single deploy, the Fetter params aren't written in force/pressure
+    // mode — so existing shared links stay byte-for-byte identical.
+    const force: State = { ...DEFAULT_STATE, mode: "force", fetter: { ...DEFAULT_STATE.fetter, diameter: 99 } };
+    expect(encodeState(force)).not.toContain("xdia");
+    expect(decodeState(encodeState(force)).fetter.diameter).toBe(DEFAULT_STATE.fetter.diameter);
+  });
+
+  it("decodes the fetter mode code and its compartment", () => {
+    const s = decodeState("mode=x&xdia=6&xl=30&xsc=6-32&xn=3&xpk=0.75&xsf=0.4");
+    expect(s.mode).toBe("fetter");
+    expect(s.fetter.diameter).toBe(6);
+    expect(s.fetter.screw).toBe("6-32");
+    expect(s.fetter.pinCount).toBe(3);
+    expect(s.fetter.packing).toBe(0.75);
+  });
+
+  it("clamps a hand-edited packing factor and safety, and rejects a bad screw", () => {
+    expect(decodeState("mode=x&xpk=2").fetter.packing).toBe(1);
+    expect(decodeState("mode=x&xpk=-1").fetter.packing).toBe(0);
+    expect(decodeState("mode=x&xsf=-3").fetter.safety).toBe(0);
+    expect(decodeState("mode=x&xsc=bolt").fetter.screw).toBe(DEFAULT_STATE.fetter.screw);
+    // Pins are discrete, like the force-mode well.
+    expect(decodeState("mode=x&xn=2.7").fetter.pinCount).toBe(3);
+  });
+});
