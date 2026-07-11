@@ -8,6 +8,7 @@ import {
   encodeState,
   normalizeState,
   type Deploy,
+  type FetterInput,
   type Mode,
   type State,
   type WellInput,
@@ -185,8 +186,7 @@ function computeWell(s: State, w: WellInput): Computed {
 // (inches, lbf). The Fetter safety factor is the model's own margin, so — unlike computeWell —
 // no `state.margin` multiplier is applied here; layering one on a model that already runs 1–4×
 // hot is exactly the double-count the mode must avoid.
-function computeFetter(s: State): FetterResult {
-  const f = s.fetter;
+function computeFetter(s: State, f: FetterInput): FetterResult {
   return fetterCharge({
     diameterIn: nn(toInches(f.diameter, s.lengthUnit)),
     lengthIn: nn(toInches(f.length, s.lengthUnit)),
@@ -317,22 +317,38 @@ export default function Calculator({
 
   const drogue = useMemo(() => computeWell(state, state.drogue), [state]);
   const main = useMemo(() => computeWell(state, state.main), [state]);
-  const fetter = useMemo(() => computeFetter(state), [state]);
+  const fetterDrogueRes = useMemo(() => computeFetter(state, state.fetter), [state]);
+  const fetterMainRes = useMemo(() => computeFetter(state, state.fetterMain), [state]);
   const isFetter = state.mode === "fetter";
-  // The Fetter result adapted into the same shape the wells use, so the field card, bench
-  // view, and recovery report can carry it with the existing plumbing.
-  const fetterComputed: Computed = {
-    result: {
-      area: fetter.areaIn2,
-      volume: fetter.volumeIn3,
-      pressure: fetter.pressurePsi,
-      mass: fetter.mass,
-    },
-    requiredForceLbf: fetter.forceLbf,
+
+  // A Fetter result adapted into the same shape the wells use, so the field card, bench view,
+  // and recovery report can carry it with the existing plumbing.
+  const toComputed = (r: FetterResult): Computed => ({
+    result: { area: r.areaIn2, volume: r.volumeIn3, pressure: r.pressurePsi, mass: r.mass },
+    requiredForceLbf: r.forceLbf,
+  });
+
+  // The Fetter compartments, parallel to `wells`: one in single deploy, drogue + main in dual.
+  // Each carries its own input, result, and altitude-envelope check — the drogue fires at
+  // apogee (which can exceed the envelope) while the main deploys low.
+  type FetterWell = {
+    key: "fetter" | "fetterMain";
+    title: string;
+    sub: string;
+    input: FetterInput;
+    result: FetterResult;
   };
-  // Whether the sized charge is out of the Fetter model's altitude envelope — the field
-  // artifacts must not emit a number the on-screen guard is suppressing.
-  const fetterOutOfEnvelope = isFetter && !withinAltitudeEnvelope(state.fetter.deployAlt);
+  const fetterWells: FetterWell[] =
+    state.deploy === "dual"
+      ? [
+          { key: "fetter", title: "Drogue compartment", sub: "Apogee — separates the airframe", input: state.fetter, result: fetterDrogueRes },
+          { key: "fetterMain", title: "Main compartment", sub: "Lower — deploys the main", input: state.fetterMain, result: fetterMainRes },
+        ]
+      : [{ key: "fetter", title: "Parachute compartment", sub: "Chute + recovery blanket", input: state.fetter, result: fetterDrogueRes }];
+  const fetterInEnvelope = (w: FetterWell) => withinAltitudeEnvelope(w.input.deployAlt);
+  // Every Fetter compartment is out of the altitude envelope — so the whole plan is empty for
+  // an envelope reason, not for want of inputs (drives the card/bench/copy empty note).
+  const fetterAllOutOfEnvelope = isFetter && fetterWells.every((w) => !fetterInEnvelope(w));
 
   const share = async () => {
     try {
@@ -378,15 +394,15 @@ export default function Calculator({
       : [{ key: "drogue", title: "Ejection charge", sub: "Separates the airframe", data: drogue }];
 
   // The headline charge, and whether it's a single compartment mapping cleanly to one logged
-  // test. Fetter mode is single-compartment like single deploy; both drive the drift guard.
-  const primary = isFetter ? fetterComputed : drogue;
-  const singleCompartment = isFetter || state.deploy === "single";
+  // test. Single deploy (either mode) drives the drift guard; dual is left alone.
+  const primary = isFetter ? toComputed(fetterDrogueRes) : drogue;
+  const singleCompartment = state.deploy === "single";
 
   // A normalized view of the sized charges the field artifacts consume, so the printable card
-  // and bench view work the same in Fetter mode as in the ideal-gas modes. In Fetter mode a
-  // charge outside the altitude envelope is withheld — the card must not print a number the
-  // on-screen guard is suppressing. Backups belong to redundant altimeters, an ideal-gas-mode
-  // concern, so Fetter carries none.
+  // and bench view work the same in Fetter mode as in the ideal-gas modes. A charge outside its
+  // altitude envelope is withheld — the card must not print a number the on-screen guard is
+  // suppressing. The backup follows the same +20% / +0.5 g redundant-altimeter convention as the
+  // ideal-gas modes: it's a second altimeter's charge, not extra margin on the model.
   const ladder = (mass: number) => [
     { label: "Low −20%", grams: round(mass * 0.8, 2) },
     { label: "Estimate", grams: round(mass, 2) },
@@ -394,16 +410,15 @@ export default function Calculator({
   ];
   const artWells: { title: string; idText: string; lenText: string; mass: number; backup?: number }[] =
     isFetter
-      ? fetter.mass > 0 && !fetterOutOfEnvelope
-        ? [
-            {
-              title: "Parachute compartment",
-              idText: `${fmt(state.fetter.diameter, 3)} ${state.lengthUnit}`,
-              lenText: `${fmt(state.fetter.length, 2)} ${state.lengthUnit}`,
-              mass: fetter.mass,
-            },
-          ]
-        : []
+      ? fetterWells
+          .filter((w) => w.result.mass > 0 && fetterInEnvelope(w))
+          .map((w) => ({
+            title: w.title,
+            idText: `${fmt(w.input.diameter, 3)} ${state.lengthUnit}`,
+            lenText: `${fmt(w.input.length, 2)} ${state.lengthUnit}`,
+            mass: w.result.mass,
+            backup: state.redundant ? backupMass(w.result.mass, state.backupPct) : undefined,
+          }))
       : wells
           .filter(({ data }) => data.result.mass > 0)
           .map(({ key, title, data }) => ({
@@ -430,16 +445,16 @@ export default function Calculator({
   // The plan for the printable build & ground-test card. Only wells with a real charge
   // are included; each gets the ground-test ladder as rows to fill in at the bench.
   const modeMeta = isFetter
-    ? "Fetter model · parachute deployment"
+    ? `Fetter model · ${state.deploy === "dual" ? "dual deploy" : "parachute deployment"}`
     : `${state.deploy === "dual" ? "Dual deploy" : "Single deploy"} · sized by ${
         state.mode === "force" ? "separation force" : "target pressure"
       }`;
-  // When Fetter mode is out of its altitude envelope there are no wells, but not because the
-  // inputs are empty — so the carried artifacts explain the envelope rather than telling the
-  // user to "enter a pressure or force" they don't have in this mode.
+  // When every Fetter compartment is out of its altitude envelope there are no charges, but not
+  // because the inputs are empty — so the carried artifacts explain the envelope rather than
+  // telling the user to "enter a pressure or force" they don't have in this mode.
   const emptyNote =
-    isFetter && fetterOutOfEnvelope
-      ? `Outside the Fetter model's envelope: at ${fmt(state.fetter.deployAlt, 0)} ft (~20,000 ft and up) the model doesn't apply. Size this with the target-pressure or separation-force modes, and ground-test in flight configuration.`
+    isFetter && fetterAllOutOfEnvelope
+      ? "Outside the Fetter model's envelope (~20,000 ft and up), the model doesn't apply. Size this with the target-pressure or separation-force modes, and ground-test in flight configuration."
       : undefined;
   const printPlan: PrintPlan = {
     title: airframeName?.trim() || "Ejection charge plan",
@@ -529,65 +544,76 @@ export default function Calculator({
     const pu = state.pressureUnit;
     const fu = state.forceUnit;
 
-    const summary: [string, string][] = isFetter
-      ? [
-          ["Sized by", "Fetter model (parachute deployment)"],
-          ["Safety factor", `${fmt(state.fetter.safety * 100, 0)}% (the model's own margin — no separate multiplier)`],
-        ]
-      : [
-          ["Deployment", state.deploy === "dual" ? "Dual (drogue + main)" : "Single"],
-          ["Sized by", state.mode === "force" ? "Separation force" : "Target pressure"],
-        ];
-    if (!isFetter && state.mode === "force") summary.push(["Safety margin", `${fmt(state.margin, 2)}×`]);
-    else if (!isFetter && state.margin > 1)
+    const summary: [string, string][] = [
+      ["Deployment", state.deploy === "dual" ? "Dual (drogue + main)" : "Single"],
+      [
+        "Sized by",
+        isFetter
+          ? `Fetter model (${state.deploy === "dual" ? "dual deploy" : "parachute deployment"})`
+          : state.mode === "force"
+            ? "Separation force"
+            : "Target pressure",
+      ],
+    ];
+    if (isFetter)
+      summary.push([
+        "Safety factor",
+        `${fmt(state.fetter.safety * 100, 0)}% (the model's own margin — no separate multiplier)`,
+      ]);
+    else if (state.mode === "force") summary.push(["Safety margin", `${fmt(state.margin, 2)}×`]);
+    else if (state.margin > 1)
       summary.push(["Safety margin", `${fmt(state.margin, 2)}× (sized above target)`]);
-    if (!isFetter && state.redundant)
+    if (state.redundant)
       summary.push([
         "Redundant altimeters",
         `yes — backup +${fmt(backupPctClamped(state.backupPct), 0)}% (min +${BACKUP_MIN_G} g)`,
       ]);
     if (!isFetter && state.elevation > 0) summary.push(["Field elevation", `${fmt(state.elevation, 0)} ft`]);
-    if (isFetter && state.fetter.deployAlt > 0)
-      summary.push([
-        "Deployment altitude",
-        `${fmt(state.fetter.deployAlt, 0)} ft — ${
-          fetterOutOfEnvelope ? "outside the model's sea-level envelope" : "within the model's sea-level envelope"
-        }`,
-      ]);
+    if (isFetter)
+      for (const w of fetterWells)
+        if (w.input.deployAlt > 0)
+          summary.push([
+            state.deploy === "dual"
+              ? `Deployment altitude — ${w.title.replace(" compartment", "").toLowerCase()}`
+              : "Deployment altitude",
+            `${fmt(w.input.deployAlt, 0)} ft — ${fetterInEnvelope(w) ? "within" : "outside"} the model's sea-level envelope`,
+          ]);
     summary.push(["Units", `${lu} · ${state.mode === "force" || isFetter ? fu : pu}`]);
 
-    // A Fetter report carries the one compartment (with its own rows); the ideal-gas modes map
-    // over their sized wells as before.
+    // A Fetter report carries each in-envelope compartment (with its own rows); the ideal-gas
+    // modes map over their sized wells as before.
     const wellBlocks: { title: string; rows: [string, string][] }[] = isFetter
-      ? fetter.mass > 0 && !fetterOutOfEnvelope
-        ? [
-            {
-              title: "Parachute compartment",
-              rows: [
-                ["Inner diameter", `${fmt(state.fetter.diameter, 3)} ${lu}`],
-                ["Compartment length", `${fmt(state.fetter.length, 2)} ${lu}`],
-                [
-                  "Shear screws",
-                  state.fetter.pinCount > 0
-                    ? `${fmt(state.fetter.pinCount, 0)} × ${state.fetter.screw} (nylon)`
-                    : "none (friction only)",
-                ],
-                ...(state.fetter.friction > 0
-                  ? ([["Nosecone friction", `${fmt(state.fetter.friction, 1)} ${fu}`]] as [string, string][])
-                  : []),
-                ["Parachute packing factor", `${fmt(state.fetter.packing, 2)} (chute absorption ${fmt(fetter.absorption * 100, 0)}%)`],
-                ["Required pressure", `${fmt(fromPsi(fetter.pressurePsi, pu), 1)} ${pu}`],
-                ["Required force", `${fmt(fromLbf(fetter.forceLbf, fu), 0)} ${fu}`],
-                ["Charge (Fetter)", `${fmtMass(fetter.mass)} g · ${fmt(gToGrains(fetter.mass), 1)} gr`],
-                [
-                  "Traditional ideal-gas (same pressure)",
-                  `${fmtMass(fetter.traditionalMass)} g — Fetter is ${fmt(fetter.ratio, 2)}× the traditional charge`,
-                ],
-                ["Volume", `${fmt(fetter.volumeIn3, 1)} in³ · ${fmt(in3ToCc(fetter.volumeIn3), 0)} cc`],
+      ? fetterWells
+          .filter((w) => w.result.mass > 0 && fetterInEnvelope(w))
+          .map((w) => {
+            const r = w.result;
+            const rows: [string, string][] = [
+              ["Inner diameter", `${fmt(w.input.diameter, 3)} ${lu}`],
+              ["Compartment length", `${fmt(w.input.length, 2)} ${lu}`],
+              [
+                "Shear screws",
+                w.input.pinCount > 0
+                  ? `${fmt(w.input.pinCount, 0)} × ${w.input.screw} (nylon)`
+                  : "none (friction only)",
               ],
-            },
-          ]
-        : []
+              ...(w.input.friction > 0
+                ? ([["Nosecone friction", `${fmt(w.input.friction, 1)} ${fu}`]] as [string, string][])
+                : []),
+              ["Parachute packing factor", `${fmt(w.input.packing, 2)} (chute absorption ${fmt(r.absorption * 100, 0)}%)`],
+              ["Required pressure", `${fmt(fromPsi(r.pressurePsi, pu), 1)} ${pu}`],
+              ["Required force", `${fmt(fromLbf(r.forceLbf, fu), 0)} ${fu}`],
+              ["Charge (Fetter)", `${fmtMass(r.mass)} g · ${fmt(gToGrains(r.mass), 1)} gr`],
+              ...(state.redundant
+                ? ([["Backup charge", `${fmtMass(backupMass(r.mass, state.backupPct))} g — for the second altimeter`]] as [string, string][])
+                : []),
+              [
+                "Traditional ideal-gas (same pressure)",
+                `${fmtMass(r.traditionalMass)} g — Fetter is ${fmt(r.ratio, 2)}× the traditional charge`,
+              ],
+              ["Volume", `${fmt(r.volumeIn3, 1)} in³ · ${fmt(in3ToCc(r.volumeIn3), 0)} cc`],
+            ];
+            return { title: w.title, rows };
+          })
       : wells.filter(({ data }) => data.result.mass > 0).map(({ key, title, data }) => {
           const w = state[key];
           const res = data.result;
@@ -613,38 +639,43 @@ export default function Calculator({
         });
 
     let method: string[];
-    if (isFetter && fetterOutOfEnvelope) {
-      // Outside the envelope the on-screen guard withholds the charge; the report's "how it was
-      // sized" section must not recite one either. Explain the envelope instead of a number.
-      method = [
-        "Fetter model — black powder for parachute deployment.",
-        "",
-        `At ${fmt(state.fetter.deployAlt, 0)} ft this deployment is outside the model's envelope —`,
-        "a sea-level model, not intended for high-altitude deployment (~20,000 ft and up), where",
-        "black powder no longer burns completely. No charge is sized. Size this deployment with the",
-        "target-pressure or separation-force modes, and ground-test in full flight configuration.",
-      ];
-    } else if (isFetter) {
-      method = [
-        "Fetter model — black powder for parachute deployment.",
-        "",
-        "Rather than sizing powder from a target pressure alone, the model solves an energy and",
-        "pressure balance for the compartment: the combustion energy of the powder, minus the",
-        "share the parachute protector absorbs, heats the trapped air and combustion gas and",
-        "builds the pressure needed to shear the pins (plus friction) with an energetic margin.",
-        "",
-        `  Parachute absorption  A_H = 0.951 · (1 − e^(−4.491 · Pf))   at Pf = ${fmt(state.fetter.packing, 2)} → ${fmt(fetter.absorption * 100, 0)}%`,
-        `  Required pressure     ${fmt(fetter.pressurePsi, 2)} psi     Required force ${fmt(fetter.forceLbf, 0)} lbf`,
-        `  Safety factor         ${fmt(state.fetter.safety * 100, 0)}% (built in — no separate multiplier)`,
-        "",
-        `  Fetter charge         ${fmt(fetter.mass, 2)} g`,
-        `  Traditional ideal-gas ${fmt(fetter.traditionalMass, 2)} g at the same pressure and volume`,
-        `  Model delta           ${fmt(fetter.ratio, 2)}× (Fetter vs. traditional at the same pressure)`,
-        "",
-        "The model is Tom Fetter's; see the references below. It assumes a chute protector /",
-        "recovery blanket, does not model a piston, and is a sea-level model (not for deployment",
-        "near or above 20,000 ft).",
-      ];
+    if (isFetter) {
+      // Derive the worked comparison from a compartment that actually carries an in-envelope
+      // charge. If none does (all out of envelope, or no geometry), the "how it was sized"
+      // section must explain that rather than recite a number the guard is withholding.
+      const ex = fetterWells.find((w) => w.result.mass > 0 && fetterInEnvelope(w));
+      if (!ex) {
+        method = [
+          "Fetter model — black powder for parachute deployment.",
+          "",
+          "No compartment is sized. Either enter a compartment's geometry, or — if the deployment",
+          "is outside the model's envelope (a sea-level model, not for ~20,000 ft and up) — size it",
+          "with the target-pressure or separation-force modes and ground-test in flight configuration.",
+        ];
+      } else {
+        const r = ex.result;
+        const label = state.deploy === "dual" ? ` — ${ex.title.toLowerCase()}` : "";
+        method = [
+          `Fetter model — black powder for parachute deployment.${label}`,
+          "",
+          "Rather than sizing powder from a target pressure alone, the model solves an energy and",
+          "pressure balance for the compartment: the combustion energy of the powder, minus the",
+          "share the parachute protector absorbs, heats the trapped air and combustion gas and",
+          "builds the pressure needed to shear the pins (plus friction) with an energetic margin.",
+          "",
+          `  Parachute absorption  A_H = 0.951 · (1 − e^(−4.491 · Pf))   at Pf = ${fmt(ex.input.packing, 2)} → ${fmt(r.absorption * 100, 0)}%`,
+          `  Required pressure     ${fmt(r.pressurePsi, 2)} psi     Required force ${fmt(r.forceLbf, 0)} lbf`,
+          `  Safety factor         ${fmt(ex.input.safety * 100, 0)}% (built in — no separate multiplier)`,
+          "",
+          `  Fetter charge         ${fmt(r.mass, 2)} g`,
+          `  Traditional ideal-gas ${fmt(r.traditionalMass, 2)} g at the same pressure and volume`,
+          `  Model delta           ${fmt(r.ratio, 2)}× (Fetter vs. traditional at the same pressure)`,
+          "",
+          "The model is Tom Fetter's; see the references below. It assumes a chute protector /",
+          "recovery blanket, does not model a piston, and is a sea-level model (not for deployment",
+          "near or above 20,000 ft).",
+        ];
+      }
     } else {
       // Derive the worked example from a well that actually carries a charge — the same wells
       // the report shows. Otherwise a dual setup with an empty drogue but a filled main would
@@ -773,35 +804,31 @@ export default function Calculator({
       {/* Controls */}
       <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
         <div className="flex flex-wrap items-start gap-x-8 gap-y-5">
-          {/* Deployment and redundant-altimeter backups are ideal-gas-mode concerns — the
-              Fetter model sizes a single parachute compartment and already carries its own
-              margin, so both are hidden in that mode. */}
-          {!isFetter && (
-            <>
-              <ControlGroup label="Deployment">
-                <Segmented<Deploy>
-                  ariaLabel="Deployment"
-                  value={state.deploy}
-                  onChange={(deploy) => update({ deploy })}
-                  options={[
-                    { value: "single", label: "Single" },
-                    { value: "dual", label: "Dual" },
-                  ]}
-                />
-              </ControlGroup>
-              <ControlGroup label="Altimeters">
-                <Segmented<"single" | "redundant">
-                  ariaLabel="Altimeter configuration"
-                  value={state.redundant ? "redundant" : "single"}
-                  onChange={(v) => update({ redundant: v === "redundant" })}
-                  options={[
-                    { value: "single", label: "Single" },
-                    { value: "redundant", label: "Redundant" },
-                  ]}
-                />
-              </ControlGroup>
-            </>
-          )}
+          {/* Deployment (single/dual) and redundant altimeters apply in every mode — the Fetter
+              model sizes each parachute-deployment event, so a dual-deploy rocket has two Fetter
+              compartments and a backup charge just as the ideal-gas modes do. */}
+          <ControlGroup label="Deployment">
+            <Segmented<Deploy>
+              ariaLabel="Deployment"
+              value={state.deploy}
+              onChange={(deploy) => update({ deploy })}
+              options={[
+                { value: "single", label: "Single" },
+                { value: "dual", label: "Dual" },
+              ]}
+            />
+          </ControlGroup>
+          <ControlGroup label="Altimeters">
+            <Segmented<"single" | "redundant">
+              ariaLabel="Altimeter configuration"
+              value={state.redundant ? "redundant" : "single"}
+              onChange={(v) => update({ redundant: v === "redundant" })}
+              options={[
+                { value: "single", label: "Single" },
+                { value: "redundant", label: "Redundant" },
+              ]}
+            />
+          </ControlGroup>
           <ControlGroup label="Size by">
             <Segmented<Mode>
               ariaLabel="Sizing method"
@@ -855,9 +882,9 @@ export default function Calculator({
           )}
         </div>
 
-        {/* The safety margin, backup uplift, and field-elevation advisory are ideal-gas-mode
-            controls. In Fetter mode the model's own safety factor and the deployment-altitude
-            envelope live in the compartment card instead, so this panel is hidden. */}
+        {/* The safety margin and field-elevation advisory are ideal-gas-mode controls; in Fetter
+            mode the model's own safety factor and the per-bay deployment-altitude envelope live in
+            the compartment card instead. The backup uplift applies in both modes when redundant. */}
         {!isFetter && (
           <div className="mt-5 grid grid-cols-1 gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3">
             <NumberField
@@ -896,20 +923,79 @@ export default function Calculator({
             />
           </div>
         )}
+        {isFetter && state.redundant && (
+          <div className="mt-5 grid grid-cols-1 gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3">
+            <NumberField
+              label="Backup charge uplift"
+              value={state.backupPct}
+              onChange={(backupPct) => update({ backupPct })}
+              unit="%"
+              step={5}
+              min={0}
+              hint="How much larger the second altimeter's charge is than the primary. The common convention is +20%. This is redundancy, not extra model margin — ground-test both."
+            />
+          </div>
+        )}
       </div>
 
       <MeasureGuide />
-      {!isFetter && state.deploy === "dual" && <DeploySequence />}
+      {state.deploy === "dual" && <DeploySequence />}
 
-      {/* Wells + results — the ideal-gas wells, or the Fetter compartment. */}
+      {/* Attribution, once at the mode — not a footer, and not repeated per compartment. */}
+      {isFetter && (
+        <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 text-sm leading-relaxed text-indigo-900 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200">
+          <p>
+            The <strong className="font-semibold">Fetter model</strong> is {FETTER_LINKS.author}&apos;s —
+            derived from pressure-chamber and deployment-fixture testing to fix the traditional
+            model&apos;s under-prediction of the powder a parachute needs.{" "}
+            <a href={FETTER_LINKS.paper} target="_blank" rel="noopener noreferrer" className="font-medium underline decoration-indigo-400 underline-offset-2">
+              Read the paper
+            </a>{" "}
+            ·{" "}
+            <a href={FETTER_LINKS.video} target="_blank" rel="noopener noreferrer" className="font-medium underline decoration-indigo-400 underline-offset-2">
+              NARCON-2025 talk
+            </a>
+            .
+          </p>
+          <p className="mt-1.5 text-indigo-800/80 dark:text-indigo-300/80">
+            It assumes a chute protector / recovery blanket and does not model a piston (a piston
+            needs less powder).{" "}
+            {state.deploy === "dual"
+              ? "In dual deploy it sizes the drogue and main compartments independently, each with its own sea-level envelope check below."
+              : "Its sea-level altitude envelope is checked below."}
+          </p>
+        </div>
+      )}
+
+      {/* Wells + results — the ideal-gas wells, or the Fetter compartment(s). */}
       {isFetter ? (
-        <FetterCard
-          state={state}
-          input={state.fetter}
-          onChange={(patch) => setState((s) => ({ ...s, fetter: { ...s.fetter, ...patch } }))}
-          result={fetter}
-          onPlanCharge={onPlanCharge}
-        />
+        <div
+          className={
+            "mt-5 grid grid-cols-1 gap-5 " +
+            (state.deploy === "dual" ? "lg:grid-cols-2" : "")
+          }
+        >
+          {fetterWells.map((w) => (
+            <FetterCard
+              key={w.key}
+              title={w.title}
+              sub={w.sub}
+              state={state}
+              input={w.input}
+              onChange={(patch) => setState((s) => ({ ...s, [w.key]: { ...s[w.key], ...patch } }))}
+              result={w.result}
+              backup={state.redundant ? backupMass(w.result.mass, state.backupPct) : undefined}
+              backupLabel={
+                state.redundant
+                  ? backupFloorBinds(w.result.mass, state.backupPct)
+                    ? `+${BACKUP_MIN_G} g`
+                    : `+${round(backupPctClamped(state.backupPct), 0)}%`
+                  : undefined
+              }
+              onPlanCharge={onPlanCharge}
+            />
+          ))}
+        </div>
       ) : (
         <div
           className={
@@ -1115,7 +1201,7 @@ export default function Calculator({
         </div>
       </section>
 
-      <Methodology state={state} drogue={drogue} fetter={fetter} />
+      <Methodology state={state} drogue={drogue} fetter={fetterDrogueRes} />
       {benchOpen && (
         <BenchMode
           wells={benchWells}

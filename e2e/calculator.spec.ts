@@ -965,13 +965,14 @@ test.describe("Charge calculator", () => {
   }) => {
     // Default Fetter compartment (3"×15", 2×2-56, full chute, 40% safety) → ~2.01 g, versus the
     // traditional ideal-gas ~0.67 g at the same pressure — the delta the mode exists to show.
-    await page.goto("/?mode=x");
+    await page.goto("/?mode=x&dep=s");
     await expect(page.getByTestId("fetter-mass")).toHaveText("2.01");
     await expect(page.getByTestId("fetter-traditional")).toContainText("0.67");
     await expect(page.getByTestId("fetter-ratio")).toContainText("×");
-    // The margin/backup panel and deployment toggle don't apply here and are hidden.
+    // Charge's ×-multiplier "Safety margin" never applies in Fetter (the model has its own).
     await expect(page.getByLabel("Safety margin")).toHaveCount(0);
-    await expect(page.getByRole("group", { name: "Deployment" })).toHaveCount(0);
+    // Deployment DOES apply — single/dual works in Fetter just like the ideal-gas modes.
+    await expect(page.getByRole("group", { name: "Deployment" })).toBeVisible();
     // The mode is credited at the mode, with the paper linked (not buried in a footer).
     await expect(page.getByRole("link", { name: /Read the paper/i })).toBeVisible();
   });
@@ -979,7 +980,7 @@ test.describe("Charge calculator", () => {
   test("the Fetter safety factor is the model's margin — no separate multiplier", async ({
     page,
   }) => {
-    await page.goto("/?mode=x");
+    await page.goto("/?mode=x&dep=s");
     // The mode exposes Fetter's own safety factor as a percent, defaulting to 40%…
     await expect(page.getByLabel("Safety factor")).toHaveValue("40");
     // …framed as built-in, so no separate multiplier is layered on…
@@ -991,7 +992,7 @@ test.describe("Charge calculator", () => {
   });
 
   test("outside the altitude envelope the Fetter mode withholds a number", async ({ page }) => {
-    await page.goto("/?mode=x&xalt=25000");
+    await page.goto("/?mode=x&dep=s&xalt=25000");
     // No charge is presented; instead a redirect to the traditional modes + a ground test.
     await expect(page.getByTestId("fetter-mass")).toHaveCount(0);
     await expect(
@@ -1037,13 +1038,16 @@ test.describe("Charge calculator", () => {
     expect(html).toContain("speedmotionrockets.com");
     // The model's own margin — never Charge's separate multiplier stacked on top.
     expect(html).toContain("no separate multiplier");
+    // Default deploy is dual, so both compartments are carried.
+    expect(html).toContain("Drogue compartment");
+    expect(html).toContain("Main compartment");
     expect(html).not.toContain("<script");
   });
 
   test("switching units in Fetter mode converts the compartment, not the charge", async ({
     page,
   }) => {
-    await page.goto("/?mode=x");
+    await page.goto("/?mode=x&dep=s");
     const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
     await expect(dia).toHaveValue("3"); // 3 in
     const mass = page.getByTestId("fetter-mass");
@@ -1062,7 +1066,7 @@ test.describe("Charge calculator", () => {
   test("deployment altitude reads as an envelope check and never changes the charge below the limit", async ({
     page,
   }) => {
-    await page.goto("/?mode=x");
+    await page.goto("/?mode=x&dep=s");
     // Framed as a validity check in its own "Model envelope" panel, not a sizing knob.
     await expect(page.getByText("Model envelope")).toBeVisible();
     await expect(page.getByText(/within envelope/i)).toBeVisible();
@@ -1081,7 +1085,7 @@ test.describe("Charge calculator", () => {
   test("out of the envelope, no surface recites a charge — not the report, not the methodology", async ({
     page,
   }) => {
-    await page.goto("/?mode=x&xalt=25000");
+    await page.goto("/?mode=x&dep=s&xalt=25000");
     // On-screen: the compartment card withholds the number…
     await expect(page.getByTestId("fetter-mass")).toHaveCount(0);
     // …and the methodology's worked comparison must not print it either.
@@ -1102,7 +1106,7 @@ test.describe("Charge calculator", () => {
   test("out of envelope, bench mode explains the envelope instead of 'enter an airframe'", async ({
     page,
   }) => {
-    await page.goto("/?mode=x&xalt=25000");
+    await page.goto("/?mode=x&dep=s&xalt=25000");
     await page.getByRole("button", { name: "Bench mode" }).click();
     const dialog = page.getByRole("dialog", { name: "Bench mode" });
     await expect(dialog.getByText(/outside the Fetter model.s envelope/i)).toBeVisible();
@@ -1110,7 +1114,7 @@ test.describe("Charge calculator", () => {
   });
 
   test("Fetter mode flags a diameter that looks like a unit or OD mix-up", async ({ page }) => {
-    await page.goto("/?mode=x");
+    await page.goto("/?mode=x&dep=s");
     const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
     await dia.fill("98"); // 98 "inches" is really 98 mm typed into an inches field
     await expect(page.getByText(/did you mean mm, or enter the outside diameter/i)).toBeVisible();
@@ -1120,7 +1124,7 @@ test.describe("Charge calculator", () => {
 
   test("Fetter packing factor is clamped to its physical range on entry", async ({ page }) => {
     // Start below full so the clamp changes the value (and the field visibly resyncs).
-    await page.goto("/?mode=x&xpk=0.5");
+    await page.goto("/?mode=x&dep=s&xpk=0.5");
     const pk = page.getByLabel("Parachute packing factor");
     await expect(pk).toHaveValue("0.5");
     await pk.fill("3"); // nonsensical; clamps to the full-tube maximum of 1
@@ -1129,14 +1133,59 @@ test.describe("Charge calculator", () => {
 
   test("the Fetter mode has no serious accessibility violations", async ({ page }) => {
     // The default-mode axe scan doesn't reach the Fetter UI (the screw <select>, the
-    // attribution box, the envelope alert), so it gets its own scan.
+    // attribution box, the envelope alert), so it gets its own scan — in dual deploy, to also
+    // cover the two-compartment layout.
     await page.goto("/?mode=x");
-    await expect(page.getByTestId("fetter-mass")).toBeVisible();
+    await expect(page.getByTestId("fetter-mass").first()).toBeVisible();
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     const serious = results.violations.filter(
       (v) => v.impact === "serious" || v.impact === "critical",
     );
     expect(serious).toEqual([]);
+  });
+
+  test("dual deploy sizes two Fetter compartments — a drogue and a main", async ({ page }) => {
+    await page.goto("/?mode=x&dep=d");
+    await expect(page.getByRole("heading", { name: "Drogue compartment" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Main compartment" })).toBeVisible();
+    // Two independent charges, one per bay; the longer main bay sizes larger than the drogue.
+    await expect(page.getByTestId("fetter-mass")).toHaveCount(2);
+    const masses = await page.getByTestId("fetter-mass").allTextContents();
+    expect(Number(masses[1])).toBeGreaterThan(Number(masses[0]));
+  });
+
+  test("redundant altimeters add a Fetter backup charge, larger than the primary", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x&dep=s&rdn=1");
+    const primary = Number(await page.getByTestId("fetter-mass").textContent());
+    const backup = Number(await page.getByTestId("fetter-backup-mass").textContent());
+    expect(backup).toBeGreaterThan(primary); // +20% / +0.5 g redundancy convention
+    // The ×-multiplier "Safety margin" is still never applied — the backup is redundancy, not margin.
+    await expect(page.getByLabel("Safety margin")).toHaveCount(0);
+  });
+
+  test("per-bay envelope: a high drogue is withheld while the low main still sizes", async ({
+    page,
+  }) => {
+    // Drogue fires at apogee (25k ft, out of envelope); the main deploys low (in envelope).
+    await page.goto("/?mode=x&dep=d&xalt=25000");
+    await expect(page.getByTestId("fetter-mass")).toHaveCount(1); // main only
+    await expect(
+      page.getByRole("alert").filter({ hasText: /Outside the Fetter model.s envelope/i }),
+    ).toBeVisible(); // the drogue's redirect
+  });
+
+  test("dual Fetter round-trips the main compartment through the shareable URL", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x&dep=d&xmdia=4&xml=30");
+    await expect(page).toHaveURL(/xmdia=4/);
+    await expect(page).toHaveURL(/xml=30/);
+    // The main compartment (second card) reflects the shared geometry.
+    await expect(
+      page.getByRole("spinbutton", { name: /Inner diameter/ }).nth(1),
+    ).toHaveValue("4");
   });
 
 });

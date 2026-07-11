@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  FETTER_LINKS,
   FETTER_MIN_TYPICAL_G,
   FETTER_ALT_LIMIT_FT,
   FETTER_SCREWS,
@@ -28,16 +27,26 @@ const ID_PRESETS: Record<LengthUnit, number[]> = {
  * safety factor, so — unlike the two ideal-gas modes — no separate margin is layered on top.
  */
 export default function FetterCard({
+  title,
+  sub,
   state,
   input,
   onChange,
   result,
+  backup,
+  backupLabel,
   onPlanCharge,
 }: {
+  title: string;
+  sub: string;
   state: State;
   input: FetterInput;
   onChange: (patch: Partial<FetterInput>) => void;
   result: FetterResult;
+  /** The redundant second-altimeter charge (g), or undefined when not redundant. */
+  backup?: number;
+  /** Label for how the backup was sized ("+20%" or "+0.5 g"). */
+  backupLabel?: string;
   onPlanCharge?: (grams: number, estimate: number) => void;
 }) {
   const lu = state.lengthUnit;
@@ -56,41 +65,10 @@ export default function FetterCard({
   );
 
   return (
-    <div className="mt-5 flex flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+    <div className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-base font-semibold tracking-tight">Parachute compartment</h3>
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">Chute + recovery blanket</span>
-      </div>
-
-      {/* Attribution + envelope, at the mode itself — not a footer. */}
-      <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-3 text-xs leading-relaxed text-indigo-900 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200">
-        <p>
-          The <strong className="font-semibold">Fetter model</strong> is {FETTER_LINKS.author}&apos;s
-          — derived from pressure-chamber and deployment-fixture testing to fix the traditional
-          model&apos;s under-prediction of the powder a parachute needs.{" "}
-          <a
-            href={FETTER_LINKS.paper}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium underline decoration-indigo-400 underline-offset-2"
-          >
-            Read the paper
-          </a>{" "}
-          ·{" "}
-          <a
-            href={FETTER_LINKS.video}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium underline decoration-indigo-400 underline-offset-2"
-          >
-            NARCON-2025 talk
-          </a>
-          .
-        </p>
-        <p className="mt-1.5 text-indigo-800/80 dark:text-indigo-300/80">
-          It assumes a chute protector / recovery blanket and does not model a piston (a piston
-          needs less powder). Its sea-level altitude envelope is checked below.
-        </p>
+        <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">{sub}</span>
       </div>
 
       {/* Inputs */}
@@ -291,9 +269,27 @@ export default function FetterCard({
                 </span>
               )}
               <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-                Fetter model
+                {backup !== undefined ? "primary · Fetter" : "Fetter model"}
               </span>
             </div>
+
+            {/* The redundant second-altimeter charge — sized larger by the same +20% / +0.5 g
+                convention as the ideal-gas modes. It's a separate charge for a separate altimeter,
+                to ground-test on its own; not extra margin on the model's number. */}
+            {backup !== undefined && mass > 0 && (
+              <div className="flex items-baseline gap-2 border-t border-indigo-200/70 pt-3 dark:border-indigo-500/20">
+                <span
+                  data-testid="fetter-backup-mass"
+                  className="font-mono text-xl font-semibold tracking-tight text-zinc-700 tabular-nums dark:text-zinc-200"
+                >
+                  {fmtMass(backup)}
+                </span>
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">g</span>
+                <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
+                  backup charge ({backupLabel})
+                </span>
+              </div>
+            )}
 
             {/* Traditional vs Fetter, with the ratio — the whole reason the mode exists. */}
             {mass > 0 && result.traditionalMass > 0 && (
@@ -372,17 +368,23 @@ export default function FetterCard({
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                 Bench-test around the estimate until separation is clean and energetic. Tap a step
                 to start a log entry below.
+                {backup !== undefined && " Test the backup charge too — it fires on its own if the primary doesn't."}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {[
-                  { label: "Low −20%", grams: round(mass * 0.8, 2) },
-                  { label: "Estimate", grams: round(mass, 2) },
-                  { label: "High +20%", grams: round(mass * 1.2, 2) },
+                  // estimate = the model baseline this step calibrates against; the backup step is
+                  // intentionally inflated for redundancy, so it carries none (estimate 0).
+                  { label: "Low −20%", grams: round(mass * 0.8, 2), estimate: mass },
+                  { label: "Estimate", grams: round(mass, 2), estimate: mass },
+                  { label: "High +20%", grams: round(mass * 1.2, 2), estimate: mass },
+                  ...(backup !== undefined
+                    ? [{ label: `Backup ${backupLabel ?? ""}`.trim(), grams: round(backup, 2), estimate: 0 }]
+                    : []),
                 ].map((s) => (
                   <button
                     key={s.label}
                     type="button"
-                    onClick={() => onPlanCharge?.(s.grams, mass)}
+                    onClick={() => onPlanCharge?.(s.grams, s.estimate)}
                     title={`Log a ${s.grams} g test`}
                     className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-left transition hover:border-indigo-400 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-500/60"
                   >

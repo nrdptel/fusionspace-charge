@@ -63,9 +63,12 @@ export interface State {
   elevation: number;
   drogue: WellInput;
   main: WellInput;
-  /** The Fetter-model compartment (mode "fetter"). Kept separate from the ideal-gas wells so
+  /** The Fetter-model compartment (mode "fetter"). In single deploy this is the one
+   *  compartment; in dual deploy it's the drogue. Kept separate from the ideal-gas wells so
    *  switching modes never disturbs the other's inputs. */
   fetter: FetterInput;
+  /** The Fetter main compartment, used only in dual deploy — the drogue is `fetter`. */
+  fetterMain: FetterInput;
 }
 
 /** Common nylon shear screws. Values are widely-cited single-shear approximations and
@@ -94,6 +97,18 @@ export const DEFAULT_STATE: State = {
   fetter: {
     diameter: 3,
     length: 15,
+    screw: "2-56",
+    pinCount: 2,
+    friction: 0,
+    packing: 1,
+    safety: 0.4,
+    deployAlt: 0,
+  },
+  // The main compartment (dual deploy only): same tube, a longer bay for the larger main
+  // chute. Deploys low, so its deployment altitude stays at sea level by default.
+  fetterMain: {
+    diameter: 3,
+    length: 24,
     screw: "2-56",
     pinCount: 2,
     friction: 0,
@@ -162,6 +177,7 @@ export function normalizeState(raw: unknown): State {
     drogue: well(o.drogue, DEFAULT_STATE.drogue),
     main: well(o.main, DEFAULT_STATE.main),
     fetter: fetter(o.fetter, DEFAULT_STATE.fetter),
+    fetterMain: fetter(o.fetterMain, DEFAULT_STATE.fetterMain),
   };
 }
 
@@ -193,19 +209,24 @@ export function encodeState(s: State): string {
   };
   well("d", s.drogue);
   if (s.deploy === "dual") well("m", s.main);
-  // The Fetter compartment is encoded only in its own mode — like the main well in dual
-  // deploy — so pressure/force links stay exactly as they were and existing shared links
-  // don't change. The keys are all "x"-prefixed to avoid colliding with the well params.
+  // The Fetter compartments are encoded only in their own mode — like the main well in dual
+  // deploy — so pressure/force links stay exactly as they were and existing shared links don't
+  // change. Keys are "x"-prefixed to avoid colliding with the well params; the drogue keeps the
+  // original bare `x*` keys (so single-compartment links from before dual are unchanged) and the
+  // main uses `xm*`, encoded only in dual deploy.
+  const fetterEnc = (prefix: string, f: FetterInput) => {
+    p.set(`${prefix}dia`, String(f.diameter));
+    p.set(`${prefix}l`, String(f.length));
+    p.set(`${prefix}sc`, f.screw);
+    p.set(`${prefix}n`, String(f.pinCount));
+    p.set(`${prefix}fr`, String(f.friction));
+    p.set(`${prefix}pk`, String(f.packing));
+    p.set(`${prefix}sf`, String(f.safety));
+    p.set(`${prefix}alt`, String(f.deployAlt));
+  };
   if (s.mode === "fetter") {
-    const f = s.fetter;
-    p.set("xdia", String(f.diameter));
-    p.set("xl", String(f.length));
-    p.set("xsc", f.screw);
-    p.set("xn", String(f.pinCount));
-    p.set("xfr", String(f.friction));
-    p.set("xpk", String(f.packing));
-    p.set("xsf", String(f.safety));
-    p.set("xalt", String(f.deployAlt));
+    fetterEnc("x", s.fetter);
+    if (s.deploy === "dual") fetterEnc("xm", s.fetterMain);
   }
   return p.toString();
 }
@@ -238,20 +259,24 @@ export function decodeState(query: string): State {
   const pu = (p.get("pu") as PressureUnit) || DEFAULT_STATE.pressureUnit;
   const fu = (p.get("fu") as ForceUnit) || DEFAULT_STATE.forceUnit;
 
-  const fd = DEFAULT_STATE.fetter;
-  const scParam = p.get("xsc");
-  const fetter: FetterInput = {
-    diameter: numOr("xdia", fd.diameter),
-    length: numOr("xl", fd.length),
-    screw: isScrewSize(scParam) ? scParam : fd.screw,
-    pinCount: Math.max(0, Math.round(numOr("xn", fd.pinCount))),
-    friction: numOr("xfr", fd.friction),
-    // Same clamps as normalizeState: packing to [0,1], safety floored at 0, so a hand-edited
-    // link can't push the absorption out of range or size below the bare requirement.
-    packing: Math.min(1, Math.max(0, numOr("xpk", fd.packing))),
-    safety: Math.max(0, numOr("xsf", fd.safety)),
-    deployAlt: Math.max(0, numOr("xalt", fd.deployAlt)),
+  // Drogue keeps the bare `x*` keys; main uses `xm*`. Same clamps as normalizeState: packing
+  // to [0,1], safety/deployAlt floored at 0, pins to a non-negative integer — so a hand-edited
+  // link can't push the absorption out of range or size below the bare requirement.
+  const fetterDec = (prefix: string, d: FetterInput): FetterInput => {
+    const sc = p.get(`${prefix}sc`);
+    return {
+      diameter: numOr(`${prefix}dia`, d.diameter),
+      length: numOr(`${prefix}l`, d.length),
+      screw: isScrewSize(sc) ? sc : d.screw,
+      pinCount: Math.max(0, Math.round(numOr(`${prefix}n`, d.pinCount))),
+      friction: numOr(`${prefix}fr`, d.friction),
+      packing: Math.min(1, Math.max(0, numOr(`${prefix}pk`, d.packing))),
+      safety: Math.max(0, numOr(`${prefix}sf`, d.safety)),
+      deployAlt: Math.max(0, numOr(`${prefix}alt`, d.deployAlt)),
+    };
   };
+  const fetter = fetterDec("x", DEFAULT_STATE.fetter);
+  const fetterMain = fetterDec("xm", DEFAULT_STATE.fetterMain);
 
   return {
     mode: MODE_FROM[p.get("mode") ?? ""] ?? DEFAULT_STATE.mode,
@@ -270,5 +295,6 @@ export function decodeState(query: string): State {
     drogue: well("d", DEFAULT_STATE.drogue),
     main: well("m", DEFAULT_STATE.main),
     fetter,
+    fetterMain,
   };
 }

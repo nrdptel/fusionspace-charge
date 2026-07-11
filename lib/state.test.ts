@@ -189,6 +189,28 @@ describe("URL state — Fetter mode", () => {
     expect(decodeState(encodeState(custom))).toEqual(custom);
   });
 
+  it("round-trips both Fetter compartments in dual deploy", () => {
+    const custom: State = {
+      ...DEFAULT_STATE,
+      mode: "fetter",
+      deploy: "dual",
+      fetter: { ...DEFAULT_STATE.fetter, diameter: 3, length: 15, deployAlt: 12000 },
+      fetterMain: { ...DEFAULT_STATE.fetterMain, diameter: 4, length: 30, screw: "6-32", pinCount: 3 },
+    };
+    expect(decodeState(encodeState(custom))).toEqual(custom);
+  });
+
+  it("drops the Fetter main compartment in single deploy (like the ideal-gas main well)", () => {
+    const single: State = {
+      ...DEFAULT_STATE,
+      mode: "fetter",
+      deploy: "single",
+      fetterMain: { ...DEFAULT_STATE.fetterMain, diameter: 99 },
+    };
+    expect(encodeState(single)).not.toContain("xmdia");
+    expect(decodeState(encodeState(single)).fetterMain.diameter).toBe(DEFAULT_STATE.fetterMain.diameter);
+  });
+
   it("only encodes the Fetter compartment in Fetter mode (documented asymmetry)", () => {
     // Like the main well in single deploy, the Fetter params aren't written in force/pressure
     // mode — so existing shared links stay byte-for-byte identical.
