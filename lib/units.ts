@@ -35,7 +35,8 @@ export const fromLbf = (lbf: number, unit: ForceUnit): number =>
 // Volume — canonical: in³
 export const in3ToCc = (in3: number): number => in3 * CC_PER_IN3;
 
-// Mass — canonical: grams. Black powder is always reported in grams, but many powder
-// scales and dippers are marked in grains, so a grains equivalent is offered alongside.
+// Mass — canonical: grams. Black powder is always reported in grams in the UI; this
+// grams↔grains conversion (many powder scales and dippers read in grains) backs the
+// unit round-trip tests and is here for any future readout.
 export const gToGrains = (g: number): number => g * GR_PER_G;
 export const grainsToG = (grains: number): number => grains / GR_PER_G;

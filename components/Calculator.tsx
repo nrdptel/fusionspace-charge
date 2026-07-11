@@ -17,7 +17,6 @@ import {
   fromInches,
   fromLbf,
   fromPsi,
-  gToGrains,
   in3ToCc,
   toInches,
   toLbf,
@@ -602,7 +601,7 @@ export default function Calculator({
               ["Parachute packing factor", `${fmt(w.input.packing, 2)} (chute absorption ${fmt(r.absorption * 100, 0)}%)`],
               ["Required pressure", `${fmt(fromPsi(r.pressurePsi, pu), 1)} ${pu}`],
               ["Required force", `${fmt(fromLbf(r.forceLbf, fu), 0)} ${fu}`],
-              ["Charge (Fetter)", `${fmtMass(r.mass)} g · ${fmt(gToGrains(r.mass), 1)} gr`],
+              ["Charge (Fetter)", `${fmtMass(r.mass)} g`],
               ...(state.redundant
                 ? ([["Backup charge", `${fmtMass(backupMass(r.mass, state.backupPct))} g — for the second altimeter`]] as [string, string][])
                 : []),
