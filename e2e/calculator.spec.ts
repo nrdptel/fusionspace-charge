@@ -1193,6 +1193,19 @@ test.describe("Charge calculator", () => {
     await expect(mainMass).toHaveText(before); // its charge is unchanged
   });
 
+  test("in dual deploy the methodology walks the in-envelope compartment, not always the drogue", async ({
+    page,
+  }) => {
+    // Drogue fires at 25k (out of envelope); the main deploys low (in envelope) and is sized.
+    await page.goto("/?mode=x&dep=d&xalt=25000");
+    const methodology = page.locator("#methodology");
+    // The worked comparison is labeled for the main — the compartment that actually sized —
+    // and shows its numbers, not the drogue's "no charge is sized here".
+    await page.getByText("Worked comparison — Main compartment").click();
+    await expect(methodology.getByText(/no charge is sized here/i)).toHaveCount(0);
+    await expect(methodology.getByText(/× the traditional charge/i)).toBeVisible();
+  });
+
   test("dual Fetter round-trips the main compartment through the shareable URL", async ({
     page,
   }) => {

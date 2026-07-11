@@ -355,6 +355,11 @@ export default function Calculator({
   // Every Fetter compartment is out of the altitude envelope — so the whole plan is empty for
   // an envelope reason, not for want of inputs (drives the card/bench/copy empty note).
   const fetterAllOutOfEnvelope = isFetter && fetterWells.every((w) => !fetterInEnvelope(w));
+  // The compartment the methodology walks through — a real, in-envelope one where possible, so
+  // in dual deploy the worked comparison matches a charge the tool actually sized (not the
+  // drogue when only the main is in envelope). Falls back to the first compartment.
+  const fetterExample =
+    fetterWells.find((w) => w.result.mass > 0 && fetterInEnvelope(w)) ?? fetterWells[0];
 
   const share = async () => {
     try {
@@ -561,12 +566,18 @@ export default function Calculator({
             : "Target pressure",
       ],
     ];
-    if (isFetter)
+    if (isFetter) {
+      // Each compartment carries its own safety factor; state it globally only when they agree,
+      // otherwise point to the per-compartment rows (each block lists its own).
+      const safeties = fetterWells.map((w) => w.input.safety);
+      const allSame = safeties.every((s) => s === safeties[0]);
       summary.push([
         "Safety factor",
-        `${fmt(state.fetter.safety * 100, 0)}% (the model's own margin — no separate multiplier)`,
+        allSame
+          ? `${fmt(safeties[0] * 100, 0)}% (the model's own margin — no separate multiplier)`
+          : "per compartment below (the model's own margin — no separate multiplier)",
       ]);
-    else if (state.mode === "force") summary.push(["Safety margin", `${fmt(state.margin, 2)}×`]);
+    } else if (state.mode === "force") summary.push(["Safety margin", `${fmt(state.margin, 2)}×`]);
     else if (state.margin > 1)
       summary.push(["Safety margin", `${fmt(state.margin, 2)}× (sized above target)`]);
     if (state.redundant)
@@ -606,6 +617,7 @@ export default function Calculator({
                 ? ([["Nosecone friction", `${fmt(w.input.friction, 1)} ${fu}`]] as [string, string][])
                 : []),
               ["Parachute packing factor", `${fmt(w.input.packing, 2)} (chute absorption ${fmt(r.absorption * 100, 0)}%)`],
+              ["Safety factor", `${fmt(w.input.safety * 100, 0)}% (built into the charge)`],
               ["Required pressure", `${fmt(fromPsi(r.pressurePsi, pu), 1)} ${pu}`],
               ["Required force", `${fmt(fromLbf(r.forceLbf, fu), 0)} ${fu}`],
               ["Charge (Fetter)", `${fmtMass(r.mass)} g`],
@@ -1207,7 +1219,13 @@ export default function Calculator({
         </div>
       </section>
 
-      <Methodology state={state} drogue={drogue} fetter={fetterDrogueRes} />
+      <Methodology
+        state={state}
+        drogue={drogue}
+        fetter={fetterExample.result}
+        fetterInput={fetterExample.input}
+        fetterLabel={state.deploy === "dual" ? fetterExample.title : ""}
+      />
       {benchOpen && (
         <BenchMode
           wells={benchWells}
