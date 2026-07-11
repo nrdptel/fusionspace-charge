@@ -8,7 +8,7 @@ import {
   type FetterResult,
 } from "@/lib/fetter";
 import type { FetterInput, State } from "@/lib/state";
-import { fromLbf, fromPsi, in3ToCc, gToGrains, type LengthUnit } from "@/lib/units";
+import { fromLbf, fromPsi, in3ToCc, type LengthUnit } from "@/lib/units";
 import { fmt, fmtMass, round } from "@/lib/format";
 import { LARGE_CHARGE_G, wellCautions } from "@/lib/checks";
 import { NumberField, Select, Chip } from "./ui";
@@ -54,7 +54,6 @@ export default function FetterCard({
   const pu = state.pressureUnit;
   const inEnvelope = withinAltitudeEnvelope(input.deployAlt);
   const mass = result.mass;
-  const grains = gToGrains(mass);
   // The same diameter sanity check the ideal-gas wells get — a bore that reads like a mm/inch
   // mix-up or an outside diameter. Passing mass 0 asks only for the diameter cautions; the
   // large-charge caution is rendered separately below with the Fetter number.
@@ -263,11 +262,6 @@ export default function FetterCard({
                 {fmtMass(mass)}
               </span>
               <span className="text-lg text-zinc-500 dark:text-zinc-400">g</span>
-              {mass > 0 && (
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                  · {fmt(grains, 1)} gr
-                </span>
-              )}
               <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
                 {backup !== undefined ? "primary · Fetter" : "Fetter model"}
               </span>
