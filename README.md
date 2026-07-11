@@ -33,7 +33,11 @@ section, so the whole tool is discoverable at a glance.
   traditional model under-predicts). The Fetter charge is shown **alongside the traditional
   result with the ratio**, so you can see which model produced which number and why they
   differ. Its own safety factor is built in — no separate margin is applied — and the model's
-  envelope (chute protector assumed, no piston, sea level) is enforced in the UI.
+  envelope (chute protector assumed, no piston, sea level) is enforced in the UI. It works with
+  **single or dual deploy and redundant altimeters** like the other modes: each parachute-
+  deployment event is its own Fetter compartment, with a per-bay altitude-envelope check (a
+  drogue fires at apogee, a main down low), and the redundant backup follows the same
+  +20% / +0.5 g convention — as redundancy, not extra model margin.
 - A **safety margin** in either mode: it sizes the charge above the bare separation
   force, or above your target pressure so a leaky real well still reaches it.
 - **Single and dual-deploy**: separate drogue and main wells.

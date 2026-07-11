@@ -386,6 +386,22 @@ function FetterMethodology({ state, fetter }: { state: State; fetter: FetterResu
         </p>
       </Disclosure>
 
+      {state.redundant && (
+        <Disclosure summary="Redundant altimeters and the backup charge">
+          <p>
+            With two altimeters, each fires its own charge into the bay, and the backup is sized a
+            little larger — the same +20% (or at least +0.5 g) convention the ideal-gas modes use.
+            The reason isn&apos;t that the model needs more powder; it&apos;s redundancy: if the
+            primary fires but doesn&apos;t free the airframe — a joint that bound, a charge a touch
+            light — the backup has to break a section the first charge already strained against.
+          </p>
+          <p className="font-medium text-zinc-700 dark:text-zinc-300">
+            So the backup is a separate charge for a separate altimeter, not extra margin stacked on
+            the Fetter number. Ground-test both — each has to separate the airframe on its own.
+          </p>
+        </Disclosure>
+      )}
+
       <Disclosure summary="Envelope & assumptions">
         <p>The model is fit to a specific set of conditions. Outside them, use the ideal-gas modes and a ground test:</p>
         <ul className="list-disc space-y-1 pl-5">
