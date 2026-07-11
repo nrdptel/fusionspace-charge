@@ -10,7 +10,7 @@ import {
 } from "@/lib/charge";
 import { FETTER, FETTER_LINKS, withinAltitudeEnvelope, type FetterResult } from "@/lib/fetter";
 import { fmt, fmtMass } from "@/lib/format";
-import type { State } from "@/lib/state";
+import type { FetterInput, State } from "@/lib/state";
 import { Disclosure } from "./ui";
 
 function Row({ term, children }: { term: string; children: React.ReactNode }) {
@@ -26,12 +26,21 @@ export default function Methodology({
   state,
   drogue,
   fetter,
+  fetterInput,
+  fetterLabel,
 }: {
   state: State;
   drogue: { result: WellResult; requiredForceLbf: number };
+  /** The Fetter compartment the methodology walks through (a real, in-envelope one when
+   *  possible), its inputs, and — in dual deploy — its name ("Drogue/Main compartment"). */
   fetter: FetterResult;
+  fetterInput: FetterInput;
+  fetterLabel: string;
 }) {
-  if (state.mode === "fetter") return <FetterMethodology state={state} fetter={fetter} />;
+  if (state.mode === "fetter")
+    return (
+      <FetterMethodology state={state} fetter={fetter} input={fetterInput} label={fetterLabel} />
+    );
   const r = drogue.result;
   const margin = Math.max(1, state.margin);
   const volumeFt3 = r.volume / IN3_PER_FT3;
@@ -262,10 +271,22 @@ export default function Methodology({
 
 /** The "Where the numbers come from" panel for the Fetter model — the same transparency the
  *  ideal-gas modes get: the mechanism, every constant, a worked comparison, and the credit. */
-function FetterMethodology({ state, fetter }: { state: State; fetter: FetterResult }) {
-  const f = state.fetter;
+function FetterMethodology({
+  state,
+  fetter,
+  input,
+  label,
+}: {
+  state: State;
+  fetter: FetterResult;
+  input: FetterInput;
+  label: string;
+}) {
+  const f = input;
   // Outside the envelope the compartment card withholds the charge; the worked comparison below
-  // must not print it either, or a confused user scrolls here and finds the number anyway.
+  // must not print it either, or a confused user scrolls here and finds the number anyway. The
+  // example is the same compartment the card sizes, so in dual deploy this tracks whichever bay
+  // is in envelope rather than always the drogue.
   const outOfEnvelope = !withinAltitudeEnvelope(f.deployAlt);
   return (
     <section id="methodology" className="mt-10 scroll-mt-8">
@@ -333,7 +354,7 @@ function FetterMethodology({ state, fetter }: { state: State; fetter: FetterResu
         </dl>
       </Disclosure>
 
-      <Disclosure summary="Worked comparison — your compartment">
+      <Disclosure summary={`Worked comparison — ${label || "your compartment"}`}>
         {outOfEnvelope ? (
           <p>
             This deployment is outside the model&apos;s envelope (a sea-level model, not for

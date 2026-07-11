@@ -1176,6 +1176,36 @@ test.describe("Charge calculator", () => {
     ).toBeVisible(); // the drogue's redirect
   });
 
+  test("switching units in dual Fetter converts BOTH compartments, not just the drogue", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x&dep=d");
+    const mainDia = page.getByRole("spinbutton", { name: /Inner diameter/ }).nth(1);
+    await expect(mainDia).toHaveValue("3");
+    const mainMass = page.getByTestId("fetter-mass").nth(1);
+    const before = (await mainMass.textContent())!.trim();
+    await page
+      .locator("#calculator")
+      .getByRole("group", { name: "Length unit" })
+      .getByRole("button", { name: "mm" })
+      .click();
+    await expect(mainDia).toHaveValue("76.2"); // the main converts too, not a silent 3 mm
+    await expect(mainMass).toHaveText(before); // its charge is unchanged
+  });
+
+  test("in dual deploy the methodology walks the in-envelope compartment, not always the drogue", async ({
+    page,
+  }) => {
+    // Drogue fires at 25k (out of envelope); the main deploys low (in envelope) and is sized.
+    await page.goto("/?mode=x&dep=d&xalt=25000");
+    const methodology = page.locator("#methodology");
+    // The worked comparison is labeled for the main — the compartment that actually sized —
+    // and shows its numbers, not the drogue's "no charge is sized here".
+    await page.getByText("Worked comparison — Main compartment").click();
+    await expect(methodology.getByText(/no charge is sized here/i)).toHaveCount(0);
+    await expect(methodology.getByText(/× the traditional charge/i)).toBeVisible();
+  });
+
   test("dual Fetter round-trips the main compartment through the shareable URL", async ({
     page,
   }) => {
