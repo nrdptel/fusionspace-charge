@@ -130,7 +130,7 @@ test.describe("Charge calculator", () => {
     await page.getByPlaceholder("Name this setup").fill("Av-Bay 4");
     await page.getByRole("button", { name: "Save", exact: true }).click();
     // Saving makes it the active rocket, which seeds the log's airframe field.
-    await expect(page.getByLabel("Well / airframe")).toHaveValue("Av-Bay 4");
+    await expect(page.getByLabel("Section / airframe")).toHaveValue("Av-Bay 4");
   });
 
   test("the layout doesn't scroll sideways on a narrow phone, even with the save form open", async ({
@@ -269,7 +269,7 @@ test.describe("Charge calculator", () => {
 
   test("coaches the next charge to try after a failed test", async ({ page }) => {
     await page.goto("/");
-    await page.getByLabel("Well / airframe").fill("Iter");
+    await page.getByLabel("Section / airframe").fill("Iter");
     await page.getByLabel("Charge tested").fill("0.6");
     await page.getByRole("button", { name: "None", exact: true }).click();
     await page.getByRole("button", { name: "Log test", exact: true }).click();
@@ -281,7 +281,7 @@ test.describe("Charge calculator", () => {
 
   test("offers failure causes after a failed test", async ({ page }) => {
     await page.goto("/");
-    await page.getByLabel("Well / airframe").fill("Iter");
+    await page.getByLabel("Section / airframe").fill("Iter");
     await page.getByLabel("Charge tested").fill("0.6");
     await page.getByRole("button", { name: "None", exact: true }).click();
     await page.getByRole("button", { name: "Log test", exact: true }).click();
@@ -1042,6 +1042,41 @@ test.describe("Charge calculator", () => {
     expect(html).toContain("Drogue compartment");
     expect(html).toContain("Main compartment");
     expect(html).not.toContain("<script");
+  });
+
+  test("the measure guide speaks the Fetter card's vocabulary, not the ideal-gas 'well'", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x&dep=s");
+    await page.getByText("What am I measuring?").click();
+    // The diagram names the same dimension the card does ("compartment length"), so the two
+    // don't mix "well" and "compartment" copy on one screen.
+    await expect(page.getByRole("img", { name: /the compartment length runs/i })).toBeVisible();
+    await expect(page.getByRole("img", { name: /pressurized length runs/i })).toHaveCount(0);
+  });
+
+  test("an unsized Fetter report explains the compartment, never 'enter a pressure or force'", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x&dep=s");
+    // Wait for hydration + the first compute before touching an input, so the clear isn't lost to
+    // a pre-hydration render (the default 3"×15" compartment sizes to 2.01 g).
+    const mass = page.getByTestId("fetter-mass");
+    await expect(mass).toHaveText("2.01");
+    // Clear the geometry so nothing is sized — the report has no compartment to show. The headline
+    // dropping to the empty-value dash confirms the recompute landed before we export.
+    await page.getByRole("spinbutton", { name: /Inner diameter/ }).first().fill("0");
+    await expect(mass).toHaveText("—");
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download report as HTML" }).click(),
+    ]);
+    const html = fs.readFileSync(await dl.path(), "utf8");
+    expect(html).toContain("No compartment is sized yet");
+    // The ideal-gas empty copy (a "well", a "target pressure or separation force") must not leak
+    // into a mode that has none of those inputs.
+    expect(html).not.toContain("No charge well is sized yet");
+    expect(html).not.toContain("target pressure or separation force");
   });
 
   test("switching units in Fetter mode converts the compartment, not the charge", async ({

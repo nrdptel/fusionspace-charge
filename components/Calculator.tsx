@@ -460,13 +460,15 @@ export default function Calculator({
     : `${state.deploy === "dual" ? "Dual deploy" : "Single deploy"} · sized by ${
         state.mode === "force" ? "separation force" : "target pressure"
       }`;
-  // When every Fetter compartment is out of its altitude envelope there are no charges, but not
-  // because the inputs are empty — so the carried artifacts explain the envelope rather than
-  // telling the user to "enter a pressure or force" they don't have in this mode.
-  const emptyNote =
-    isFetter && fetterAllOutOfEnvelope
+  // Fetter mode never has "a target pressure or separation force" to enter, so when it sizes no
+  // charge the carried artifacts (card, copy text, report) must not fall back to the ideal-gas
+  // "enter a pressure or force" copy. Two empty cases: every compartment is outside the altitude
+  // envelope, or the geometry just isn't filled in yet — each gets its own mode-appropriate note.
+  const emptyNote = isFetter
+    ? fetterAllOutOfEnvelope
       ? "Outside the Fetter model's envelope (~20,000 ft and up), the model doesn't apply. Size this with the target-pressure or separation-force modes, and ground-test in flight configuration."
-      : undefined;
+      : "No compartment is sized yet. Enter an inner diameter and a compartment length for at least one parachute compartment."
+    : undefined;
   const printPlan: PrintPlan = {
     title: airframeName?.trim() || "Ejection charge plan",
     meta: modeMeta,
@@ -767,6 +769,9 @@ export default function Calculator({
       testsHeader: ["Date", "Charge", "Result", "vs model", "Notes"],
       tests,
       testsNote,
+      // Mode-appropriate copy when no compartment/well is sized (Fetter has no pressure/force to
+      // "enter"); undefined in the ideal-gas modes keeps the report's own default fallback.
+      emptyNote,
       references: [
         ...(isFetter
           ? [
@@ -956,8 +961,8 @@ export default function Calculator({
         )}
       </div>
 
-      <MeasureGuide />
-      {state.deploy === "dual" && <DeploySequence />}
+      <MeasureGuide fetter={isFetter} />
+      {state.deploy === "dual" && <DeploySequence fetter={isFetter} />}
 
       {/* Attribution, once at the mode — not a footer, and not repeated per compartment. */}
       {isFetter && (

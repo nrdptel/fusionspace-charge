@@ -13,7 +13,7 @@ export type Outcome = "clean" | "partial" | "none";
 export interface TestEntry {
   id: string;
   date: string; // yyyy-mm-dd
-  label: string; // which well / airframe
+  label: string; // which section / airframe
   charge: number; // grams
   outcome: Outcome;
   notes: string;
