@@ -43,6 +43,24 @@ describe("recovery report", () => {
     expect(html).toContain("Ground-test results");
   });
 
+  it("uses a mode-specific empty note when one is given (no ideal-gas copy in a Fetter report)", () => {
+    const html = buildReportHtml({
+      ...base,
+      wells: [],
+      emptyNote: "No compartment is sized yet. Enter an inner diameter and a compartment length for at least one parachute compartment.",
+    });
+    expect(html).toContain("No compartment is sized yet");
+    // The ideal-gas prompt to enter "a target pressure or separation force" must not appear.
+    expect(html).not.toContain("No charge well is sized yet");
+    expect(html).not.toContain("target pressure or separation force");
+  });
+
+  it("escapes the empty note", () => {
+    const html = buildReportHtml({ ...base, wells: [], emptyNote: '<img src=x onerror="alert(1)">' });
+    expect(html).not.toContain("<img src=x");
+    expect(html).toContain("&lt;img src=x");
+  });
+
   it("escapes user-supplied text", () => {
     const html = buildReportHtml({
       ...base,

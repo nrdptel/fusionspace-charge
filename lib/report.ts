@@ -25,6 +25,11 @@ export interface ReportData {
   tests: string[][];
   /** Validation / calibration summary, or a prompt to go test. */
   testsNote: string;
+  /** Overrides the default "no charge well is sized yet" copy when there are no wells for a
+   *  reason other than empty ideal-gas inputs — e.g. a Fetter compartment awaiting geometry,
+   *  or a deployment outside the model's altitude envelope. Keeps the report from telling a
+   *  Fetter user to "enter a target pressure or separation force" that mode doesn't have. */
+  emptyNote?: string;
   /** Where the values come from — citations for the cert/build documentation. */
   references?: { label: string; detail: string; url?: string }[];
 }
@@ -62,7 +67,10 @@ export function buildReportHtml(d: ReportData): string {
               `<section><h2>${escapeHtml(w.title)}</h2><table class="kv">${rows(w.rows)}</table></section>`,
           )
           .join("")
-      : `<section><h2>Charge wells</h2><p class="note">No charge well is sized yet. Enter an inner diameter and a pressurized length (and a target pressure or separation force) for at least one well.</p></section>`;
+      : `<section><h2>Charge wells</h2><p class="note">${escapeHtml(
+          d.emptyNote ??
+            "No charge well is sized yet. Enter an inner diameter and a pressurized length (and a target pressure or separation force) for at least one well.",
+        )}</p></section>`;
 
   const method = `<section><h2>How the number was sized</h2><pre>${d.method
     .map(escapeHtml)

@@ -39,7 +39,7 @@ const GROUPS: { id: string; title: string; blurb: string; points: string[] }[] =
     points: [
       "Size by target pressure or by separation force (shear pins + friction)",
       "Or the Fetter model — the research-backed method for parachute deployment, shown against the traditional result with the ratio",
-      "Single or dual deploy, with a diameter and length per well",
+      "Single or dual deploy, with a diameter and length per bay",
       "Redundant-altimeter backup charge (+20%, or +0.5 g, whichever is larger)",
       "Safety margin, field-elevation advisory, unit toggles, size & pin presets",
       "Save rockets, and share any setup as a link",
@@ -72,6 +72,7 @@ const GROUPS: { id: string; title: string; blurb: string; points: string[] }[] =
     blurb: "Nothing here is fudged — the whole calculation is shown.",
     points: [
       "The ideal-gas formula, its constants, and a worked example",
+      "The Fetter deployment model, its constants, and the traditional-vs-Fetter comparison",
       "The assumptions, and why there's no efficiency fudge factor",
       "Cited references and sources",
     ],

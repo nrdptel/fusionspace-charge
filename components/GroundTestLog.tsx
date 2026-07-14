@@ -324,7 +324,7 @@ export default function GroundTestLog({
           </label>
           <label className="block">
             <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Well / airframe
+              Section / airframe
             </span>
             <input
               type="text"

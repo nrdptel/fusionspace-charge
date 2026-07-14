@@ -3,7 +3,11 @@
 // airframe at apogee for a fast, stable descent, then the main charge deploys the main
 // parachute down low for a gentle landing. Collapsed by default; reads as reference, not
 // decoration. Theme-aware via Tailwind stroke/fill utilities.
-export default function DeploySequence() {
+//
+// The Fetter mode titles its two cards "Drogue/Main compartment" rather than "well", so pass
+// `fetter` to point this prose at the cards by the name they actually carry above it.
+export default function DeploySequence({ fetter = false }: { fetter?: boolean }) {
+  const section = fetter ? "compartment" : "well";
   return (
     <details className="mt-5 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/50">
       <summary className="cursor-pointer select-none font-medium text-zinc-700 dark:text-zinc-300">
@@ -56,7 +60,7 @@ export default function DeploySequence() {
             <dd>
               Fires at the top of the flight to split the airframe and release a small drogue
               chute. The rocket comes down fast but stable — not drifting for miles, not
-              falling flat. This is the drogue well above.
+              falling flat. This is the drogue {section} above.
             </dd>
           </div>
           <div>
@@ -64,7 +68,7 @@ export default function DeploySequence() {
             <dd>
               Fires a few hundred to ~1,000 ft up to deploy the main parachute for a gentle
               landing. Late, so the rocket doesn&apos;t drift far under the big chute. This is
-              the main well above.
+              the main {section} above.
             </dd>
           </div>
           <div>
@@ -72,7 +76,7 @@ export default function DeploySequence() {
             <dd>
               Each event is its own charge in its own section, sized independently — usually
               the same tube diameter but very different pressurized lengths, which is why the
-              two wells can come out to different masses.
+              two {section}s can come out to different masses.
             </dd>
           </div>
         </dl>
