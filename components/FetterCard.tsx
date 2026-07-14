@@ -10,7 +10,7 @@ import {
 import type { FetterInput, State } from "@/lib/state";
 import { fromLbf, fromPsi, in3ToCc, type LengthUnit } from "@/lib/units";
 import { fmt, fmtMass, round } from "@/lib/format";
-import { LARGE_CHARGE_G, wellCautions } from "@/lib/checks";
+import { largeChargeCaution, wellCautions } from "@/lib/checks";
 import { NumberField, Select, Chip } from "./ui";
 
 const SCREW_OPTIONS = FETTER_SCREWS.map((s) => ({ value: s.label, label: s.label }));
@@ -54,6 +54,9 @@ export default function FetterCard({
   const pu = state.pressureUnit;
   const inEnvelope = withinAltitudeEnvelope(input.deployAlt);
   const mass = result.mass;
+  // Shared with the ideal-gas wells so the wording stays in lockstep; `screws` adds the shear
+  // screws to the list of inputs to re-check, since the Fetter card has them.
+  const largeCharge = largeChargeCaution(mass, { screws: true });
   // The same diameter sanity check the ideal-gas wells get — a bore that reads like a mm/inch
   // mix-up or an outside diameter. Passing mass 0 asks only for the diameter cautions; the
   // large-charge caution is rendered separately below with the Fetter number.
@@ -263,7 +266,10 @@ export default function FetterCard({
               </span>
               <span className="text-lg text-zinc-500 dark:text-zinc-400">g</span>
               <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-                {backup !== undefined ? "primary · Fetter" : "Fetter model"}
+                {/* Name the material, matching the ideal-gas card's caption — the Fetter
+                    attribution banner and the traditional-vs-Fetter delta already carry the
+                    method, so the same headline slot reads the same across every mode. */}
+                {backup !== undefined ? "primary · Fetter" : "black powder"}
               </span>
             </div>
 
@@ -341,16 +347,13 @@ export default function FetterCard({
               </span>
             </p>
           )}
-          {mass > LARGE_CHARGE_G && (
+          {largeCharge && (
             <p
               role="alert"
               className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400"
             >
               <span aria-hidden className="mt-px shrink-0">⚠</span>
-              <span>
-                {fmt(mass, 1)} g is a large ejection charge — double-check the diameter, length,
-                screws, and units.
-              </span>
+              <span>{largeCharge.message}</span>
             </p>
           )}
 
@@ -360,8 +363,8 @@ export default function FetterCard({
                 Ground-test plan
               </div>
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                Bench-test around the estimate until separation is clean and energetic. Tap a step
-                to start a log entry below.
+                Bench-test from the low charge up until separation is clean and energetic. Tap a
+                step to start a log entry below.
                 {backup !== undefined && " Test the backup charge too — it fires on its own if the primary doesn't."}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">

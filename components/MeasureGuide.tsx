@@ -3,7 +3,12 @@
 // from the charge's bulkhead to the separation joint — not the whole airframe.
 // Collapsed by default and paired with definitions, so it reads as reference, not
 // decoration. Theme-aware via Tailwind stroke/fill utilities.
-export default function MeasureGuide() {
+//
+// The Fetter mode names the same dimension "compartment length" on its input card, so
+// pass `fetter` to keep the diagram's vocabulary in step with the card above it rather
+// than mixing "well" and "compartment" copy on one screen.
+export default function MeasureGuide({ fetter = false }: { fetter?: boolean }) {
+  const lengthLabel = fetter ? "compartment length" : "pressurized length";
   return (
     <details className="mt-5 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/50">
       <summary className="cursor-pointer select-none font-medium text-zinc-700 dark:text-zinc-300">
@@ -14,7 +19,7 @@ export default function MeasureGuide() {
         <svg
           viewBox="60 22 340 192"
           role="img"
-          aria-label="Airframe section: the inner diameter is measured across the tube's inside bore; the pressurized length runs from the charge's bulkhead to the separation joint."
+          aria-label={`Airframe section: the inner diameter is measured across the tube's inside bore; the ${lengthLabel} runs from the charge's bulkhead to the separation joint.`}
           className="mx-auto h-auto w-full max-w-md"
           fontSize="11"
         >
@@ -91,13 +96,13 @@ export default function MeasureGuide() {
             markerEnd="url(#mg-arrow)"
           />
           <text x="244" y="200" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
-            pressurized length
+            {lengthLabel}
           </text>
 
           {/* Top callouts with leader lines to the feature */}
           <line x1="170" y1="46" x2="170" y2="62" className="stroke-zinc-300 dark:stroke-zinc-700" strokeWidth="1" />
           <text x="170" y="42" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
-            bulkhead + charge well
+            bulkhead + charge{fetter ? "" : " well"}
           </text>
           <line x1="318" y1="46" x2="318" y2="60" className="stroke-zinc-300 dark:stroke-zinc-700" strokeWidth="1" />
           <text x="318" y="42" textAnchor="middle" className="fill-zinc-600 dark:fill-zinc-400">
@@ -112,14 +117,18 @@ export default function MeasureGuide() {
             <dd>The tube&apos;s inside bore — what the gas actually fills. Not the outside diameter.</dd>
           </div>
           <div>
-            <dt className="font-medium text-zinc-700 dark:text-zinc-300">Pressurized length</dt>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">
+              {fetter ? "Compartment length" : "Pressurized length"}
+            </dt>
             <dd>
               From the charge&apos;s bulkhead to the separation joint — the bay the gas
               pressurizes. Not the whole airframe; measure the section that actually splits.
             </dd>
           </div>
           <div>
-            <dt className="font-medium text-zinc-700 dark:text-zinc-300">Bulkhead &amp; charge well</dt>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">
+              {fetter ? "Bulkhead & charge" : "Bulkhead & charge well"}
+            </dt>
             <dd>The sealed plate the charge sits on; the gas pushes against it to separate the joint.</dd>
           </div>
           <div>
