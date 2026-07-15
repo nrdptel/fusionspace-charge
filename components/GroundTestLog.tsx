@@ -168,9 +168,14 @@ export default function GroundTestLog({
 
   const add = () => {
     if (charge <= 0) return;
+    const today = todayISO();
     const entry: TestEntry = {
       id: newId(),
-      date: date || todayISO(),
+      // Never store a future date. summarizeFor picks the surfaced "fly this" charge by date
+      // order, so a mistyped year (2062 for 2026) would sort above every real test. The date
+      // input carries a `max` hint, but that isn't enforced on typed input — mirror
+      // sanitizeEntries' backstop here so the invariant holds on the manual-entry path too.
+      date: date && date <= today ? date : today,
       label: label.trim() || "—",
       charge,
       outcome,
@@ -182,6 +187,9 @@ export default function GroundTestLog({
     setCharge(0);
     setNotes("");
     setDraftEstimate(0);
+    // If the typed date was clamped to today, reflect that in the field so it matches the
+    // stored entry instead of leaving a future value that would silently clamp again.
+    if (entry.date !== date) setDate(entry.date);
   };
 
   const remove = (id: string) => {
@@ -341,6 +349,7 @@ export default function GroundTestLog({
             <input
               type="date"
               value={date}
+              max={todayISO()}
               onChange={(e) => setDate(e.target.value)}
               className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:[color-scheme:dark]"
             />

@@ -88,6 +88,30 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText("1.50 g").first()).toBeVisible();
   });
 
+  test("a future-dated manual entry is backstopped to today so it can't hijack 'proven'", async ({
+    page,
+  }) => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const d = new Date();
+    const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    await page.goto("/");
+    const dateInput = page.getByLabel("Date");
+    // The picker advertises today as its ceiling...
+    await expect(dateInput).toHaveAttribute("max", today);
+    // ...but `max` doesn't block typed input, so the add path itself must clamp. Type a
+    // far-future date, log a clean test, and confirm the stored/shown date is today, not 2062 —
+    // otherwise it would sort above every real test and surface as the "proven" charge.
+    await dateInput.fill("2062-01-01");
+    await page.getByLabel("Charge tested").fill("9");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText("9.00 g").first()).toBeVisible();
+    await expect(page.getByText("2062-01-01")).toHaveCount(0);
+    await expect(page.getByText(today).first()).toBeVisible();
+    // The field is corrected too, so a repeat entry doesn't silently clamp again.
+    await expect(dateInput).toHaveValue(today);
+  });
+
   test("saves and reloads a rocket setup", async ({ page }) => {
     await page.goto("/");
     const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
