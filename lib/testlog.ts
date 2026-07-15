@@ -223,10 +223,11 @@ export function failureCauses(outcome: Outcome): string[] {
   if (outcome === "none")
     return [
       "Charge too small — step up and re-test.",
+      "Charge not contained — a loose pile of powder flashes and vents instead of building pressure. Cap or tape the well and bury the e-match tip in the powder.",
       "Shear pins or screws too strong, or too many of them.",
-      "Gas leaking past the bulkhead, or out the vent / sampling holes.",
-      "Wadding packed too tight, smothering the charge.",
       "E-match didn't fully light the powder — poor contact, or too little BP packed around it.",
+      "Gas leaking past a poorly-sealed bulkhead or coupler, or out a vent hole in the pressurized bay (not the sealed av-bay's sampling ports).",
+      "Wadding packed too tight, smothering the charge.",
     ];
   if (outcome === "partial")
     return [
