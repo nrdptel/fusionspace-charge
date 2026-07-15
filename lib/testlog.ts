@@ -74,6 +74,12 @@ export function sanitizeEntries(
           : typeof rawId === "number" && Number.isFinite(rawId)
             ? String(rawId)
             : genId();
+      // Coerce the charge once and require it finite. Number("1e999") and Number("Infinity")
+      // overflow to Infinity, which would slip past a bare `> 0` filter, win same-date ties in
+      // summarizeFor (Infinity beats every real charge), and surface as the "proven" charge —
+      // rendered as "— g" by fmtMass, so it poisons the log invisibly. A non-finite or
+      // non-positive charge falls to 0 and is dropped by the trailing filter.
+      const charge = Number(x.charge);
       return {
         id,
         // Reject a future date too, not just a malformed one: "most recent clean" is chosen by
@@ -82,10 +88,12 @@ export function sanitizeEntries(
         date:
           typeof x.date === "string" && isIsoDate(x.date) && x.date <= today ? x.date : today,
         label: typeof x.label === "string" && x.label ? x.label : "—",
-        charge: Number(x.charge) || 0,
+        charge: Number.isFinite(charge) ? charge : 0,
         outcome: OUTCOMES.has(x.outcome as Outcome) ? (x.outcome as Outcome) : "clean",
         notes: typeof x.notes === "string" ? x.notes : "",
-        ...(typeof x.estimate === "number" && x.estimate > 0 ? { estimate: x.estimate } : {}),
+        ...(typeof x.estimate === "number" && Number.isFinite(x.estimate) && x.estimate > 0
+          ? { estimate: x.estimate }
+          : {}),
       };
     })
     .filter((e) => e.charge > 0);
