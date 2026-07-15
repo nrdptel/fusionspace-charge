@@ -490,6 +490,9 @@ export default function Calculator({
     title: airframeName?.trim() || "Ejection charge plan",
     meta: modeMeta,
     emptyNote,
+    // Match the mode's vocabulary and the recovery report — Fetter compartments are measured by
+    // "compartment length", the ideal-gas wells by "pressurized length".
+    lengthLabel: isFetter ? "Compartment length" : "Pressurized length",
     // A proven charge is only printed as "proven" when the setup hasn't drifted from what
     // was tested — otherwise the card would tell the builder to fly a charge the on-screen
     // guard is warning them not to trust until re-tested.

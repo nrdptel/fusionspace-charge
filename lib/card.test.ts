@@ -43,6 +43,15 @@ describe("build & ground-test card HTML", () => {
     expect(html).toContain("Ejection charge");
   });
 
+  it("labels the length by mode — matching the recovery report's vocabulary", () => {
+    // Default (ideal-gas) keeps "Pressurized length"; Fetter passes "Compartment length" so the
+    // bench card and the recovery report don't disagree on the same measurement.
+    expect(buildCardHtml(plan, "2026-06-27")).toContain("Pressurized length 12 in");
+    const fetter = buildCardHtml({ ...plan, lengthLabel: "Compartment length" }, "2026-06-27");
+    expect(fetter).toContain("Compartment length 12 in");
+    expect(fetter).not.toContain("Pressurized length");
+  });
+
   it("relaxes the fixed table widths on a narrow screen so the card doesn't scroll sideways", () => {
     const html = buildCardHtml(plan, "2026-06-27");
     expect(html).toContain("@media screen and (max-width: 26rem)");
