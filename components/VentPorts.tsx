@@ -135,8 +135,11 @@ export default function VentPorts() {
 
         {/* Result */}
         <div className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-          <div className="flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
-            <div aria-live="polite" className="flex items-baseline gap-2">
+          {/* Live region spans the whole result — the port diameter AND the chips — so a screen
+              reader hears when the recommended bit changes or the tool flips to the over-1/4"
+              "add more ports" state, not just the headline number. */}
+          <div aria-live="polite" className="flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
+            <div className="flex items-baseline gap-2">
               <span
                 data-testid="port-diameter"
                 className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50"

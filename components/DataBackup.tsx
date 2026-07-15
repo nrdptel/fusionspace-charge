@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { buildBackup, readBackup, mergeById } from "@/lib/backup";
+import { buildBackup, readBackup, mergeById, sanitizeRockets } from "@/lib/backup";
 import { sanitizeEntries } from "@/lib/testlog";
 
 const KEYS = {
@@ -77,9 +77,12 @@ export default function DataBackup() {
       return;
     }
     try {
+      // Sanitize incoming rockets before merging, the same way the log is handled: this mints
+      // ids and rebuilds each state up front, so dedup-by-id is reliable and a foreign/hand-edited
+      // rocket can't slip through unnormalized.
       localStorage.setItem(
         KEYS.rockets,
-        JSON.stringify(mergeById(readArray(KEYS.rockets), parsed.rockets as { id?: unknown }[])),
+        JSON.stringify(mergeById(readArray(KEYS.rockets), sanitizeRockets(parsed.rockets, newId))),
       );
       // Sanitize the incoming log the same way the log's own importer does, so a restore
       // can't write an entry with a negative/NaN/missing charge that would render as "NaN g".

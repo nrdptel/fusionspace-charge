@@ -628,6 +628,7 @@ test.describe("Charge calculator", () => {
 
   test("backs up everything and restores it", async ({ page }) => {
     await page.goto("/");
+    page.on("dialog", (d) => d.accept()); // accept the delete-rocket confirm
     await page.getByRole("button", { name: "Save current setup" }).click();
     await page.getByPlaceholder("Name this setup").fill("Backup Bird");
     await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -902,6 +903,7 @@ test.describe("Charge calculator", () => {
 
   test("deleting a ground-test entry removes just that row and persists", async ({ page }) => {
     await page.goto("/");
+    page.on("dialog", (d) => d.accept()); // accept the delete-entry confirm
     await page.getByLabel("Charge tested").fill("1.1");
     await page.getByRole("button", { name: "Log test", exact: true }).click();
     await page.getByLabel("Charge tested").fill("2.2");
@@ -915,6 +917,17 @@ test.describe("Charge calculator", () => {
     await page.reload();
     await expect(page.getByText("2.20 g")).toHaveCount(0);
     await expect(page.getByText("1.10 g")).toBeVisible();
+  });
+
+  test("dismissing the delete confirm keeps the ground-test entry", async ({ page }) => {
+    await page.goto("/");
+    page.on("dialog", (d) => d.dismiss()); // cancel the confirm
+    await page.getByLabel("Charge tested").fill("1.5");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(page.getByText("1.50 g").first()).toBeVisible();
+    await page.getByRole("button", { name: "Delete entry" }).first().click();
+    // The confirm was dismissed, so the record survives — no accidental data loss.
+    await expect(page.getByText("1.50 g").first()).toBeVisible();
   });
 
   test("copies the share link to the clipboard", async ({ page }) => {
@@ -955,6 +968,7 @@ test.describe("Charge calculator", () => {
 
   test("deleting a saved rocket removes it and it stays gone after reload", async ({ page }) => {
     await page.goto("/");
+    page.on("dialog", (d) => d.accept()); // accept the delete-rocket confirm
     await page.getByRole("button", { name: "Save current setup" }).click();
     await page.getByPlaceholder("Name this setup").fill("Del Bird");
     await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -967,6 +981,7 @@ test.describe("Charge calculator", () => {
 
   test("deleting a saved rocket keeps focus in the list, not on the body", async ({ page }) => {
     await page.goto("/");
+    page.on("dialog", (d) => d.accept()); // accept the delete-rocket confirm
     for (const n of ["Bird One", "Bird Two"]) {
       await page.getByRole("button", { name: "Save current setup" }).click();
       await page.getByPlaceholder("Name this setup").fill(n);
@@ -980,6 +995,7 @@ test.describe("Charge calculator", () => {
 
   test("deleting a ground-test entry keeps focus on a delete control", async ({ page }) => {
     await page.goto("/");
+    page.on("dialog", (d) => d.accept()); // accept the delete-entry confirm
     for (const c of ["1.20", "1.50"]) {
       await page.getByLabel("Charge tested").fill(c);
       await page.getByRole("button", { name: "Log test", exact: true }).click();

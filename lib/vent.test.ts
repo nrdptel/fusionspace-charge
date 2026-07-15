@@ -46,10 +46,22 @@ describe("vent-port sizing", () => {
     expect(sizeVentPorts({ diameterIn: 0, lengthIn: 0, ports: 3 }).perPortDiameterIn).toBe(0);
   });
 
-  it("suggests the nearest common drill bit", () => {
-    expect(nearestPortBit(0.125)?.label).toBe('1/8"');
-    expect(nearestPortBit(0.13)?.label).toBe('1/8"');
-    expect(nearestPortBit(0.24)?.label).toBe('1/4"');
+  it("treats a negative dimension as empty, not as its positive twin", () => {
+    // A negative diameter would otherwise square to the same volume as the positive value,
+    // silently returning a plausible port size for nonsense input.
+    expect(sizeVentPorts({ diameterIn: -4, lengthIn: 6, ports: 3 }).perPortDiameterIn).toBe(0);
+    expect(sizeVentPorts({ diameterIn: 4, lengthIn: -6, ports: 3 }).perPortDiameterIn).toBe(0);
+  });
+
+  it("suggests a drill bit at or below the computed size — never larger (err small)", () => {
+    expect(nearestPortBit(0.125)?.label).toBe('1/8"'); // exact
+    expect(nearestPortBit(0.13)?.label).toBe('1/8"'); // rounds DOWN to 1/8", not up to 9/64"
+    // 0.24" is closest to 1/4", but rounding up would over-vent; floor to 7/32".
+    expect(nearestPortBit(0.24)?.label).toBe('7/32"');
+    // 0.177" (nearest is 3/16"=0.188, larger) floors to 5/32"=0.156.
+    expect(nearestPortBit(0.177)?.label).toBe('5/32"');
+    // Finer than any bit → the smallest common bit (the practical drill floor).
+    expect(nearestPortBit(0.03)?.label).toBe('1/16"');
     expect(nearestPortBit(0)).toBeNull();
   });
 
