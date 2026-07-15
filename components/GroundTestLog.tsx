@@ -334,7 +334,7 @@ export default function GroundTestLog({
               value={label}
               placeholder="e.g. 4&quot; drogue"
               onChange={(e) => setLabel(e.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-600"
+              className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-zinc-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-400"
             />
           </label>
           <NumberField
@@ -373,7 +373,7 @@ export default function GroundTestLog({
             value={notes}
             placeholder="Powder, wadding, what you saw — pins sheared, gear thrown clear, etc."
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-600"
+            className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-zinc-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-400"
           />
         </label>
         <div className="mt-4">
@@ -483,7 +483,7 @@ export default function GroundTestLog({
                     {e.estimate && e.estimate > 0 && (
                       <span
                         title={`Model estimate was ${e.estimate} g`}
-                        className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500"
+                        className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400"
                       >
                         {fmt(e.charge / e.estimate, 2)}× est
                       </span>
@@ -503,7 +503,7 @@ export default function GroundTestLog({
                   data-delete
                   onClick={() => remove(e.id)}
                   aria-label="Delete entry"
-                  className="shrink-0 rounded-md px-2 py-1 text-xs text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                  className="shrink-0 rounded-md px-2 py-1.5 text-xs text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                 >
                   Delete
                 </button>

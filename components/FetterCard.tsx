@@ -90,7 +90,7 @@ export default function FetterCard({
                 key={v}
                 type="button"
                 onClick={() => onChange({ diameter: v })}
-                className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
               >
                 {v} {lu}
               </button>
@@ -148,7 +148,7 @@ export default function FetterCard({
                 key={v}
                 type="button"
                 onClick={() => onChange({ packing: v })}
-                className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
               >
                 {v === 1 ? "Full" : v}
               </button>
@@ -385,7 +385,7 @@ export default function FetterCard({
                     title={`Log a ${s.grams} g test`}
                     className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-left transition hover:border-indigo-400 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-500/60"
                   >
-                    <span className="block text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                    <span className="block text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                       {s.label}
                     </span>
                     <span className="block font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">

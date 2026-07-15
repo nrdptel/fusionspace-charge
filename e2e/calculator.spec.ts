@@ -742,6 +742,22 @@ test.describe("Charge calculator", () => {
     expect(serious).toEqual([]);
   });
 
+  test("has no serious accessibility violations in dark theme", async ({ page }) => {
+    // The app's dark mode is class-based (not OS-media), so seed the stored theme before load.
+    // Dark theme is where the chip / ladder / result-chip labels previously failed contrast — a
+    // scan the light-only default test can't catch — so this guards those against regressing.
+    await page.addInitScript(() => localStorage.setItem("charge.theme", "dark"));
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa"])
+      .analyze();
+    const serious = results.violations.filter(
+      (v) => v.impact === "serious" || v.impact === "critical",
+    );
+    expect(serious).toEqual([]);
+  });
+
   test("a skip link jumps keyboard focus past the header to the calculator", async ({
     page,
   }) => {

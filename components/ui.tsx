@@ -99,7 +99,7 @@ export function Select<T extends string>({
 export function Chip({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+      <div className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
         {label}
       </div>
       <div className="font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
@@ -197,7 +197,7 @@ export function NumberField({
             last.current = v;
             onChange(v);
           }}
-          className="w-full bg-transparent px-3 py-2 text-sm tabular-nums outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+          className="w-full bg-transparent px-3 py-2 text-sm tabular-nums outline-none placeholder:text-zinc-500 dark:placeholder:text-zinc-400"
         />
         {unit && (
           <span

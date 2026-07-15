@@ -86,7 +86,7 @@ export default function ServiceWorker() {
           type="button"
           onClick={() => setUpdateReady(false)}
           aria-label="Dismiss"
-          className="rounded-md px-1.5 py-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+          className="rounded-md px-2 py-1.5 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
         >
           ✕
         </button>
