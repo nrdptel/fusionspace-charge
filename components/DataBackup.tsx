@@ -34,6 +34,15 @@ function readArray(key: string): { id?: unknown }[] {
   }
 }
 
+/** Read a raw string key, tolerating a storage-access-denied context (returns null). */
+function readString(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Back up and restore everything that lives only in this browser — saved rockets, the
  * ground-test log, and the theme — as one JSON file. The log can already export itself, but
@@ -47,7 +56,7 @@ export default function DataBackup() {
     const data = buildBackup({
       rockets: readArray(KEYS.rockets),
       testlog: readArray(KEYS.testlog),
-      theme: localStorage.getItem(KEYS.theme),
+      theme: readString(KEYS.theme),
       exportedAt: new Date().toISOString(),
     });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });

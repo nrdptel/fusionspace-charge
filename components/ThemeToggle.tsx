@@ -27,7 +27,13 @@ export default function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(KEY) as Theme | null;
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(KEY);
+    } catch {
+      /* storage access blocked (e.g. "block all site data") — fall back to the default.
+         The pre-paint script in layout.tsx guards the same read; this is its effect twin. */
+    }
     if (stored === "light" || stored === "dark" || stored === "system") {
       setTheme(stored);
     }
@@ -46,10 +52,19 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     if (!mounted || theme !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mq) return;
     const onChange = () => apply("system");
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    // MediaQueryList.addEventListener is Safari 14 / iOS 14+; older iOS (a plausible field
+    // phone) exposes only the deprecated addListener. Without this fork the missing method
+    // throws inside this effect and the error boundary replaces the whole calculator — and it
+    // runs on the default "System" theme, so it would hit first-time visitors, not an opt-in.
+    if (mq.addEventListener) {
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    }
+    mq.addListener(onChange);
+    return () => mq.removeListener(onChange);
   }, [theme, mounted]);
 
   const cycle = () => setTheme((t) => ORDER[(ORDER.indexOf(t) + 1) % ORDER.length]);
