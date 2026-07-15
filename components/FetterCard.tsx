@@ -257,39 +257,45 @@ export default function FetterCard({
       ) : (
         <>
           <div className="mt-5 flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
-            <div aria-live="polite" className="flex items-baseline gap-2">
-              <span
-                data-testid="fetter-mass"
-                className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50"
-              >
-                {fmtMass(mass)}
-              </span>
-              <span className="text-lg text-zinc-500 dark:text-zinc-400">g</span>
-              <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-                {/* Name the material, matching the ideal-gas card's caption — the Fetter
-                    attribution banner and the traditional-vs-Fetter delta already carry the
-                    method, so the same headline slot reads the same across every mode. */}
-                {backup !== undefined ? "primary · Fetter" : "black powder"}
-              </span>
-            </div>
-
-            {/* The redundant second-altimeter charge — sized larger by the same +20% / +0.5 g
-                convention as the ideal-gas modes. It's a separate charge for a separate altimeter,
-                to ground-test on its own; not extra margin on the model's number. */}
-            {backup !== undefined && mass > 0 && (
-              <div className="flex items-baseline gap-2 border-t border-indigo-200/70 pt-3 dark:border-indigo-500/20">
+            {/* aria-live wraps the primary AND backup charge rows so both are announced on input
+                change — the backup is a separate charge for a separate altimeter, weighed and
+                ground-tested on its own. The traditional-vs-Fetter comparison below is left out
+                so a screen reader isn't read a second full number on every keystroke. */}
+            <div aria-live="polite" className="flex flex-col gap-3">
+              <div className="flex items-baseline gap-2">
                 <span
-                  data-testid="fetter-backup-mass"
-                  className="font-mono text-xl font-semibold tracking-tight text-zinc-700 tabular-nums dark:text-zinc-200"
+                  data-testid="fetter-mass"
+                  className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50"
                 >
-                  {fmtMass(backup)}
+                  {fmtMass(mass)}
                 </span>
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">g</span>
+                <span className="text-lg text-zinc-500 dark:text-zinc-400">g</span>
                 <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-                  backup charge ({backupLabel})
+                  {/* Name the material, matching the ideal-gas card's caption — the Fetter
+                      attribution banner and the traditional-vs-Fetter delta already carry the
+                      method, so the same headline slot reads the same across every mode. */}
+                  {backup !== undefined ? "primary · Fetter" : "black powder"}
                 </span>
               </div>
-            )}
+
+              {/* The redundant second-altimeter charge — sized larger by the same +20% / +0.5 g
+                  convention as the ideal-gas modes. It's a separate charge for a separate altimeter,
+                  to ground-test on its own; not extra margin on the model's number. */}
+              {backup !== undefined && mass > 0 && (
+                <div className="flex items-baseline gap-2 border-t border-indigo-200/70 pt-3 dark:border-indigo-500/20">
+                  <span
+                    data-testid="fetter-backup-mass"
+                    className="font-mono text-xl font-semibold tracking-tight text-zinc-700 tabular-nums dark:text-zinc-200"
+                  >
+                    {fmtMass(backup)}
+                  </span>
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">g</span>
+                  <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
+                    backup charge ({backupLabel})
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* Traditional vs Fetter, with the ratio — the whole reason the mode exists. */}
             {mass > 0 && result.traditionalMass > 0 && (

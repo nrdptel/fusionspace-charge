@@ -263,6 +263,30 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText(/backup charge \(\+0\.5 g\)/i)).toBeVisible();
   });
 
+  test("announces its secondary computed values to a screen reader", async ({ page }) => {
+    // axe can't flag a missing live region, so assert the ones that used to update silently.
+    // The primary AND backup charge share one polite region (the backup is a distinct charge to
+    // weigh). Scoping the testid selector under [aria-live] means a dropped wrapper would match
+    // nothing and fail. (.first() because the result renders in two responsive copies.)
+    await page.goto("/?mode=p&dep=s&rdn=1&bpct=20&mg=1");
+    await expect(
+      page.locator('[aria-live="polite"] [data-testid="mass"]').first(),
+    ).toBeVisible();
+    await expect(
+      page.locator('[aria-live="polite"] [data-testid="backup-mass"]').first(),
+    ).toBeVisible();
+
+    // The ground-test coach's next-charge suggestion appears in a status region when a test is
+    // logged, so a screen reader hears the recommendation rather than it changing silently.
+    await page.getByLabel("Section / airframe").fill("Iter");
+    await page.getByLabel("Charge tested").fill("0.6");
+    await page.getByRole("button", { name: "None", exact: true }).click();
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    await expect(
+      page.locator('[role="status"]').getByText(/try 0\.75 g next/i).first(),
+    ).toBeVisible();
+  });
+
   test("the backup uses the percentage once it exceeds the +0.5 g floor", async ({
     page,
   }) => {
