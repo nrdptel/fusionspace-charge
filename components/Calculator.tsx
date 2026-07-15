@@ -230,6 +230,14 @@ export default function Calculator({
   // Spoken to assistive tech when a bench-mode step queues a charge into the log below —
   // otherwise closing the dialog just returns focus to the trigger with no sign anything happened.
   const [benchAnnounce, setBenchAnnounce] = useState("");
+  // The inline ground-test ladder pre-fills a field far down the page and scrolls to it — silent
+  // to a screen reader (focus doesn't move, the scroll isn't announced). Mirror Bench mode's
+  // confirmation through the shared status region so a non-sighted user knows it worked.
+  const planCharge = (grams: number, estimate: number) => {
+    onPlanCharge?.(grams, estimate);
+    setBenchAnnounce(`Queued ${fmtMass(grams)} g in the ground-test log below.`);
+    setTimeout(() => setBenchAnnounce(""), 3000);
+  };
   // Native share sheet, where the browser supports it (mostly mobile). Detected after mount
   // so the buttons only appear when usable; otherwise the copy/download paths stand in.
   const [canShare, setCanShare] = useState(false);
@@ -822,6 +830,10 @@ export default function Calculator({
   return (
     <>
       <div id="calculator" className="mt-10 scroll-mt-8 md:mt-14">
+      {/* Heading for screen-reader heading-navigation parity with the sibling tool sections
+          (Test & validate, Vent ports, …), which each carry a visible h2. The calculator's
+          visible title is the page h1, so this one is visually hidden. */}
+      <h2 className="sr-only">Ejection charge calculator</h2>
       <div className="mb-5">
         <SavedRockets
           current={state}
@@ -1024,7 +1036,7 @@ export default function Calculator({
                     : `+${round(backupPctClamped(state.backupPct), 0)}%`
                   : undefined
               }
-              onPlanCharge={onPlanCharge}
+              onPlanCharge={planCharge}
             />
           ))}
         </div>
@@ -1044,7 +1056,7 @@ export default function Calculator({
               well={state[key]}
               onChange={(patch) => updateWell(key, patch)}
               computed={data}
-              onPlanCharge={onPlanCharge}
+              onPlanCharge={planCharge}
             />
           ))}
         </div>
@@ -1319,7 +1331,7 @@ function WellCard({
                 key={v}
                 type="button"
                 onClick={() => onChange({ diameter: v })}
-                className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
               >
                 {v} {state.lengthUnit}
               </button>
@@ -1377,7 +1389,7 @@ function WellCard({
                   key={p.label}
                   type="button"
                   onClick={() => onChange({ pinForce: round(fromLbf(p.lbf, state.forceUnit), 1) })}
-                  className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                  className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600 transition hover:border-indigo-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 >
                   {p.label}
                 </button>
@@ -1496,7 +1508,7 @@ function WellCard({
                 title={`Log a ${s.grams} g test`}
                 className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-left transition hover:border-indigo-400 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-500/60"
               >
-                <span className="block text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                <span className="block text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                   {s.label}
                 </span>
                 <span className="block font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">

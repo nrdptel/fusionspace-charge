@@ -154,7 +154,7 @@ export default function SavedRockets({
                 if (e.key === "Enter") save();
                 if (e.key === "Escape") closeForm();
               }}
-              className="w-44 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none transition placeholder:text-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-600"
+              className="w-44 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none transition placeholder:text-zinc-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-400"
             />
             <button
               type="button"
@@ -213,7 +213,7 @@ export default function SavedRockets({
                   onActivate?.(r.name);
                 }}
                 title={`Load "${r.name}"`}
-                className="py-1 pl-3 pr-2 font-medium text-zinc-700 transition hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400"
+                className="py-1.5 pl-3 pr-2 font-medium text-zinc-700 transition hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400"
               >
                 {r.name}
               </button>
@@ -222,7 +222,7 @@ export default function SavedRockets({
                 data-delete
                 onClick={() => remove(r.id)}
                 aria-label={`Delete ${r.name}`}
-                className="px-2 py-1 text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                className="px-2.5 py-1.5 text-zinc-500 transition hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
               >
                 ×
               </button>

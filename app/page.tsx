@@ -35,9 +35,14 @@ const JSON_LD = {
   publisher: { "@type": "Organization", name: "Fusion Space", url: "https://fusionspace.co" },
 };
 
+// Shared centered-column classes. Header, main, and footer are siblings (not nested in <main>)
+// so each is exposed as its own landmark — banner / main / contentinfo — for screen-reader
+// landmark navigation, while keeping <main> a direct child of <body> (globals.css pins its width).
+const COLUMN = "mx-auto w-full max-w-5xl px-4 md:px-6";
+
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-6 md:py-10">
+    <>
       {/* Keyboard shortcut past the header, theme/tip controls, and the overview straight
           to the tool. Hidden until focused (first tab stop), then shown. */}
       <a
@@ -52,7 +57,7 @@ export default function Page() {
         // is a static literal today, but this keeps the serialization safe by construction.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD).replace(/</g, "\\u003c") }}
       />
-      <header className="flex items-start justify-between gap-4 border-b border-zinc-200 pb-6 dark:border-zinc-800">
+      <header className={`${COLUMN} flex items-start justify-between gap-4 border-b border-zinc-200 pt-8 pb-6 dark:border-zinc-800 md:pt-10`}>
         <div>
           <FusionSpaceBadge className="mb-1.5" />
           <h1 className="text-2xl font-semibold tracking-tight">Charge</h1>
@@ -68,28 +73,33 @@ export default function Page() {
         </div>
       </header>
 
-      {/* Safety is the headline, not the fine print. */}
-      <div className="mt-8 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-relaxed text-amber-900 dark:text-amber-200">
-        <span aria-hidden className="mt-0.5 shrink-0 text-base">
-          ⚠
-        </span>
-        <p>
-          <strong className="font-semibold">
-            This gives a starting estimate, never a number to fly unverified.
-          </strong>{" "}
-          The calculation is a conservative theoretical baseline — real charges differ
-          with powder, wadding, leakage, and friction. Always ground-test a charge and
-          confirm clean separation before flight, and follow your range&apos;s safety
-          rules. Black powder is an explosive; handling and use are your responsibility.
-        </p>
+      <main className={COLUMN}>
+        {/* Safety is the headline, not the fine print. */}
+        <div className="mt-8 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-relaxed text-amber-900 dark:text-amber-200">
+          <span aria-hidden className="mt-0.5 shrink-0 text-base">
+            ⚠
+          </span>
+          <p>
+            <strong className="font-semibold">
+              This gives a starting estimate, never a number to fly unverified.
+            </strong>{" "}
+            The calculation is a conservative theoretical baseline — real charges differ
+            with powder, wadding, leakage, and friction. Always ground-test a charge and
+            confirm clean separation before flight, and follow your range&apos;s safety
+            rules. Black powder is an explosive; handling and use are your responsibility.
+          </p>
+        </div>
+
+        <FeatureGuide />
+
+        <ChargeApp />
+        <DataBackup />
+        <InstallHint />
+      </main>
+
+      <div className={`${COLUMN} pb-8 md:pb-10`}>
+        <Footer />
       </div>
-
-      <FeatureGuide />
-
-      <ChargeApp />
-      <DataBackup />
-      <InstallHint />
-      <Footer />
-    </main>
+    </>
   );
 }
