@@ -149,7 +149,7 @@ export default function BenchMode({
                   onClick={() => onPlan(s.grams, s.estimate)}
                   className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-3 text-left transition active:bg-zinc-800"
                 >
-                  <span className="block text-xs uppercase tracking-wide text-zinc-500">
+                  <span className="block text-xs uppercase tracking-wide text-zinc-400">
                     {s.label}
                   </span>
                   <span className="block font-mono text-2xl font-semibold tabular-nums">
