@@ -212,7 +212,12 @@ export default function Calculator({
     name: string;
     cleanCount: number;
     lastClean?: TestEntry;
+    /** Drift baseline: the estimate the most-recent estimate-carrying clean was planned from. */
+    driftEstimate?: number;
     validated?: { charge: number; count: number };
+    /** A recent no-separation/partial at or above the proven charge — that charge shouldn't be
+     *  trusted until re-tested, so the "proven" assertions are gated and a warning is shown. */
+    retest?: { charge: number; outcome: "none" | "partial" } | null;
   } | null;
   /** The active saved rocket's name, used to title the printable card and report. */
   airframeName?: string;
@@ -458,8 +463,10 @@ export default function Calculator({
   // current configuration would now size very differently, the airframe likely changed —
   // so the "proven" charge shouldn't be trusted until re-tested. Single-compartment only,
   // where the one charge maps unambiguously to the logged test; dual is left alone.
+  // Drift baseline: the most-recent estimate-carrying clean, not strictly the last clean — a
+  // hand-logged (estimate-less) most-recent clean otherwise silently disables drift protection.
   const driftFrom =
-    singleCompartment ? testedSummary?.lastClean?.estimate : undefined;
+    singleCompartment ? testedSummary?.driftEstimate : undefined;
   // In Fetter mode a charge outside the altitude envelope is withheld on screen, so the drift
   // guard mustn't compare against that suppressed number (it would warn off a value the card
   // isn't even showing).
@@ -469,6 +476,11 @@ export default function Calculator({
     Math.abs(primary.result.mass / driftFrom - 1) > 0.15
       ? { now: primary.result.mass, then: driftFrom }
       : null;
+  // A recent bench failure at or above the proven charge (from the log, geometry-independent) is,
+  // like drift, a reason not to assert "fly the charge you tested". Both gate the proven line in
+  // the carried artifacts and add an on-screen warning.
+  const retest = testedSummary?.retest ?? null;
+  const provenUntrusted = Boolean(drift) || Boolean(retest);
 
   // The plan for the printable build & ground-test card. Only wells with a real charge
   // are included; each gets the ground-test ladder as rows to fill in at the bench.
@@ -496,7 +508,7 @@ export default function Calculator({
     // A proven charge is only printed as "proven" when the setup hasn't drifted from what
     // was tested — otherwise the card would tell the builder to fly a charge the on-screen
     // guard is warning them not to trust until re-tested.
-    tested: testedSummary?.lastClean && !drift
+    tested: testedSummary?.lastClean && !provenUntrusted
       ? `${fmtMass(testedSummary.lastClean.charge)} g — ${testedSummary.name} (${testedSummary.lastClean.date})`
       : undefined,
     wells: artWells.map((w) => ({
@@ -527,10 +539,11 @@ export default function Calculator({
         : []),
     ],
   }));
-  // Drift-gated like the printed card: on a drifted setup the bench view mustn't tell the
-  // user at the pad to "fly the charge you tested" when the on-screen guard says otherwise.
+  // Gated like the printed card: on a drifted setup — or when a later bench test failed at or
+  // above the proven charge — the bench view mustn't tell the user at the pad to "fly the charge
+  // you tested" when the on-screen guard says otherwise.
   const benchProven =
-    drift
+    provenUntrusted
       ? null
       : testedSummary?.validated
         ? { label: "Validated", charge: fmtMass(testedSummary.validated.charge) }
@@ -756,10 +769,15 @@ export default function Calculator({
         : "No ground tests logged yet. Save a setup as a named airframe and log its bench tests to attach them here.";
     } else {
       const parts: string[] = [];
-      // Drift-gate the proven/validated assertion the same way the card and bench view do:
-      // if the current setup sizes far from what was tested, the cert document must not state
-      // a proven charge the rest of the tool is warning is no longer trustworthy.
-      if (drift)
+      // Gate the proven/validated assertion the same way the card and bench view do, so the cert
+      // document never states a proven charge the rest of the tool is warning about. A later bench
+      // failure at or above the proven charge takes precedence over drift — an actual no-separation
+      // is a stronger signal than a geometry change.
+      if (retest)
+        parts.push(
+          `A later bench test at ${fmtMass(retest.charge)} g did not fully separate — the proven charge above it can't be relied on until it's re-tested.`,
+        );
+      else if (drift)
         parts.push(
           `Setup has changed since the last clean test — it now sizes to ${fmtMass(drift.now)} g versus ${fmtMass(drift.then)} g when proven. Re-test before relying on the logged charge.`,
         );
@@ -1086,8 +1104,10 @@ export default function Calculator({
                 {fmtMass(testedSummary.lastClean.charge)} g
               </span>{" "}
               on {testedSummary.lastClean.date}
-              {testedSummary.cleanCount > 1 && ` (${testedSummary.cleanCount} clean tests logged)`}.
-              Fly the charge you tested — the estimate below is only a starting point.
+              {testedSummary.cleanCount > 1 && ` (${testedSummary.cleanCount} clean tests logged)`}.{" "}
+              {provenUntrusted
+                ? "Re-test before you rely on it — see the note below."
+                : "Fly the charge you tested — the estimate below is only a starting point."}
             </p>
             {drift && (
               <p
@@ -1103,6 +1123,23 @@ export default function Calculator({
                   airframe was proven at a setup that sized to{" "}
                   <span className="font-mono tabular-nums">{fmtMass(drift.then)} g</span>. If you
                   changed the tube, length, or pins, re-test before trusting the proven charge.
+                </span>
+              </p>
+            )}
+            {retest && (
+              <p
+                role="alert"
+                className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400"
+              >
+                <span aria-hidden className="mt-px shrink-0">
+                  ⚠
+                </span>
+                <span>
+                  A later bench test at{" "}
+                  <span className="font-mono tabular-nums">{fmtMass(retest.charge)} g</span>{" "}
+                  {retest.outcome === "none" ? "didn't separate" : "only partially separated"} — at
+                  or above this charge. Don&apos;t trust the proven charge until you re-test; the
+                  ground-test coach below picks up where to go next.
                 </span>
               </p>
             )}
