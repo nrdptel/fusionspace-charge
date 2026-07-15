@@ -79,6 +79,16 @@ export default function DeploySequence({ fetter = false }: { fetter?: boolean })
               two {section}s can come out to different masses.
             </dd>
           </div>
+          <div>
+            <dt className="font-medium text-zinc-700 dark:text-zinc-300">Pin the main joint</dt>
+            <dd>
+              Most flyers hold the main joint with shear pins (and often the drogue too).
+              Friction alone can let the main pull out early under drogue-descent drag — a{" "}
+              <span className="font-medium">drag separation</span> — deploying the big chute at
+              high speed and shredding it. That&apos;s why the main defaults to more pins than
+              the drogue here.
+            </dd>
+          </div>
         </dl>
       </div>
     </details>

@@ -121,8 +121,9 @@ export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
   ${body}
   <footer>
     <strong>These are theoretical starting estimates, not numbers to fly unverified.</strong>
-    Bench-test from the low charge up until separation is clean and energetic; fly the charge
-    you proved, not the one the formula guessed. Black powder is an explosive — sizing,
+    Bench-test from the low charge up until separation is clean and energetic — fire it remotely
+    from behind cover, airframe restrained and pointed somewhere safe, eye protection on. Fly the
+    charge you proved, not the one the formula guessed. Black powder is an explosive — sizing,
     handling, and use are your responsibility.
   </footer>
 </main>
