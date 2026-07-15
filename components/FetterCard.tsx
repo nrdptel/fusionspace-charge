@@ -295,7 +295,7 @@ export default function FetterCard({
             {mass > 0 && result.traditionalMass > 0 && (
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-indigo-200/70 pt-3 text-sm dark:border-indigo-500/20">
                 <span className="text-zinc-600 dark:text-zinc-300">
-                  Traditional ideal-gas, same pressure:
+                  Traditional ideal-gas, same pressure (no margin):
                 </span>
                 <span
                   data-testid="fetter-traditional"

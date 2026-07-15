@@ -24,13 +24,19 @@ function Row({ term, children }: { term: string; children: React.ReactNode }) {
 
 export default function Methodology({
   state,
-  drogue,
+  well,
+  wellLabel,
   fetter,
   fetterInput,
   fetterLabel,
 }: {
   state: State;
-  drogue: { result: WellResult; requiredForceLbf: number };
+  /** The well the worked example walks through — the first one that actually carries a charge,
+   *  so a dual setup with an empty drogue but a filled main doesn't print an all-zero derivation
+   *  for a well that isn't even in the report. Matches the report's example selection. */
+  well: { result: WellResult; requiredForceLbf: number };
+  /** That well's name for the disclosure heading ("drogue" / "main" / "ejection"). */
+  wellLabel: string;
   /** The Fetter compartment the methodology walks through (a real, in-envelope one when
    *  possible), its inputs, and — in dual deploy — its name ("Drogue/Main compartment"). */
   fetter: FetterResult;
@@ -41,7 +47,7 @@ export default function Methodology({
     return (
       <FetterMethodology state={state} fetter={fetter} input={fetterInput} label={fetterLabel} />
     );
-  const r = drogue.result;
+  const r = well.result;
   const margin = Math.max(1, state.margin);
   const volumeFt3 = r.volume / IN3_PER_FT3;
   const pressurePsf = r.pressure * PSI_TO_PSF;
@@ -86,7 +92,7 @@ export default function Methodology({
         </dl>
       </Disclosure>
 
-      <Disclosure summary={`Worked example — your ${state.deploy === "dual" ? "drogue" : "ejection"} well`}>
+      <Disclosure summary={`Worked example — your ${wellLabel} well`}>
         <p>
           The same arithmetic the calculator just ran, with your current inputs (canonical
           units shown):
@@ -100,7 +106,7 @@ export default function Methodology({
             {state.mode === "force" && (
               <>
                 {" "}
-                (from {fmt(drogue.requiredForceLbf, 1)} lbf over{" "}
+                (from {fmt(well.requiredForceLbf, 1)} lbf over{" "}
                 {fmt(r.area, 2)} in²)
               </>
             )}
