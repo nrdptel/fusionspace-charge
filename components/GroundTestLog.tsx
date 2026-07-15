@@ -419,7 +419,11 @@ export default function GroundTestLog({
 
       {/* Bench coach: what to pack next, or flight-ready. The flight-ready panel is suppressed
           when the coach has re-opened (a later failure undermined the validated charge) — the
-          step-up coach below takes over rather than asserting "fly it". */}
+          step-up coach below takes over rather than asserting "fly it".
+          Wrapped in a persistent status region: the coach recomputes and appears/changes on a
+          logged test or an airframe-name match, without a reload, so a screen reader would
+          otherwise never hear that the tool is now recommending a specific next charge. */}
+      <div role="status" aria-live="polite">
       {validated && !next && (
         <div className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm leading-relaxed text-emerald-800 dark:text-emerald-300">
           <span aria-hidden className="mt-0.5 shrink-0 text-base">
@@ -485,6 +489,7 @@ export default function GroundTestLog({
           )}
         </div>
       )}
+      </div>
 
       {/* Entries */}
       {entries.length > 0 && (
