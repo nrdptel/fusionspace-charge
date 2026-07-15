@@ -55,7 +55,10 @@ const rows = (pairs: [string, string][]): string =>
 // but this guarantees a `javascript:`/`data:` URL can never become a live link in the
 // downloaded document even if a URL ever comes from data. Returns null to drop the href.
 function safeHref(url: string): string | null {
-  return /^(https?:\/\/|#|\/)/i.test(url.trim()) ? url : null;
+  const u = url.trim();
+  // Emit the same trimmed value that was validated, so a passing href can't carry leading/trailing
+  // whitespace the check ignored.
+  return /^(https?:\/\/|#|\/)/i.test(u) ? u : null;
 }
 
 export function buildReportHtml(d: ReportData): string {

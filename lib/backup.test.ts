@@ -60,6 +60,27 @@ describe("backup file", () => {
     );
     expect(r).toEqual({ rockets: [{ id: "ok" }], testlog: [{ id: "t" }], theme: null });
   });
+
+  it("keeps a known theme and drops an unknown/hostile one", () => {
+    expect(readBackup(JSON.stringify({ rockets: [{ id: "a" }], theme: "dark" }))?.theme).toBe("dark");
+    expect(readBackup(JSON.stringify({ rockets: [{ id: "a" }], theme: "system" }))?.theme).toBe("system");
+    // An arbitrary string is never persisted, even though the theme is only ever strict-compared.
+    expect(readBackup(JSON.stringify({ rockets: [{ id: "a" }], theme: "<script>" }))?.theme).toBeNull();
+  });
+
+  it("returns an empty testlog for a rockets-only file", () => {
+    expect(readBackup(JSON.stringify({ rockets: [{ id: "a" }] }))).toEqual({
+      rockets: [{ id: "a" }],
+      testlog: [],
+      theme: null,
+    });
+  });
+
+  it("rejects valid JSON that isn't an object", () => {
+    expect(readBackup("null")).toBeNull();
+    expect(readBackup("5")).toBeNull();
+    expect(readBackup('"x"')).toBeNull();
+  });
 });
 
 describe("sanitizeRockets — hardens the localStorage load path against a corrupt store", () => {
