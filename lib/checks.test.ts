@@ -109,6 +109,26 @@ describe("input sanity cautions", () => {
     const c = wellCautions(DEFAULT_STATE, well(), { mass: 42 });
     expect(c.map((x) => x.id)).toContain("mass-big");
   });
+
+  it("flags a charge too small to light reliably, in the ideal-gas modes", () => {
+    const c = wellCautions(DEFAULT_STATE, well(), { mass: 0.3 });
+    expect(c.map((x) => x.id)).toContain("mass-small");
+  });
+
+  it("stays quiet on the small-charge check at or above the floor, and for an empty well", () => {
+    expect(wellCautions(DEFAULT_STATE, well(), { mass: 0.6 }).map((x) => x.id)).not.toContain("mass-small");
+    expect(wellCautions(DEFAULT_STATE, well(), { mass: 0 }).map((x) => x.id)).not.toContain("mass-small");
+  });
+
+  it("names the over-pressure consequences on the high-pressure caution", () => {
+    const c = wellCautions(
+      { mode: "pressure", lengthUnit: "in", pressureUnit: "psi" },
+      well({ pressure: 30 }),
+      { mass: 1 },
+    );
+    const high = c.find((x) => x.id === "p-high");
+    expect(high?.message).toMatch(/shred the chute|zipper|recovery hardware/i);
+  });
 });
 
 describe("largeChargeCaution — one message shared by every mode", () => {

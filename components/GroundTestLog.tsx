@@ -294,6 +294,19 @@ export default function GroundTestLog({
         guessed. Entries stay in this browser — nothing is uploaded.
       </p>
 
+      <p className="mt-3 flex max-w-3xl items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+        <span aria-hidden className="mt-px shrink-0 text-sm">
+          ⚠
+        </span>
+        <span>
+          <strong className="font-semibold">Test it like the live charge it is.</strong> Fire
+          remotely from behind cover, with the airframe restrained and pointed somewhere safe,
+          wearing eye protection and with everyone clear. Test in full flight configuration —
+          real chute, recovery blanket / chute protector, and shock cord — since a bare chute
+          melts and the packing changes the pressure.
+        </span>
+      </p>
+
       {calibration && (
         <div className="mt-4 flex items-start gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
           <span aria-hidden className="mt-0.5 shrink-0 text-base">

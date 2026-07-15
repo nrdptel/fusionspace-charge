@@ -362,4 +362,11 @@ describe("failure causes", () => {
   it("has nothing to say about a clean test", () => {
     expect(failureCauses("clean")).toEqual([]);
   });
+
+  it("lists charge containment as a top no-separation cause", () => {
+    const c = failureCauses("none").join(" ").toLowerCase();
+    expect(c).toContain("contained");
+    // and doesn't miscite the sealed av-bay sampling ports as a charge-bay leak path.
+    expect(c).not.toMatch(/out the vent \/ sampling holes/);
+  });
 });

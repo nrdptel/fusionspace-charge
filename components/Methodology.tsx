@@ -135,8 +135,18 @@ export default function Methodology({
           the bulkheads, wadding, or airframe walls), and that nothing leaks past the
           bulkhead, the shear path, or vent holes. Real wells violate every one of those:
           they lose heat and vent gas, so the pressure actually reached can be lower than
-          the model predicts — meaning a real charge sometimes needs to be a little larger
-          than this number, not smaller.
+          the model predicts.
+        </p>
+        <p>
+          One loss it leaves out entirely matters most for a parachute: the chute protector
+          and packed recovery gear soak up a large share of the combustion energy before it
+          can build pressure. That&apos;s the dominant real-world shortfall — it&apos;s why a
+          packed deployment can need several times this number, and why the{" "}
+          <a href="#calculator" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+            Fetter mode
+          </a>{" "}
+          sizes higher. So treat this figure as a floor to test <em>up</em> from, not a
+          conservative ceiling.
         </p>
         <p>
           It also doesn&apos;t know your particular powder, granulation, ignition, wadding,
@@ -144,10 +154,12 @@ export default function Methodology({
           supplier, and fit; friction is a guess until you feel it.
         </p>
         <p className="font-medium text-zinc-700 dark:text-zinc-300">
-          So treat the result as a conservative place to begin, then ground-test: build the
-          charge, fire it on the bench, and confirm it cleanly separates the airframe and
-          throws the recovery gear before you ever fly it. Adjust from what you observe —
-          the tested charge is the real answer, and the log below is where to keep it.
+          So ground-test before you fly. Build the charge and fire it{" "}
+          <strong>remotely — from behind cover, with the airframe restrained and pointed
+          somewhere safe, wearing eye protection, and everyone clear</strong>: it&apos;s a
+          live pyrotechnic charge. Confirm it cleanly separates the airframe and throws the
+          recovery gear, then adjust from what you observe — the tested charge is the real
+          answer, and the log below is where to keep it.
         </p>
       </Disclosure>
 

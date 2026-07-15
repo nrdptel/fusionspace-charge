@@ -21,6 +21,10 @@ export interface Caution {
 /** A charge far larger than typical hobby ejection charges (a few grams), in grams. */
 export const LARGE_CHARGE_G = 20;
 
+/** A charge so small it often won't light reliably — an 18 mm motor's own ejection charge is
+ *  ~0.5 g. Mirrors the Fetter card's FETTER_MIN_TYPICAL_G so both size modes flag it. */
+export const SMALL_CHARGE_G = 0.5;
+
 /**
  * The "this charge looks too big — re-check the inputs" caution, shared by every mode so the
  * wording can't drift between the ideal-gas wells and the Fetter card. `screws` swaps the
@@ -75,7 +79,7 @@ export function wellCautions(
     } else if (tPsi > 20) {
       out.push({
         id: "p-high",
-        message: `A target of ${fmt(well.pressure, 1)} ${state.pressureUnit} is above the usual ~8–15 psi — confirm that's intended.`,
+        message: `A target of ${fmt(well.pressure, 1)} ${state.pressureUnit} is above the usual ~8–15 psi — too much pressure can shred the chute, zipper the airframe, or break recovery hardware. Confirm that's intended.`,
       });
     }
   }
@@ -94,9 +98,18 @@ export function wellCautions(
     } else if (computed.pressurePsi > 20) {
       out.push({
         id: "p-high",
-        message: `This sizes to ${shown}, above the usual ~8–15 psi — double-check the diameter and force.`,
+        message: `This sizes to ${shown}, above the usual ~8–15 psi — too much pressure can shred the chute, zipper the airframe, or break recovery hardware. Double-check the diameter and force.`,
       });
     }
+  }
+
+  // A charge so small it may not light reliably — the same floor the Fetter card flags, ported
+  // here so the default ideal-gas modes warn on it too. Above 0 so an empty well stays quiet.
+  if (computed.mass > 0 && computed.mass < SMALL_CHARGE_G) {
+    out.push({
+      id: "mass-small",
+      message: `${fmt(computed.mass, 2)} g is a very small charge — under about ${SMALL_CHARGE_G} g often won't light reliably (an 18 mm motor's own ejection charge is ~0.5 g). Double-check the diameter, length, and units.`,
+    });
   }
 
   // A charge much larger than typical is a strong sign of an input error upstream.

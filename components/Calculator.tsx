@@ -1166,11 +1166,13 @@ export default function Calculator({
             ⛰
           </span>
           <span>
-            At {fmt(state.elevation, 0)} ft the air is thinner and black powder burns a little
-            less efficiently, so a real well can reach less pressure than down low.{" "}
+            At {fmt(state.elevation, 0)} ft field elevation the air is thinner and black powder
+            burns a little less efficiently, so a real well can reach less pressure than down low.{" "}
             {state.elevation >= 6000 ? "Especially up here, " : ""}ground-test toward the high
             end of the ladder — this is a heads-up, not a number to trim (you can&apos;t derate
-            your way to a smaller charge safely).
+            your way to a smaller charge safely). What matters most is your deployment altitude:
+            a charge fired near or above ~20,000 ft loses far more — black powder stops burning
+            completely up there — which is why the Fetter mode refuses to size that thin.
           </span>
         </p>
       )}
