@@ -720,8 +720,8 @@ export default function Calculator({
           `  Required pressure     ${fmt(r.pressurePsi, 2)} psi     Required force ${fmt(r.forceLbf, 0)} lbf`,
           `  Safety factor         ${fmt(ex.input.safety * 100, 0)}% (built in — no separate multiplier)`,
           "",
-          `  Fetter charge         ${fmt(r.mass, 2)} g`,
-          `  Traditional ideal-gas ${fmt(r.traditionalMass, 2)} g at the same pressure and volume`,
+          `  Fetter charge         ${fmtMass(r.mass)} g`,
+          `  Traditional ideal-gas ${fmtMass(r.traditionalMass)} g at the same pressure and volume`,
           `  Model delta           ${fmt(r.ratio, 2)}× (Fetter vs. traditional at the same pressure)`,
           "",
           "The model is Tom Fetter's; see the references below. It assumes a chute protector /",
@@ -744,7 +744,7 @@ export default function Calculator({
         `  V = ${fmt(r.volume, 2)} in³ = ${fmt(r.volume / IN3_PER_FT3, 5)} ft³`,
         `  P = ${fmt(r.pressure, 2)} psi × ${PSI_TO_PSF} = ${fmt(r.pressure * PSI_TO_PSF, 1)} lbf/ft²`,
         `  m = (${fmt(r.pressure * PSI_TO_PSF, 1)} × ${fmt(r.volume / IN3_PER_FT3, 5)}) / (${R_BP} × ${T_BP})`,
-        `    = ${fmt(r.mass / LBM_TO_G, 6)} lbm × ${LBM_TO_G} = ${fmt(r.mass, 2)} g`,
+        `    = ${fmt(r.mass / LBM_TO_G, 6)} lbm × ${LBM_TO_G} = ${fmtMass(r.mass)} g`,
       ];
     }
 
