@@ -1080,6 +1080,20 @@ test.describe("Charge calculator", () => {
     expect(html).not.toContain("<script");
   });
 
+  test("the Fetter bench card names the length like the report — 'compartment', not 'pressurized'", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=x");
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download card as HTML" }).click(),
+    ]);
+    const html = fs.readFileSync(await dl.path(), "utf8");
+    // The printable card and the recovery report must agree on the measurement's name.
+    expect(html).toContain("Compartment length");
+    expect(html).not.toContain("Pressurized length");
+  });
+
   test("the measure guide speaks the Fetter card's vocabulary, not the ideal-gas 'well'", async ({
     page,
   }) => {

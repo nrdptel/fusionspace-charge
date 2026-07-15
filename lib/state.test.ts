@@ -57,6 +57,16 @@ describe("normalizeState (untrusted saved/imported state)", () => {
     expect(s.margin).toBe(DEFAULT_STATE.margin);
     expect(s.drogue.diameter).toBe(DEFAULT_STATE.drogue.diameter);
   });
+
+  it("preserves non-default units on the saved-rocket / restore path", () => {
+    // decodeState (URL) is metric-tested, but normalizeState is the path a saved rocket and a
+    // backup restore go through. If a unit ternary regressed, a setup saved in mm/kPa/N would
+    // silently reload as in/psi/lbf — the stored numbers reinterpreted as different units.
+    const s = normalizeState({ ...DEFAULT_STATE, lengthUnit: "mm", pressureUnit: "kPa", forceUnit: "N" });
+    expect(s.lengthUnit).toBe("mm");
+    expect(s.pressureUnit).toBe("kPa");
+    expect(s.forceUnit).toBe("N");
+  });
 });
 
 describe("URL state", () => {

@@ -29,6 +29,10 @@ export interface PrintPlan {
   /** Overrides the default "no charge sized yet" copy when there are no wells for a reason
    *  other than empty inputs — e.g. a Fetter deployment outside the model's altitude envelope. */
   emptyNote?: string;
+  /** Label for the length dimension, so the card matches the mode's vocabulary and the recovery
+   *  report — "Compartment length" in Fetter mode, "Pressurized length" in the ideal-gas modes.
+   *  Defaults to the ideal-gas term. */
+  lengthLabel?: string;
 }
 
 export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
@@ -36,7 +40,7 @@ export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
     .map((w) => {
       const head = [
         `Inner Ø ${w.idText}`,
-        `Pressurized length ${w.lenText}`,
+        `${plan.lengthLabel ?? "Pressurized length"} ${w.lenText}`,
         `Estimate ${w.estimate} g`,
         ...(w.backup ? [`Backup ${w.backup} g`] : []),
       ]

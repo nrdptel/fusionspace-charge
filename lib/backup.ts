@@ -91,7 +91,10 @@ export function readBackup(text: string): RestoredBackup | null {
   const testlog = Array.isArray(o.testlog) ? asObjects(o.testlog) : null;
   // Must carry at least one of our arrays, so a random JSON file is rejected.
   if (rockets === null && testlog === null) return null;
-  const theme = typeof o.theme === "string" ? o.theme : null;
+  // Only accept a known theme token — never persist an arbitrary imported string to localStorage,
+  // even though the theme is only ever strict-equality compared and never reaches the DOM.
+  const theme =
+    o.theme === "light" || o.theme === "dark" || o.theme === "system" ? o.theme : null;
   return { rockets: rockets ?? [], testlog: testlog ?? [], theme };
 }
 

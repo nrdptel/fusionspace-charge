@@ -97,6 +97,21 @@ describe("Fetter model — reproduces the reference spreadsheet's worked example
     });
     expect(v).toBeCloseTo(54.81, 1);
   });
+
+  it("returns 0 rather than NaN when friction meets or exceeds the deployment force", () => {
+    // A heavily-bound nosecone: friction > force, so the net work is negative — the guard must
+    // stop Math.sqrt of a negative and return 0 rather than surfacing NaN.
+    expect(
+      ejectionVelocity({ forceLbf: 10, frictionLbf: 100, shoulderIn: 3, noseMassLb: 0.5, rocketMassLb: 8 }),
+    ).toBe(0);
+  });
+
+  it("returns 0 for degenerate geometry or masses", () => {
+    const base = { forceLbf: 60, frictionLbf: 0, shoulderIn: 3, noseMassLb: 0.5, rocketMassLb: 8 };
+    expect(ejectionVelocity({ ...base, noseMassLb: 0 })).toBe(0); // no nosecone mass
+    expect(ejectionVelocity({ ...base, rocketMassLb: 0.5 })).toBe(0); // rocket not heavier than nose
+    expect(ejectionVelocity({ ...base, shoulderIn: 0 })).toBe(0); // no shoulder travel
+  });
 });
 
 describe("Fetter model — Table 17-1 is a documented discrepancy, not a target", () => {
