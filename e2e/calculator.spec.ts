@@ -64,6 +64,32 @@ test.describe("Charge calculator", () => {
     expect(stored).toBe("dark");
   });
 
+  test("survives an old browser whose matchMedia lacks addEventListener (iOS Safari ≤13)", async ({
+    page,
+  }) => {
+    // Simulate iOS Safari ≤13 / old Chrome: MediaQueryList exposes only the deprecated
+    // addListener, never addEventListener. The theme sync attaches its OS-change listener on
+    // the default "System" theme, so a missing addEventListener there throws inside an effect
+    // and crashes the whole page to the error boundary — for a first-time visitor, not an
+    // opt-in path.
+    await page.addInitScript(() => {
+      window.matchMedia = ((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener() {},
+        removeListener() {},
+        dispatchEvent: () => false,
+        // deliberately no addEventListener / removeEventListener
+      })) as unknown as typeof window.matchMedia;
+    });
+    await page.goto("/");
+    // The calculator renders — not the "Something went wrong" error boundary.
+    await expect(page.getByText("Something went wrong")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Charge", level: 1 })).toBeVisible();
+    await expect(page.getByTestId("mass").first()).toBeVisible();
+  });
+
   test("System mode follows the OS color scheme", async ({ page }) => {
     // No explicit choice (System): the theme must come from the OS preference.
     await page.emulateMedia({ colorScheme: "light" });
