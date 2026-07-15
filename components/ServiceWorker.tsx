@@ -45,7 +45,11 @@ export default function ServiceWorker() {
 
     const register = async () => {
       try {
-        const reg = await navigator.serviceWorker.register("/sw.js");
+        // updateViaCache: "none" makes the browser fetch sw.js (and any future importScripts)
+        // past the HTTP cache on every update check. Cloudflare Pages serves /sw.js with its own
+        // multi-hour max-age regardless of the Cache-Control: no-cache we set in public/_headers,
+        // so this — not the header — is what actually guarantees a new deploy is detected promptly.
+        const reg = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
         offer(reg.waiting); // an update may already be waiting from a prior load
         track(reg.installing); // …or already installing when we registered (the race)
         reg.addEventListener("updatefound", () => track(reg.installing));
