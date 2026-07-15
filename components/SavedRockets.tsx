@@ -2,12 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { State } from "@/lib/state";
-
-interface SavedRocket {
-  id: string;
-  name: string;
-  state: State;
-}
+import { sanitizeRockets, type SavedRocket } from "@/lib/backup";
 
 const STORAGE_KEY = "charge.rockets";
 
@@ -77,8 +72,10 @@ export default function SavedRockets({
       const raw = localStorage.getItem(STORAGE_KEY);
       lastPersisted.current = raw;
       const parsed = raw ? JSON.parse(raw) : null;
-      // Only trust an array — a corrupted or tampered store shouldn't crash the render.
-      if (Array.isArray(parsed)) setRockets(parsed);
+      // Sanitize, not just Array-check: a null or an older/hand-edited entry would otherwise be
+      // dereferenced in the render (or the load-click clone) and crash the whole tool into the
+      // route error boundary, which reloads into the same store — an unrecoverable loop.
+      if (Array.isArray(parsed)) setRockets(sanitizeRockets(parsed, newId));
     } catch {
       /* ignore malformed storage */
     }
@@ -110,7 +107,7 @@ export default function SavedRockets({
       lastPersisted.current = e.newValue;
       try {
         const parsed = e.newValue ? JSON.parse(e.newValue) : [];
-        if (Array.isArray(parsed)) setRockets(parsed);
+        if (Array.isArray(parsed)) setRockets(sanitizeRockets(parsed, newId));
       } catch {
         /* ignore a malformed write from another tab */
       }

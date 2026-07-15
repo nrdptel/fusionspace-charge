@@ -10,7 +10,7 @@
  */
 
 import type { State, WellInput } from "./state";
-import { toInches, toPsi } from "./units";
+import { toInches, toPsi, fromPsi } from "./units";
 import { fmt } from "./format";
 
 export interface Caution {
@@ -39,7 +39,9 @@ export function largeChargeCaution(massG: number, opts?: { screws?: boolean }): 
 export function wellCautions(
   state: Pick<State, "mode" | "lengthUnit" | "pressureUnit">,
   well: WellInput,
-  computed: { mass: number },
+  /** `pressurePsi` is the sized (derived) pressure in psi — used in force mode, where there is no
+   *  entered target to sanity-check but the charge still has to reach a separation pressure. */
+  computed: { mass: number; pressurePsi?: number },
 ): Caution[] {
   const out: Caution[] = [];
 
@@ -74,6 +76,25 @@ export function wellCautions(
       out.push({
         id: "p-high",
         message: `A target of ${fmt(well.pressure, 1)} ${state.pressureUnit} is above the usual ~8–15 psi — confirm that's intended.`,
+      });
+    }
+  }
+
+  // Force mode has no entered target — the pressure is derived (P = F/A) — but the charge still has
+  // to reach a separation pressure, so the same band sanity applies to the derived value. This is
+  // the safety-relevant case the pressure-only check missed: an under-pressure force setup that
+  // won't separate, or an absurd pressure from a mistyped diameter, otherwise drew no caution.
+  if (state.mode === "force" && computed.pressurePsi !== undefined && computed.pressurePsi > 0) {
+    const shown = `${fmt(fromPsi(computed.pressurePsi, state.pressureUnit), 1)} ${state.pressureUnit}`;
+    if (computed.pressurePsi < 6) {
+      out.push({
+        id: "p-low",
+        message: `This sizes to ${shown}, below the usual ~8–15 psi — too little pressure can fail to separate. Check the force and diameter.`,
+      });
+    } else if (computed.pressurePsi > 20) {
+      out.push({
+        id: "p-high",
+        message: `This sizes to ${shown}, above the usual ~8–15 psi — double-check the diameter and force.`,
       });
     }
   }

@@ -114,8 +114,11 @@ export default function GroundTestLog({
       const raw = localStorage.getItem(TESTLOG_STORAGE_KEY);
       lastPersisted.current = raw;
       const parsed = raw ? JSON.parse(raw) : null;
-      // Only trust an array — a corrupted or tampered store shouldn't crash the render.
-      if (Array.isArray(parsed)) setEntries(parsed);
+      // Sanitize, don't just Array-check: an old, partially-written, or hand-edited store can
+      // hold a null or an entry missing fields, which the render then dereferences and throws on
+      // — and the route error boundary would re-read the same store on reload, an unrecoverable
+      // loop. Run it through the same validator the import/restore paths use.
+      if (Array.isArray(parsed)) setEntries(sanitizeEntries(parsed, newId, todayISO()));
     } catch {
       /* ignore malformed storage */
     }
@@ -148,7 +151,7 @@ export default function GroundTestLog({
       lastPersisted.current = e.newValue;
       try {
         const parsed = e.newValue ? JSON.parse(e.newValue) : [];
-        if (Array.isArray(parsed)) setEntries(parsed);
+        if (Array.isArray(parsed)) setEntries(sanitizeEntries(parsed, newId, todayISO()));
       } catch {
         /* ignore a malformed write from another tab */
       }
@@ -198,7 +201,7 @@ export default function GroundTestLog({
   const exportText = async () => {
     const lines = entries.map(
       (e) =>
-        `${e.date}  ${e.charge} g  ${OUTCOME_LABEL[e.outcome]}  ${e.label}${
+        `${e.date}  ${fmtMass(e.charge)} g  ${OUTCOME_LABEL[e.outcome]}  ${e.label}${
           e.notes ? `  — ${e.notes}` : ""
         }`,
     );
@@ -472,7 +475,7 @@ export default function GroundTestLog({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                     <span className="font-mono text-sm font-semibold tabular-nums">
-                      {e.charge} g
+                      {fmtMass(e.charge)} g
                     </span>
                     <span className="text-sm text-zinc-700 dark:text-zinc-300">
                       {e.label}

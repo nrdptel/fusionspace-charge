@@ -62,7 +62,16 @@ export default function DataBackup() {
   };
 
   const restore = async (file: File) => {
-    const parsed = readBackup(await file.text());
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      // A failed file read would otherwise be an unhandled rejection with no feedback — the log's
+      // own importer wraps file.text() the same way.
+      alert("Couldn't read that file — try selecting it again.");
+      return;
+    }
+    const parsed = readBackup(text);
     if (!parsed) {
       alert("Couldn't read that file — expected a Charge backup (.json).");
       return;

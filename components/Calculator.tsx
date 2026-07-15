@@ -404,6 +404,11 @@ export default function Calculator({
         ]
       : [{ key: "drogue", title: "Ejection charge", sub: "Separates the airframe", data: drogue }];
 
+  // The well the on-screen methodology walks through: the first that carries a real charge, so a
+  // dual setup with an empty drogue but a filled main doesn't show an all-zero derivation. Mirrors
+  // the recovery report's example selection; falls back to the drogue when nothing is sized.
+  const methodWell = wells.find((w) => w.data.result.mass > 0) ?? wells[wells.length - 1];
+
   // The headline charge, and whether it's a single compartment mapping cleanly to one logged
   // test. Single deploy (either mode) drives the drift guard; dual is left alone.
   const primary = isFetter ? toComputed(fetterDrogueRes) : drogue;
@@ -447,8 +452,12 @@ export default function Calculator({
   // where the one charge maps unambiguously to the logged test; dual is left alone.
   const driftFrom =
     singleCompartment ? testedSummary?.lastClean?.estimate : undefined;
+  // In Fetter mode a charge outside the altitude envelope is withheld on screen, so the drift
+  // guard mustn't compare against that suppressed number (it would warn off a value the card
+  // isn't even showing).
+  const primaryWithheld = isFetter && !withinAltitudeEnvelope(state.fetter.deployAlt);
   const drift =
-    driftFrom && driftFrom > 0 && primary.result.mass > 0 &&
+    driftFrom && driftFrom > 0 && primary.result.mass > 0 && !primaryWithheld &&
     Math.abs(primary.result.mass / driftFrom - 1) > 0.15
       ? { now: primary.result.mass, then: driftFrom }
       : null;
@@ -1226,7 +1235,11 @@ export default function Calculator({
 
       <Methodology
         state={state}
-        drogue={drogue}
+        // The worked example walks the first well that actually carries a charge (same choice the
+        // report makes), so a dual setup with an empty drogue but a filled main doesn't derive a
+        // zeroed drogue. Falls back to the drogue when nothing is sized yet.
+        well={methodWell.data}
+        wellLabel={state.deploy === "dual" ? methodWell.key : "ejection"}
         fetter={fetterExample.result}
         fetterInput={fetterExample.input}
         fetterLabel={state.deploy === "dual" ? fetterExample.title : ""}
@@ -1282,7 +1295,7 @@ function WellCard({
   const backupLabel = backupFloorBinds(result.mass, state.backupPct)
     ? `+${BACKUP_MIN_G} g`
     : `+${round(backupPctClamped(state.backupPct), 0)}%`;
-  const cautions = wellCautions(state, well, { mass: result.mass });
+  const cautions = wellCautions(state, well, { mass: result.mass, pressurePsi: result.pressure });
   return (
     <div className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
       <div className="flex items-baseline justify-between gap-3">

@@ -233,7 +233,11 @@ export function encodeState(s: State): string {
 
 export function decodeState(query: string): State {
   const p = new URLSearchParams(query);
-  if ([...p.keys()].length === 0) return DEFAULT_STATE;
+  // Return a fresh copy, never the shared DEFAULT_STATE singleton: a bare visit would otherwise
+  // seed React state with the module-level default (and its shared nested wells), so any future
+  // in-place edit of a nested field would corrupt the process-wide default. Every non-empty
+  // decode already builds fresh objects.
+  if ([...p.keys()].length === 0) return normalizeState(DEFAULT_STATE);
 
   const numOr = (key: string, fallback: number) => {
     const v = p.get(key);

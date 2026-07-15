@@ -58,13 +58,51 @@ describe("input sanity cautions", () => {
     expect(c.map((x) => x.id)).toContain("p-high");
   });
 
-  it("ignores the pressure band in force mode", () => {
+  it("ignores the entered-pressure band in force mode (there is no entered target)", () => {
     const c = wellCautions(
       { mode: "force", lengthUnit: "in", pressureUnit: "psi" },
       well({ pressure: 30 }),
       { mass: 1 },
     );
     expect(c.map((x) => x.id)).not.toContain("p-high");
+  });
+
+  it("flags an under-pressure force setup that won't separate (the derived pressure)", () => {
+    const c = wellCautions(
+      { mode: "force", lengthUnit: "in", pressureUnit: "psi" },
+      well(),
+      { mass: 0.4, pressurePsi: 1.4 },
+    );
+    expect(c.map((x) => x.id)).toContain("p-low");
+  });
+
+  it("flags an absurd derived pressure from a mistyped tiny diameter in force mode", () => {
+    const c = wellCautions(
+      { mode: "force", lengthUnit: "in", pressureUnit: "psi" },
+      well(),
+      { mass: 0.6, pressurePsi: 1_000_000 },
+    );
+    expect(c.map((x) => x.id)).toContain("p-high");
+  });
+
+  it("stays quiet for a normal derived pressure in force mode", () => {
+    const c = wellCautions(
+      { mode: "force", lengthUnit: "in", pressureUnit: "psi" },
+      well(),
+      { mass: 1.2, pressurePsi: 12 },
+    );
+    expect(c.map((x) => x.id)).not.toContain("p-low");
+    expect(c.map((x) => x.id)).not.toContain("p-high");
+  });
+
+  it("does not run the derived-pressure check in pressure mode", () => {
+    const c = wellCautions(
+      { mode: "pressure", lengthUnit: "in", pressureUnit: "psi" },
+      well({ pressure: 12 }),
+      { mass: 1, pressurePsi: 1.4 },
+    );
+    // Pressure mode checks the entered target (12 psi, in band), never the derived value.
+    expect(c.map((x) => x.id)).not.toContain("p-low");
   });
 
   it("flags an unusually large charge regardless of mode", () => {

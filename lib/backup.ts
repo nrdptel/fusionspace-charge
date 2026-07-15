@@ -5,6 +5,8 @@
  * live in the component; these are the pure pieces (document shape, validation, merge).
  */
 
+import { normalizeState, type State } from "./state";
+
 export const BACKUP_VERSION = 1;
 
 /** Upper bound on items pulled from an imported file, per list. Far above any real flyer's
@@ -20,6 +22,32 @@ export interface BackupFile {
   rockets: unknown[];
   testlog: unknown[];
   theme: string | null;
+}
+
+export interface SavedRocket {
+  id: string;
+  name: string;
+  state: State;
+}
+
+/**
+ * Normalize a raw array (from localStorage, a cross-tab write, or a restore) into valid
+ * SavedRockets: drop non-objects, mint a stable id where missing, and rebuild each state through
+ * `normalizeState` so a null, an older-schema entry, or a hand-edited store can't reach the render
+ * — or the load-click `structuredClone` — and throw. Without this a single corrupt entry crashes
+ * the whole tool, and the route error boundary re-reads the same store on reload: an unrecoverable
+ * loop. Nameless entries are unusable, so they're dropped. Pure; `genId` mints an id when needed.
+ */
+export function sanitizeRockets(raw: unknown[], genId: () => string): SavedRocket[] {
+  return raw
+    .filter((x): x is Record<string, unknown> => !!x && typeof x === "object")
+    .slice(0, MAX_IMPORT_ITEMS)
+    .map((x) => ({
+      id: typeof x.id === "string" && x.id ? x.id : genId(),
+      name: typeof x.name === "string" ? x.name.trim() : "",
+      state: normalizeState(x.state),
+    }))
+    .filter((r) => r.name.length > 0);
 }
 
 export function buildBackup(parts: {

@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { buildBackup, readBackup, mergeById, BACKUP_VERSION, MAX_IMPORT_ITEMS } from "./backup";
+import {
+  buildBackup,
+  readBackup,
+  mergeById,
+  sanitizeRockets,
+  BACKUP_VERSION,
+  MAX_IMPORT_ITEMS,
+} from "./backup";
 
 describe("import size cap", () => {
   it("caps each list so a pathologically large file can't freeze the tab", () => {
@@ -52,6 +59,44 @@ describe("backup file", () => {
       JSON.stringify({ rockets: [1, "x", null, { id: "ok" }], testlog: [null, { id: "t" }] }),
     );
     expect(r).toEqual({ rockets: [{ id: "ok" }], testlog: [{ id: "t" }], theme: null });
+  });
+});
+
+describe("sanitizeRockets — hardens the localStorage load path against a corrupt store", () => {
+  let n = 0;
+  const gid = () => `gen-${n++}`;
+
+  it("drops null / non-object entries that would otherwise crash the render", () => {
+    const out = sanitizeRockets(
+      [null, 1, "x", { id: "a", name: "Bird", state: {} }],
+      gid,
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].name).toBe("Bird");
+  });
+
+  it("mints an id when missing and rebuilds a valid state from nothing", () => {
+    const out = sanitizeRockets([{ name: "NoId", state: undefined }], () => "minted");
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe("minted");
+    // normalizeState turned a missing state into a usable one — so the load-click clone can't throw.
+    expect(out[0].state.mode).toBeDefined();
+    expect(out[0].state.drogue.diameter).toBeGreaterThan(0);
+  });
+
+  it("drops entries with no usable name (an unusable, corrupt rocket)", () => {
+    expect(
+      sanitizeRockets([{ id: "a", name: "   ", state: {} }, { id: "b", state: {} }], gid),
+    ).toEqual([]);
+  });
+
+  it("caps at MAX_IMPORT_ITEMS", () => {
+    const many = Array.from({ length: MAX_IMPORT_ITEMS + 10 }, (_, i) => ({
+      id: `r${i}`,
+      name: `n${i}`,
+      state: {},
+    }));
+    expect(sanitizeRockets(many, gid)).toHaveLength(MAX_IMPORT_ITEMS);
   });
 });
 
