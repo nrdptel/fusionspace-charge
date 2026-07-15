@@ -119,12 +119,18 @@ export default function SavedRockets({
   const save = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
+    // Reuse an existing setup of the same name instead of silently creating a duplicate chip
+    // (two identical-looking entries that load different geometry). Reusing its id keeps the
+    // ground-test log's history — matched by name — pointing at one airframe.
+    const existing = rockets.find((x) => x.name.trim().toLowerCase() === trimmed.toLowerCase());
+    if (existing && !confirm(`A saved setup named "${existing.name}" already exists. Replace it?`))
+      return;
     const snapshot: SavedRocket = {
-      id: newId(),
+      id: existing?.id ?? newId(),
       name: trimmed,
       state: JSON.parse(JSON.stringify(current)),
     };
-    setRockets((r) => [...r, snapshot]);
+    setRockets((r) => (existing ? r.map((x) => (x.id === existing.id ? snapshot : x)) : [...r, snapshot]));
     onActivate?.(trimmed);
     setName("");
     refocusTrigger.current = true;
@@ -132,6 +138,10 @@ export default function SavedRockets({
   };
 
   const remove = (id: string) => {
+    // A whole airframe config (tube, sections, pins) with no undo, and the × sits flush against
+    // the load button — confirm before destroying it.
+    const target = rockets.find((x) => x.id === id);
+    if (target && !confirm(`Delete the saved setup "${target.name}"? This can't be undone.`)) return;
     focusAfterDelete.current = rockets.findIndex((x) => x.id === id);
     setRockets((r) => r.filter((x) => x.id !== id));
   };

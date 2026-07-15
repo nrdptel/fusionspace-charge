@@ -45,7 +45,9 @@ export function sizeVentPorts(args: {
   ports: number;
 }): VentResult {
   const ports = Math.max(1, Math.floor(args.ports));
-  const bayVolumeIn3 = cylinderVolume(args.diameterIn, args.lengthIn);
+  // Clamp negatives to 0: a negative diameter would otherwise square to the same volume as its
+  // positive twin, silently returning a plausible port size for nonsense input. 0 → "—" instead.
+  const bayVolumeIn3 = cylinderVolume(Math.max(0, args.diameterIn), Math.max(0, args.lengthIn));
   const totalAreaIn2 = bayVolumeIn3 * VENT_AREA_PER_IN3;
   const perPortAreaIn2 = totalAreaIn2 / ports;
   const perPortDiameterIn =
@@ -73,17 +75,22 @@ export const COMMON_PORT_BITS: DrillBit[] = [
 ];
 
 /**
- * The common bit nearest a computed port diameter, for a practical drilling suggestion.
- * Returns null when the required diameter is larger than the biggest listed bit (1/4"): a
- * bay that needs a bigger single port than that should be split across more ports, and
- * suggesting "1/4"" for a port that needs to be twice that would badly under-vent — the
- * opposite of the "err small" guidance. The caller shows an add-ports hint instead.
+ * The common bit to drill for a computed port diameter — the largest bit that is NOT bigger than
+ * the computed size. This deliberately rounds DOWN rather than to the nearest bit: the tool's own
+ * guidance is "err small — an oversized port hurts more than a slightly undersized one," and a
+ * nearest-bit rule rounds up about half the time, contradicting that. Falls back to the smallest
+ * common bit when the computed port is finer than any bit (the practical drill floor).
+ *
+ * Returns null when the required diameter is larger than the biggest listed bit (1/4"): a bay that
+ * needs a bigger single port than that should be split across more ports, and suggesting "1/4"" for
+ * a port that needs to be twice that would badly under-vent. The caller shows an add-ports hint.
  */
 export function nearestPortBit(diameterIn: number): DrillBit | null {
   if (!(diameterIn > 0)) return null;
   const largest = COMMON_PORT_BITS[COMMON_PORT_BITS.length - 1];
   if (diameterIn > largest.in) return null;
-  return COMMON_PORT_BITS.reduce((best, b) =>
-    Math.abs(b.in - diameterIn) < Math.abs(best.in - diameterIn) ? b : best,
-  );
+  // COMMON_PORT_BITS is sorted ascending; take the last bit at or below the computed diameter (a
+  // tiny epsilon so an exact 1/4" still resolves to the 1/4" bit), else the smallest bit.
+  const notLarger = COMMON_PORT_BITS.filter((b) => b.in <= diameterIn + 1e-9);
+  return notLarger.length > 0 ? notLarger[notLarger.length - 1] : COMMON_PORT_BITS[0];
 }

@@ -185,6 +185,11 @@ export default function GroundTestLog({
   };
 
   const remove = (id: string) => {
+    // Confirm before dropping a real bench-test record — there's no undo, and the delete button
+    // sits at the edge of each row where a misclick is easy.
+    const target = entries.find((x) => x.id === id);
+    if (target && !confirm(`Delete the ${fmtMass(target.charge)} g test from ${target.date}? This can't be undone.`))
+      return;
     focusAfterDelete.current = entries.findIndex((x) => x.id === id);
     setEntries((e) => e.filter((x) => x.id !== id));
   };
@@ -570,7 +575,11 @@ export default function GroundTestLog({
             <button
               type="button"
               onClick={() => {
-                if (confirm("Clear the entire ground-test log on this device?"))
+                if (
+                  confirm(
+                    `Delete all ${entries.length} logged test${entries.length === 1 ? "" : "s"} on this device? This can't be undone — export the log first if you want to keep them.`,
+                  )
+                )
                   setEntries([]);
               }}
               className="font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
