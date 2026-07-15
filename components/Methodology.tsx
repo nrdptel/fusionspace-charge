@@ -123,7 +123,7 @@ export default function Methodology({
             {fmt(massLbm, 6)} lbm
           </Row>
           <Row term="In grams">
-            {fmt(massLbm, 6)} × {LBM_TO_G} = <strong>{fmt(r.mass, 2)} g</strong>
+            {fmt(massLbm, 6)} × {LBM_TO_G} = <strong>{fmtMass(r.mass)} g</strong>
           </Row>
         </dl>
       </Disclosure>
