@@ -1456,34 +1456,37 @@ function WellCard({
 
       {/* Result */}
       <div className="mt-5 flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
-        {/* aria-live scoped to the headline mass so a screen reader announces the
-            result, not the whole block of chips, on each input change. */}
-        <div aria-live="polite" className="flex items-baseline gap-2">
-          <span
-            data-testid="mass"
-            className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50"
-          >
-            {fmtMass(result.mass)}
-          </span>
-          <span className="text-lg text-zinc-500 dark:text-zinc-400">g</span>
-          <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-            {state.redundant ? "primary charge" : "black powder"}
-          </span>
-        </div>
-        {state.redundant && result.mass > 0 && (
-          <div className="flex items-baseline gap-2 border-t border-indigo-200/70 pt-3 dark:border-indigo-500/20">
+        {/* aria-live wraps the primary AND backup charge rows so a screen reader announces both
+            on each input change — the backup is a separate charge the flyer weighs and tests on
+            its own — but not the derived chips below, which would make the announcement verbose. */}
+        <div aria-live="polite" className="flex flex-col gap-3">
+          <div className="flex items-baseline gap-2">
             <span
-              data-testid="backup-mass"
-              className="font-mono text-xl font-semibold tracking-tight text-zinc-700 tabular-nums dark:text-zinc-200"
+              data-testid="mass"
+              className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50"
             >
-              {fmtMass(backup)}
+              {fmtMass(result.mass)}
             </span>
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">g</span>
+            <span className="text-lg text-zinc-500 dark:text-zinc-400">g</span>
             <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-              backup charge ({backupLabel})
+              {state.redundant ? "primary charge" : "black powder"}
             </span>
           </div>
-        )}
+          {state.redundant && result.mass > 0 && (
+            <div className="flex items-baseline gap-2 border-t border-indigo-200/70 pt-3 dark:border-indigo-500/20">
+              <span
+                data-testid="backup-mass"
+                className="font-mono text-xl font-semibold tracking-tight text-zinc-700 tabular-nums dark:text-zinc-200"
+              >
+                {fmtMass(backup)}
+              </span>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">g</span>
+              <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
+                backup charge ({backupLabel})
+              </span>
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Chip
             label="Volume"
