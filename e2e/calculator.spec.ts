@@ -85,7 +85,7 @@ test.describe("Charge calculator", () => {
     await page.goto("/");
     await page.getByLabel("Charge tested").fill("1.5");
     await page.getByRole("button", { name: "Log test", exact: true }).click();
-    await expect(page.getByText("1.5 g").first()).toBeVisible();
+    await expect(page.getByText("1.50 g").first()).toBeVisible();
   });
 
   test("saves and reloads a rocket setup", async ({ page }) => {
@@ -106,7 +106,7 @@ test.describe("Charge calculator", () => {
     await page.goto("/");
     await page.getByLabel("Charge tested").fill("1.2");
     await page.getByRole("button", { name: "Log test", exact: true }).click();
-    await expect(page.getByText("1.2 g").first()).toBeVisible();
+    await expect(page.getByText("1.20 g").first()).toBeVisible();
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
@@ -116,10 +116,10 @@ test.describe("Charge calculator", () => {
 
     page.on("dialog", (d) => d.accept());
     await page.getByRole("button", { name: "Clear all" }).click();
-    await expect(page.getByText("1.2 g")).toHaveCount(0);
+    await expect(page.getByText("1.20 g")).toHaveCount(0);
 
     await page.locator('#ground-test input[type="file"]').setInputFiles(file);
-    await expect(page.getByText("1.2 g").first()).toBeVisible();
+    await expect(page.getByText("1.20 g").first()).toBeVisible();
   });
 
   test("activating a saved rocket pre-fills the ground-test airframe", async ({
@@ -617,6 +617,26 @@ test.describe("Charge calculator", () => {
     await expect(page.getByRole("button", { name: "Backup Bird", exact: true })).toBeVisible();
   });
 
+  test("a corrupt saved-rockets / test-log store doesn't crash the whole tool", async ({ page }) => {
+    // A null entry, or an old/foreign entry missing fields, must not reach the render and throw
+    // — the route error boundary would reload into the same store, an unrecoverable loop. The
+    // load path sanitizes, so the tool renders normally and simply drops the junk.
+    await page.addInitScript(() => {
+      // A null, a nameless (unusable) entry, and one good rocket; a null and a field-missing log entry.
+      localStorage.setItem("charge.rockets", '[null, {"id":"x","state":{}}, {"id":"a","name":"Good","state":{}}]');
+      localStorage.setItem(
+        "charge.testlog",
+        '[null, {"outcome":"clean","charge":2}, {"date":"2026-01-01","label":"L","charge":1.5,"outcome":"clean","notes":""}]',
+      );
+    });
+    await page.goto("/");
+    // The calculator renders rather than the error boundary… (default is dual, so two masses).
+    await expect(page.getByTestId("mass").first()).toBeVisible();
+    await expect(page.getByText("Something went wrong")).toHaveCount(0);
+    // …and the one salvageable saved rocket survives (null and the nameless entry are dropped).
+    await expect(page.getByRole("button", { name: "Good", exact: true })).toBeVisible();
+  });
+
   test("the methodology cites its sources", async ({ page }) => {
     await page.goto("/");
     await page.getByText("References & sources").click();
@@ -826,7 +846,7 @@ test.describe("Charge calculator", () => {
     await page.goto("/");
     await page.getByLabel("Charge tested").fill("1.5");
     await page.getByRole("button", { name: "Log test", exact: true }).click();
-    await expect(page.getByText("1.5 g").first()).toBeVisible();
+    await expect(page.getByText("1.50 g").first()).toBeVisible();
     page.on("dialog", (d) => d.accept());
     await page.locator('#ground-test input[type="file"]').setInputFiles({
       name: "not-charge.json",
@@ -834,7 +854,7 @@ test.describe("Charge calculator", () => {
       buffer: Buffer.from('{"foo":1}'),
     });
     // The existing entry is untouched — a bad import can't corrupt or clear the log.
-    await expect(page.getByText("1.5 g").first()).toBeVisible();
+    await expect(page.getByText("1.50 g").first()).toBeVisible();
   });
 
   test("deleting a ground-test entry removes just that row and persists", async ({ page }) => {
@@ -843,15 +863,15 @@ test.describe("Charge calculator", () => {
     await page.getByRole("button", { name: "Log test", exact: true }).click();
     await page.getByLabel("Charge tested").fill("2.2");
     await page.getByRole("button", { name: "Log test", exact: true }).click();
-    await expect(page.getByText("1.1 g")).toBeVisible();
-    await expect(page.getByText("2.2 g")).toBeVisible();
+    await expect(page.getByText("1.10 g")).toBeVisible();
+    await expect(page.getByText("2.20 g")).toBeVisible();
     // Entries are newest-first, so the first Delete removes the 2.2 g entry.
     await page.getByRole("button", { name: "Delete entry" }).first().click();
-    await expect(page.getByText("2.2 g")).toHaveCount(0);
-    await expect(page.getByText("1.1 g")).toBeVisible();
+    await expect(page.getByText("2.20 g")).toHaveCount(0);
+    await expect(page.getByText("1.10 g")).toBeVisible();
     await page.reload();
-    await expect(page.getByText("2.2 g")).toHaveCount(0);
-    await expect(page.getByText("1.1 g")).toBeVisible();
+    await expect(page.getByText("2.20 g")).toHaveCount(0);
+    await expect(page.getByText("1.10 g")).toBeVisible();
   });
 
   test("copies the share link to the clipboard", async ({ page }) => {
