@@ -38,6 +38,28 @@ describe("sanitizeEntries", () => {
     expect(out[0].charge).toBe(1.5);
   });
 
+  it("drops an overflowing charge that coerces to Infinity so it can't hijack 'most recent'", () => {
+    // Number("1e999"), the JSON number 1e999, and "Infinity" all overflow to Infinity, which
+    // beats every real charge on a same-date tie and would surface as the "proven" charge while
+    // rendering as "— g" — poisoning the log invisibly. All three must be rejected.
+    const out = sanitizeEntries(
+      [
+        { id: "a", charge: "1e999" },
+        { id: "b", charge: 1e999 },
+        { id: "c", charge: "Infinity" },
+        { id: "d", charge: 2, date: "2026-06-01" }, // real, kept
+      ] as unknown[],
+      gen,
+      today,
+    );
+    expect(out.map((e) => e.id)).toEqual(["d"]);
+  });
+
+  it("drops a non-finite estimate instead of storing Infinity", () => {
+    const out = sanitizeEntries([{ id: "a", charge: 1, estimate: 1e999 }] as unknown[], gen, today);
+    expect(out[0].estimate).toBeUndefined();
+  });
+
   it("gives a stable id: reuse string ids, stringify numeric ids, mint only when missing", () => {
     const out = sanitizeEntries(
       [
