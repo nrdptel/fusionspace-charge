@@ -76,7 +76,11 @@ export function sanitizeEntries(
             : genId();
       return {
         id,
-        date: typeof x.date === "string" && isIsoDate(x.date) ? x.date : today,
+        // Reject a future date too, not just a malformed one: "most recent clean" is chosen by
+        // date order, so a fat-fingered 2062 (or a tampered file) would sort above every real
+        // test and hijack the surfaced charge indefinitely. Backstop to today.
+        date:
+          typeof x.date === "string" && isIsoDate(x.date) && x.date <= today ? x.date : today,
         label: typeof x.label === "string" && x.label ? x.label : "—",
         charge: Number(x.charge) || 0,
         outcome: OUTCOMES.has(x.outcome as Outcome) ? (x.outcome as Outcome) : "clean",
@@ -92,13 +96,18 @@ export interface TestedSummary {
   cleanCount: number;
   /** The most recent clean test, if any — the charge worth flying. */
   lastClean?: TestEntry;
+  /** The estimate the most-recent estimate-carrying clean test was planned from — the drift
+   *  baseline. Falls through to older cleans so a hand-logged (estimate-less) most-recent clean
+   *  doesn't silently disable drift protection when the airframe has any ladder-planned clean. */
+  driftEstimate?: number;
 }
 
 /**
  * Summarize the clean, validated tests recorded against a given airframe label. Matching
  * is case-insensitive on the trimmed label — the log's airframe field defaults to the
  * active saved rocket's name, so tests logged in the normal flow line up. Returns the most
- * recent clean test (latest date; ties resolved to the most recently added) and the count.
+ * recent clean test (latest date; same-date ties resolve to the larger charge, the safer one
+ * to surface as "fly this") and the count.
  */
 export function summarizeFor(entries: TestEntry[], label: string): TestedSummary {
   const key = label.trim().toLowerCase();
@@ -107,10 +116,17 @@ export function summarizeFor(entries: TestEntry[], label: string): TestedSummary
     (e) => e.outcome === "clean" && e.charge > 0 && e.label.trim().toLowerCase() === key,
   );
   if (matches.length === 0) return { cleanCount: 0 };
-  // entries are stored newest-added first, so for equal dates matches[0] is the newest add.
+  // Break same-date ties toward the larger charge — matching validatedCharge — so a tie never
+  // surfaces the smaller charge (the under-size direction) as the one to fly.
   let lastClean = matches[0];
-  for (const e of matches) if (e.date > lastClean.date) lastClean = e;
-  return { cleanCount: matches.length, lastClean };
+  let driftClean: TestEntry | undefined;
+  for (const e of matches) {
+    if (e.date > lastClean.date || (e.date === lastClean.date && e.charge > lastClean.charge))
+      lastClean = e;
+    // The drift baseline is the most-recent clean that actually carries an estimate.
+    if ((e.estimate ?? 0) > 0 && (!driftClean || e.date > driftClean.date)) driftClean = e;
+  }
+  return { cleanCount: matches.length, lastClean, driftEstimate: driftClean?.estimate };
 }
 
 /** A charge an airframe has cleanly separated on at least twice — flight-validated. */
@@ -158,26 +174,44 @@ export interface NextCharge {
 /**
  * What to pack next for an airframe, read from its most recent test — turning the log from a
  * record into a bench coach. No separation steps the charge up ~25%, a partial ~15%, and a
- * single clean test suggests repeating the same charge to confirm it. Returns null once the
- * charge is validated (nothing left to chase) or when there's no history to go on. It only
- * ever steps up; it never proposes trimming a charge down.
+ * single clean test suggests repeating the same charge to confirm it. It only ever steps up;
+ * it never proposes trimming a charge down.
+ *
+ * A confirmed-clean airframe that's already validated has nothing left to chase, so this is
+ * silent — UNLESS the most recent test is a failure at or above the validated charge, which
+ * re-opens coaching: a later no-separation means the "validated" charge can't be trusted, so
+ * the coach must not stay quiet. A failure *below* the validated charge is an expected
+ * too-little-powder result, not a reason to chase (and stepping up from it would only propose
+ * a charge under the proven one), so that stays silent.
  */
 export function nextChargeSuggestion(entries: TestEntry[], label: string): NextCharge | null {
   const key = label.trim().toLowerCase();
   if (!key) return null;
-  if (validatedCharge(entries, label)) return null;
-  // Most recently *added* test for this airframe (entries are stored newest-first).
-  const latest = entries.find(
-    (e) => e.charge > 0 && e.label.trim().toLowerCase() === key,
-  );
-  if (!latest) return null;
-  if (latest.outcome === "none") {
-    return { kind: "increase", fromCharge: latest.charge, fromOutcome: "none", suggested: round(latest.charge * 1.25, 2) };
+  const matches = entries.filter((e) => e.charge > 0 && e.label.trim().toLowerCase() === key);
+  if (matches.length === 0) return null;
+  // The most recent test *by date* (ties resolve to the most recently added — matches[0]).
+  let latest = matches[0];
+  for (const e of matches) if (e.date > latest.date) latest = e;
+
+  const validated = validatedCharge(entries, label);
+
+  if (latest.outcome === "clean") {
+    // A confirmed clean at the validated charge means there's nothing left to chase.
+    if (validated) return null;
+    return { kind: "confirm", fromCharge: latest.charge, fromOutcome: "clean", suggested: latest.charge };
   }
-  if (latest.outcome === "partial") {
-    return { kind: "increase", fromCharge: latest.charge, fromOutcome: "partial", suggested: round(latest.charge * 1.15, 2) };
-  }
-  return { kind: "confirm", fromCharge: latest.charge, fromOutcome: "clean", suggested: latest.charge };
+
+  // Latest test did not fully separate. A failure below an already-validated charge is expected
+  // (too little powder) — don't chase it.
+  if (validated && round(latest.charge, 2) < round(validated.charge, 2)) return null;
+
+  const step = latest.outcome === "none" ? 1.25 : 1.15;
+  return {
+    kind: "increase",
+    fromCharge: latest.charge,
+    fromOutcome: latest.outcome,
+    suggested: round(latest.charge * step, 2),
+  };
 }
 
 /**
@@ -213,6 +247,13 @@ export interface Calibration {
   max: number;
 }
 
+/** Calibration ratios outside this band are treated as data-entry errors (a typo'd estimate — say
+ *  0.2 for 2.0, a 10× ratio — rather than real signal) and dropped, so one bad row can't skew the
+ *  "your charges run N× the model" advisory into wildly-oversized territory. A real clean charge
+ *  runs within a few× its ideal-gas estimate. */
+export const CALIBRATION_MIN_RATIO = 0.25;
+export const CALIBRATION_MAX_RATIO = 6;
+
 /**
  * How your real, clean charges have compared to the ideal-gas estimate, across every test
  * that was planned from a ladder step (so it has an estimate to compare against). Needs at
@@ -222,7 +263,10 @@ export interface Calibration {
 export function calibrationFromEntries(entries: TestEntry[]): Calibration | null {
   const ratios = entries
     .filter((e) => e.outcome === "clean" && e.charge > 0 && (e.estimate ?? 0) > 0)
-    .map((e) => e.charge / (e.estimate as number));
+    .map((e) => e.charge / (e.estimate as number))
+    // Drop implausible ratios (a typo'd tiny/huge estimate), which would otherwise steer the
+    // advisory toward a grossly oversized charge — over-pressurization is its own hazard.
+    .filter((r) => r >= CALIBRATION_MIN_RATIO && r <= CALIBRATION_MAX_RATIO);
   if (ratios.length < 2) return null;
   const mean = ratios.reduce((a, b) => a + b, 0) / ratios.length;
   return { count: ratios.length, mean, min: Math.min(...ratios), max: Math.max(...ratios) };

@@ -255,10 +255,12 @@ export default function GroundTestLog({
   };
 
   const calibration = calibrationFromEntries(entries);
-  // Bench coaching for the airframe currently in the form: a validated charge is
-  // flight-ready; otherwise the last result drives what to pack next.
+  // Bench coaching for the airframe currently in the form. Let nextChargeSuggestion decide when to
+  // speak: it's silent once a charge is validated and confirmed, but re-opens if the most recent
+  // test is a failure at or above the validated charge — a later no-separation means "validated"
+  // can no longer be trusted, so the coach must not stay quiet.
   const validated = validatedCharge(entries, label);
-  const next = validated ? null : nextChargeSuggestion(entries, label);
+  const next = nextChargeSuggestion(entries, label);
 
   return (
     <section id="ground-test" className="mt-16 scroll-mt-8">
@@ -388,8 +390,10 @@ export default function GroundTestLog({
         </div>
       </div>
 
-      {/* Bench coach: what to pack next, or flight-ready */}
-      {validated && (
+      {/* Bench coach: what to pack next, or flight-ready. The flight-ready panel is suppressed
+          when the coach has re-opened (a later failure undermined the validated charge) — the
+          step-up coach below takes over rather than asserting "fly it". */}
+      {validated && !next && (
         <div className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm leading-relaxed text-emerald-800 dark:text-emerald-300">
           <span aria-hidden className="mt-0.5 shrink-0 text-base">
             ✓

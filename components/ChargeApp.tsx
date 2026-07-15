@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import Calculator from "./Calculator";
 import VentPorts from "./VentPorts";
 import GroundTestLog from "./GroundTestLog";
-import { summarizeFor, validatedCharge, type TestEntry } from "@/lib/testlog";
+import { summarizeFor, validatedCharge, nextChargeSuggestion, type TestEntry } from "@/lib/testlog";
+import { round } from "@/lib/format";
 
 /** A charge weight sent from a well's ground-test plan to the log. The nonce makes
  *  each pick a distinct value so re-picking the same weight still re-triggers. */
@@ -33,11 +34,18 @@ export default function ChargeApp() {
     if (!activeRocket) return null;
     const s = summarizeFor(logEntries, activeRocket);
     if (!s.lastClean) return null;
-    return {
-      name: activeRocket,
-      ...s,
-      validated: validatedCharge(logEntries, activeRocket) ?? undefined,
-    };
+    const validated = validatedCharge(logEntries, activeRocket) ?? undefined;
+    // A recent no-separation/partial at or above the charge we present as proven means that charge
+    // can't be trusted until re-tested. Surface it so the tool never asserts "fly it" over a later
+    // failure — the coach re-opens (nextChargeSuggestion) and every "proven" claim gets gated.
+    const next = nextChargeSuggestion(logEntries, activeRocket);
+    const proven = validated?.charge ?? s.lastClean.charge;
+    const retest =
+      next?.kind === "increase" && round(next.fromCharge, 2) >= round(proven, 2)
+        ? // "increase" is only returned for a none/partial, never a clean.
+          { charge: next.fromCharge, outcome: next.fromOutcome as "none" | "partial" }
+        : null;
+    return { name: activeRocket, ...s, validated, retest };
   }, [activeRocket, logEntries]);
 
   // The active airframe's logged tests, for the downloadable recovery report.

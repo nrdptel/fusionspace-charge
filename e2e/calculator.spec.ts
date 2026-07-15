@@ -289,6 +289,33 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText(/Charge too small/)).toBeVisible();
   });
 
+  test("a later no-separation above the proven charge withdraws 'fly it' and re-opens the coach", async ({
+    page,
+  }) => {
+    await page.goto("/?mode=p&dep=s");
+    // Save a named airframe so the proven-charge callout tracks it and the log's label seeds to it.
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    const charge = page.getByLabel("Charge tested");
+    const logBtn = page.getByRole("button", { name: "Log test", exact: true });
+    // Two clean separations at 1.0 g → validated (clean is the default outcome).
+    await charge.fill("1.0");
+    await logBtn.click();
+    await charge.fill("1.0");
+    await logBtn.click();
+    await expect(page.getByText(/Validated/)).toBeVisible();
+    await expect(page.getByText(/Fly the charge you tested/)).toBeVisible();
+    // Now a no-separation at a HIGHER charge — the validated charge can no longer be trusted.
+    await charge.fill("2.0");
+    await page.getByRole("button", { name: "None", exact: true }).click();
+    await logBtn.click();
+    // The "fly it" assertion is withdrawn, a warning appears, and the coach re-opens with a step-up.
+    await expect(page.getByText(/Fly the charge you tested/)).toHaveCount(0);
+    await expect(page.getByText(/didn't separate/i).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Use 2\.5/ })).toBeVisible();
+  });
+
   test("offers a native share sheet where the browser supports it", async ({ page }) => {
     await page.addInitScript(() => {
       (window as unknown as { __shared?: unknown }).__shared = null;

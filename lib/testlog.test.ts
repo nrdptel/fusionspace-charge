@@ -84,6 +84,15 @@ describe("sanitizeEntries", () => {
     );
     expect(out.map((e) => e.date)).toEqual([today, today, today, "2026-06-15"]);
   });
+
+  it("replaces a future date with today so a fat-fingered year can't hijack 'most recent'", () => {
+    const out = sanitizeEntries(
+      [{ id: "a", charge: 1, date: "2062-01-01" }] as unknown[],
+      gen,
+      today,
+    );
+    expect(out[0].date).toBe(today);
+  });
 });
 
 const entry = (p: Partial<TestEntry>): TestEntry => ({
@@ -132,6 +141,33 @@ describe("ground-test summary", () => {
   it("does not match a different airframe", () => {
     expect(summarizeFor([entry({ label: "Drogue" })], "Main")).toEqual({ cleanCount: 0 });
   });
+
+  it("breaks same-date ties toward the larger charge, not the smaller", () => {
+    // With no time-of-day, add-order is ambiguous; surface the larger charge (safer to fly) —
+    // matching validatedCharge's tie-break, not the smaller.
+    const s = summarizeFor(
+      [
+        entry({ label: "X", date: "2026-05-01", charge: 2.4 }), // added first
+        entry({ label: "X", date: "2026-05-01", charge: 1.8 }), // added second
+      ],
+      "X",
+    );
+    expect(s.lastClean?.charge).toBe(2.4);
+  });
+
+  it("takes the drift baseline from the most-recent estimate-carrying clean", () => {
+    // Most-recent clean is hand-logged (no estimate); the drift baseline must fall through to the
+    // ladder-planned clean rather than silently disabling drift protection.
+    const s = summarizeFor(
+      [
+        entry({ label: "X", date: "2026-06-01", charge: 2.0, estimate: undefined }),
+        entry({ label: "X", date: "2026-05-01", charge: 1.9, estimate: 1.8 }),
+      ],
+      "X",
+    );
+    expect(s.lastClean?.charge).toBe(2.0); // still the most recent clean
+    expect(s.driftEstimate).toBe(1.8); // but drift falls back to the estimate-carrying one
+  });
 });
 
 describe("model calibration", () => {
@@ -162,6 +198,18 @@ describe("model calibration", () => {
       entry({ charge: 0, estimate: 1.0 }), // no charge
     ]);
     expect(c?.count).toBe(2);
+  });
+
+  it("drops an implausible ratio from a typo'd estimate instead of skewing the advisory", () => {
+    // estimate 0.2 for a 2.0 g charge → 10× ratio: a data-entry error, not real signal. Without
+    // the clamp it would drive "your charges run ~4× the model" toward a grossly oversized charge.
+    const c = calibrationFromEntries([
+      entry({ charge: 1.2, estimate: 1.0 }),
+      entry({ charge: 1.5, estimate: 1.0 }),
+      entry({ charge: 2.0, estimate: 0.2 }), // 10× — dropped
+    ]);
+    expect(c?.count).toBe(2);
+    expect(c?.max).toBeLessThan(6);
   });
 });
 
@@ -255,6 +303,46 @@ describe("next-charge suggestion", () => {
       "X",
     );
     expect(done).toBeNull();
+  });
+
+  it("reads the most recent test by DATE, not by add-order", () => {
+    // A backdated failure added last must not drive the coach off a stale test.
+    const n = nextChargeSuggestion(
+      [
+        entry({ label: "X", date: "2025-01-01", charge: 0.5, outcome: "none" }), // added last, old
+        entry({ label: "X", date: "2026-06-01", charge: 1.5, outcome: "clean" }),
+      ],
+      "X",
+    );
+    expect(n).toEqual({ kind: "confirm", fromCharge: 1.5, fromOutcome: "clean", suggested: 1.5 });
+  });
+
+  it("re-opens coaching when a later test fails at or above the validated charge", () => {
+    // Two cleans at 1.0 (Jan), then a no-separation at 2.0 (Mar): the "validated" charge is now
+    // suspect, so the coach must NOT stay silent — it steps up from the failed 2.0 g.
+    const n = nextChargeSuggestion(
+      [
+        entry({ label: "X", date: "2026-03-01", charge: 2.0, outcome: "none" }),
+        entry({ label: "X", date: "2026-01-02", charge: 1.0, outcome: "clean" }),
+        entry({ label: "X", date: "2026-01-01", charge: 1.0, outcome: "clean" }),
+      ],
+      "X",
+    );
+    expect(n).toEqual({ kind: "increase", fromCharge: 2.0, fromOutcome: "none", suggested: 2.5 });
+  });
+
+  it("stays silent when a later failure is BELOW the validated charge (expected under-size)", () => {
+    // A no-separation at 0.5 g when 1.0 g is validated is expected (too little powder) — nothing
+    // to chase, and stepping up from 0.5 would only propose a charge under the proven one.
+    const n = nextChargeSuggestion(
+      [
+        entry({ label: "X", date: "2026-03-01", charge: 0.5, outcome: "none" }),
+        entry({ label: "X", date: "2026-01-02", charge: 1.0, outcome: "clean" }),
+        entry({ label: "X", date: "2026-01-01", charge: 1.0, outcome: "clean" }),
+      ],
+      "X",
+    );
+    expect(n).toBeNull();
   });
 });
 
