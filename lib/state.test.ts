@@ -67,6 +67,39 @@ describe("normalizeState (untrusted saved/imported state)", () => {
     expect(s.pressureUnit).toBe("kPa");
     expect(s.forceUnit).toBe("N");
   });
+
+  it("clamps Fetter compartment fields on the saved-rocket / backup-import path", () => {
+    // normalizeState — not decodeState — is what a restored saved rocket and an imported backup go
+    // through. Its Fetter clamps (packing [0,1], safety/deployAlt floor, discrete pins, screw
+    // whitelist) were only ever exercised via the URL path; a regression here would silently
+    // corrupt every restored Fetter setup with no failing test. Pin them.
+    const s = normalizeState({
+      ...DEFAULT_STATE,
+      mode: "fetter",
+      fetter: { ...DEFAULT_STATE.fetter, packing: 2, safety: -3, deployAlt: -500, pinCount: 2.7, screw: "bolt" },
+    });
+    expect(s.fetter.packing).toBe(1);
+    expect(s.fetter.safety).toBe(0);
+    expect(s.fetter.deployAlt).toBe(0);
+    expect(s.fetter.pinCount).toBe(3);
+    expect(s.fetter.screw).toBe(DEFAULT_STATE.fetter.screw);
+  });
+
+  it("rebuilds a corrupt or missing Fetter compartment from defaults", () => {
+    // Mirrors the corrupt-well case: a tampered store with null/garbage Fetter compartments must
+    // not reach computeFetter — normalizeState restores the defaults for both compartments.
+    const s = normalizeState({ ...DEFAULT_STATE, mode: "fetter", fetter: null, fetterMain: "oops" });
+    expect(s.fetter).toEqual(DEFAULT_STATE.fetter);
+    expect(s.fetterMain).toEqual(DEFAULT_STATE.fetterMain);
+  });
+
+  it("coerces Fetter string numbers and fills missing fields from defaults", () => {
+    const s = normalizeState({ mode: "fetter", fetter: { diameter: "4", length: "24" } });
+    expect(s.fetter.diameter).toBe(4);
+    expect(s.fetter.length).toBe(24);
+    expect(s.fetter.packing).toBe(DEFAULT_STATE.fetter.packing);
+    expect(s.fetter.screw).toBe(DEFAULT_STATE.fetter.screw);
+  });
 });
 
 describe("URL state", () => {
@@ -197,6 +230,22 @@ describe("URL state — Fetter mode", () => {
       },
     };
     expect(decodeState(encodeState(custom))).toEqual(custom);
+  });
+
+  it("keeps the ideal-gas wells through a Fetter-mode round-trip (wells encode in every mode)", () => {
+    // The wells are encoded unconditionally — unlike the Fetter params, which only encode in Fetter
+    // mode — so a link shared while in Fetter mode still carries the force/pressure geometry, and
+    // switching back to an ideal-gas mode doesn't find the wells reset to defaults.
+    const custom: State = {
+      ...DEFAULT_STATE,
+      mode: "fetter",
+      deploy: "dual",
+      drogue: { diameter: 5.5, length: 20, pressure: 15, pinCount: 3, pinForce: 40, friction: 5 },
+      main: { diameter: 6, length: 36, pressure: 18, pinCount: 4, pinForce: 50, friction: 8 },
+    };
+    const back = decodeState(encodeState(custom));
+    expect(back.drogue).toEqual(custom.drogue);
+    expect(back.main).toEqual(custom.main);
   });
 
   it("round-trips both Fetter compartments in dual deploy", () => {
