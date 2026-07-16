@@ -476,6 +476,24 @@ test.describe("Charge calculator", () => {
     await expect(dia).toHaveValue("3.9");
   });
 
+  test("an mm tube-ID preset stores millimetres, not a raw number read as inches", async ({
+    page,
+  }) => {
+    // The mm presets are a different array from the inch ones; a preset that stored the mm number
+    // as inches (54 → 54") would be a large silent mis-size. Verify 54 mm survives a switch to
+    // inches as ~2.13 in, proving it was stored as millimetres.
+    await page.goto("/?dep=s&lu=mm");
+    const dia = page.getByRole("spinbutton", { name: /Inner diameter/ }).first();
+    await page.getByRole("button", { name: "54 mm" }).first().click();
+    await expect(dia).toHaveValue("54");
+    await page
+      .getByRole("group", { name: "Length unit" })
+      .first()
+      .getByRole("button", { name: "in", exact: true })
+      .click();
+    await expect(dia).toHaveValue(/^2\.1/); // 54 / 25.4 = 2.126…, not 54
+  });
+
   test("copies the plan as text to the clipboard", async ({ page }) => {
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/?dep=s&mg=1");
