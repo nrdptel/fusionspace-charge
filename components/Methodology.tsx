@@ -153,6 +153,13 @@ export default function Methodology({
           or how free your airframe really is to slide. Shear-pin forces vary by screw,
           supplier, and fit; friction is a guess until you feel it.
         </p>
+        <p>
+          Two things the number does assume: <strong>real black powder</strong>, and that you{" "}
+          <strong>weigh it on a scale</strong>. FFFFg (4F) is the usual ejection granulation and
+          FFFg is fine; substitutes like Pyrodex light slower and peak lower, so they don&apos;t
+          deploy the way this figure expects. And weigh each charge rather than dipping it by
+          volume — density shifts with granulation, so a volume scoop drifts.
+        </p>
         <p className="font-medium text-zinc-700 dark:text-zinc-300">
           So ground-test before you fly. Build the charge and fire it{" "}
           <strong>remotely — from behind cover, with the airframe restrained and pointed

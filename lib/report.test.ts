@@ -31,6 +31,13 @@ describe("recovery report", () => {
     expect(html).toContain("Validated — 2 clean separations at 1.50 g.");
   });
 
+  it("carries the pad-safety and powder guidance in the footer", () => {
+    const html = buildReportHtml(base);
+    expect(html).toContain("FFFFg");
+    expect(html).toContain("shorted");
+    expect(html).toContain("everyone is clear");
+  });
+
   it("guards against splitting well blocks and the formula across printed pages", () => {
     expect(buildReportHtml(base)).toContain("page-break-inside: avoid");
   });

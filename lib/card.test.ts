@@ -33,6 +33,13 @@ describe("build & ground-test card HTML", () => {
     expect(html).toContain("Proven charge:");
   });
 
+  it("carries the pad-safety and powder guidance in the footer (it's a field document)", () => {
+    const html = buildCardHtml(plan, "2026-06-27");
+    expect(html).toContain("FFFFg"); // use real black powder, weighed
+    expect(html).toContain("shorted"); // keep e-match leads shorted at the pad
+    expect(html).toContain("everyone is clear");
+  });
+
   it("reframes the proven line as ambiguous for a multi-compartment build", () => {
     // With more than one well sized, the log can't attribute a clean test to a compartment, so the
     // card must NOT tell the builder to "fly the charge you tested" — it qualifies instead.
