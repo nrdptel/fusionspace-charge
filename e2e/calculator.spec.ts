@@ -1175,6 +1175,18 @@ test.describe("Charge calculator", () => {
     await expect(page.getByRole("link", { name: /Read the paper/i })).toBeVisible();
   });
 
+  test("names why the Fetter charge can fall below traditional at low packing", async ({ page }) => {
+    // Below ~0.35 packing the protector absorbs little and the model sizes UNDER the empty-tube
+    // number, so the ratio badge reads e.g. "Fetter is 0.7×" against the mode's "needs more powder"
+    // premise. The card must explain that inversion. (4"×20, quarter chute, 2×2-56 → ratio ≈ 0.69.)
+    await page.goto("/?mode=x&dep=s&xdia=4&xl=20&xpk=0.25&xsc=2-56&xn=2");
+    await expect(page.getByTestId("fetter-below-traditional").first()).toBeVisible();
+
+    // At full packing the model is the larger number again, and the note is gone.
+    await page.goto("/?mode=x&dep=s&xdia=4&xl=20&xpk=1&xsc=2-56&xn=2");
+    await expect(page.getByTestId("fetter-below-traditional")).toHaveCount(0);
+  });
+
   test("the Fetter safety factor is the model's margin — no separate multiplier", async ({
     page,
   }) => {
