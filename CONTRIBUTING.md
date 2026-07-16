@@ -10,12 +10,15 @@ This is a single Next.js app, statically exported. There is no backend.
 
 - `app/` — the page, layout, metadata, robots/sitemap, and error/not-found pages.
 - `components/` — the calculator UI, theme toggle, header, footer.
-- `lib/` — the physics (`charge.ts`), unit conversions, URL-state serialization,
-  formatting, and the monthly observances. Pure functions, with tests alongside.
+- `lib/` — the two sizing models (`charge.ts`, the ideal-gas method; `fetter.ts`, the
+  Fetter closed-form), plus unit conversions, URL-state serialization, formatting, the
+  ground-test log and coaching (`testlog.ts`), sanity checks (`checks.ts`), the vent-port
+  tool (`vent.ts`), backup/restore (`backup.ts`), the printable card and recovery report
+  (`card.ts` / `report.ts`), and the monthly observances. Pure functions, with tests alongside.
 - `public/` — brand marks, icons, the OG image, and the Cloudflare `_headers`.
 
-The math is deliberately isolated in `lib/charge.ts` so it can be read and
-tested on its own — if you're proposing a change there, please bring a source.
+The math is deliberately isolated in `lib/` (`charge.ts` and `fetter.ts`) so it can be read
+and tested on its own — if you're proposing a change there, please bring a source.
 
 ## Setup
 
@@ -32,6 +35,9 @@ These mirror CI (`.github/workflows/test.yml`); all must pass.
 npm run lint        # eslint
 npm test            # vitest unit tests
 npm run build       # also type-checks (CI gate; tsconfig has noUnusedLocals/Params)
+
+# The e2e suite needs the Playwright browser, which `npm install` does not fetch:
+npx playwright install chromium   # one-time
 npm run test:e2e    # Playwright (incl. an axe accessibility audit) — run after a build
 ```
 
