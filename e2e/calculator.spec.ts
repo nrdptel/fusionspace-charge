@@ -504,6 +504,14 @@ test.describe("Charge calculator", () => {
     expect(text).toContain("Ladder:");
   });
 
+  test("gives pad-arming discipline in the take-it-to-the-field section", async ({ page }) => {
+    await page.goto("/");
+    const field = page.locator("#field");
+    await expect(field.getByText(/At the pad, arm last/i)).toBeVisible();
+    await expect(field.getByText(/keep the e-match leads shorted/i)).toBeVisible();
+    await expect(field.getByText(/until the rocket is on the pad/i)).toBeVisible();
+  });
+
   test("bench mode opens a focused view and hands a charge to the log", async ({ page }) => {
     await page.goto("/?mode=p&dep=s&mg=1"); // single well ≈ 0.93 g
     await page.getByRole("button", { name: "Bench mode" }).click();

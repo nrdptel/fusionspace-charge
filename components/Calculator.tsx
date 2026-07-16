@@ -1218,6 +1218,23 @@ export default function Calculator({
           recovery report for a cert package — and share the live setup as a link.
         </p>
 
+        {/* Pad discipline: the tool sizes and helps ground-test the charge, but the most codified
+            HPR safety material is at the pad (arming / e-match handling), and nothing else here
+            covered it. Kept to the standard NAR/Tripoli points, scoped to "follow your range". */}
+        <p className="mt-3 flex max-w-3xl items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+          <span aria-hidden className="mt-px shrink-0 text-sm">
+            ⚠
+          </span>
+          <span>
+            <strong className="font-semibold">At the pad, arm last.</strong>{" "}
+            Keep the e-match leads shorted until you connect them, and don&apos;t wire the charges
+            or arm the altimeters
+            until the rocket is on the pad. Be the last to arm it, disarm before anyone approaches,
+            and follow your range&apos;s procedure — it&apos;s the same live charge you ground-tested,
+            and these steps keep it from firing while it&apos;s in your hands.
+          </span>
+        </p>
+
         {/* Primary actions: the pad view and the shareable link. */}
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button

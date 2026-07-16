@@ -157,8 +157,10 @@ export function buildReportHtml(d: ReportData): string {
   <footer>
     <strong>These charges are theoretical starting estimates, not numbers to fly unverified.</strong>
     Bench-test from the low charge up until separation is clean and energetic, and fly the
-    charge you proved — not the one the formula guessed. Black powder is an explosive; sizing,
-    handling, and use are your responsibility.
+    charge you proved — not the one the formula guessed. Use real black powder (FFFFg), weighed on a
+    scale. At the pad, keep e-match leads shorted and don&rsquo;t arm the charges until the rocket is
+    up and everyone is clear. Black powder is an explosive; sizing, handling, and use are your
+    responsibility.
   </footer>
 </main>
 </body>
