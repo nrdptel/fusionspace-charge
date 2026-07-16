@@ -32,7 +32,7 @@ export default function BenchMode({
   onClose,
 }: {
   wells: BenchWell[];
-  proven: { label: string; charge: string } | null;
+  proven: { label: string; charge: string; ambiguous?: boolean } | null;
   /** Shown in place of the default "enter an airframe" prompt when there are no charges for a
    *  reason other than empty inputs — e.g. a Fetter deployment outside the altitude envelope. */
   emptyNote?: string;
@@ -118,8 +118,10 @@ export default function BenchMode({
         {proven && (
           <div className="mt-5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-lg text-emerald-300">
             <span className="font-semibold">✓ {proven.label}:</span>{" "}
-            <span className="font-mono tabular-nums">{proven.charge} g</span> — fly the charge
-            you proved.
+            <span className="font-mono tabular-nums">{proven.charge} g</span>
+            {proven.ambiguous
+              ? " — the largest you've logged; match it to the right well before you fly it."
+              : " — fly the charge you proved."}
           </div>
         )}
 
