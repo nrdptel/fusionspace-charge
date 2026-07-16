@@ -42,7 +42,7 @@ section, so the whole tool is discoverable at a glance.
   force, or above your target pressure so a leaky real well still reaches it.
 - **Single and dual-deploy**: separate drogue and main wells.
 - **Redundant altimeters**: size a backup charge alongside the primary — a little larger,
-  following the common +20% convention — for the second altimeter most flyers carry.
+  following the same +20% / +0.5 g convention — for the second altimeter most flyers carry.
 - **Altimeter vent holes**: size the static sampling ports for your electronics bay by the
   standard one-¼″-port-per-100-in³ rule, split across the ports you plan to drill.
 - Units that convert in place — diameter and length in **mm or in**, pressure in
