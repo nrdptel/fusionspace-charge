@@ -26,6 +26,10 @@ export interface PrintPlan {
   meta: string;
   wells: PlanWell[];
   tested?: string;
+  /** Dual deploy pools clean tests by airframe, not by compartment, so the surfaced charge is the
+   *  largest logged for the airframe — not necessarily the one to fly in any given well. Reword the
+   *  proven line to say so instead of asserting "fly the charge you tested". */
+  provenAmbiguous?: boolean;
   /** Overrides the default "no charge sized yet" copy when there are no wells for a reason
    *  other than empty inputs — e.g. a Fetter deployment outside the model's altitude envelope. */
   emptyNote?: string;
@@ -70,7 +74,11 @@ export function buildCardHtml(plan: PrintPlan, generatedAt: string): string {
         )}</p>`;
 
   const proven = plan.tested
-    ? `<p class="proven"><strong>Proven charge:</strong> ${escapeHtml(plan.tested)}. Fly the charge you tested.</p>`
+    ? plan.provenAmbiguous
+      ? `<p class="proven"><strong>Largest clean charge logged:</strong> ${escapeHtml(
+          plan.tested,
+        )}. With two compartments the log can't tell which charge this was — match it to the right well before you fly it.</p>`
+      : `<p class="proven"><strong>Proven charge:</strong> ${escapeHtml(plan.tested)}. Fly the charge you tested.</p>`
     : "";
 
   return `<!doctype html>

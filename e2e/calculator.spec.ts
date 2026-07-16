@@ -233,6 +233,33 @@ test.describe("Charge calculator", () => {
     );
   });
 
+  test("qualifies the proven charge when more than one compartment is sized, asserts 'fly' with one", async ({
+    page,
+  }) => {
+    // Default deploy is dual, so both wells are sized: the log can't attribute a clean test to a
+    // compartment, so the callout must NOT tell the flyer to "fly the charge you tested".
+    await page.goto("/");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Dual Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByLabel("Charge tested").fill("1.5");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    const dual = page.locator("p").filter({ hasText: "proven Dual Bird" });
+    await expect(dual).toContainText("match it to the right well");
+    await expect(dual).not.toContainText("Fly the charge you tested");
+
+    // Single deploy: one well, so the charge maps unambiguously and the assertion returns.
+    await page.goto("/?dep=s");
+    await page.getByRole("button", { name: "Save current setup" }).click();
+    await page.getByPlaceholder("Name this setup").fill("Single Bird");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByLabel("Charge tested").fill("1.5");
+    await page.getByRole("button", { name: "Log test", exact: true }).click();
+    const single = page.locator("p").filter({ hasText: "proven Single Bird" });
+    await expect(single).toContainText("Fly the charge you tested");
+    await expect(single).not.toContainText("match it to the right well");
+  });
+
   test("a sub-1 margin in a shared link is floored to 1", async ({ page }) => {
     await page.goto("/?mode=f&dep=s&mg=0.5");
     // The dangerous value must be sanitized on load, not used to shrink the charge.

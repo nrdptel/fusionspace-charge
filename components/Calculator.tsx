@@ -458,6 +458,13 @@ export default function Calculator({
             backup: state.redundant ? backupMass(data.result.mass, state.backupPct) : undefined,
           }));
 
+  // The ground-test log pools clean tests by airframe, not by compartment, so when more than one
+  // well is sized the single surfaced "proven" charge (the largest logged) can't be attributed to
+  // a well. Wherever the tool would otherwise say "fly the charge you tested", qualify it instead.
+  // Gated on the count of sized wells — not merely deploy===dual — so a dual setup with only one
+  // well filled still reads unambiguously.
+  const provenAmbiguous = artWells.length > 1;
+
   // Setup-drift guard: a proven/validated charge is only proven for the geometry it was
   // tested at. The clean test recorded the model estimate it was planned from; if the
   // current configuration would now size very differently, the airframe likely changed —
@@ -511,6 +518,9 @@ export default function Calculator({
     tested: testedSummary?.lastClean && !provenUntrusted
       ? `${fmtMass(testedSummary.lastClean.charge)} g — ${testedSummary.name} (${testedSummary.lastClean.date})`
       : undefined,
+    // Multiple wells pool tests by airframe, not compartment, so the surfaced charge is the largest
+    // logged, not the one to fly in a given well — reword the card's proven line accordingly.
+    provenAmbiguous,
     wells: artWells.map((w) => ({
       title: w.title,
       idText: w.idText,
@@ -546,9 +556,9 @@ export default function Calculator({
     provenUntrusted
       ? null
       : testedSummary?.validated
-        ? { label: "Validated", charge: fmtMass(testedSummary.validated.charge) }
+        ? { label: "Validated", charge: fmtMass(testedSummary.validated.charge), ambiguous: provenAmbiguous }
         : testedSummary?.lastClean
-          ? { label: "Proven", charge: fmtMass(testedSummary.lastClean.charge) }
+          ? { label: "Proven", charge: fmtMass(testedSummary.lastClean.charge), ambiguous: provenAmbiguous }
           : null;
 
   // A plain-text version of the same plan, for pasting into phone notes, a flight log, or a
@@ -790,6 +800,12 @@ export default function Calculator({
           `Most recent clean separation: ${fmtMass(testedSummary.lastClean.charge)} g (${testedSummary.lastClean.date}). Not yet validated — needs two clean tests at one charge.`,
         );
       else parts.push("No clean separation logged yet.");
+      // Multiple sized wells pool tests by airframe, not compartment, so the surfaced charge can be
+      // any well's — say so rather than let the cert document read as one charge to fly.
+      if (provenAmbiguous && testedSummary?.lastClean && !provenUntrusted)
+        parts.push(
+          "With more than one compartment the log can't attribute a clean test to a well — match the charge above to the right compartment.",
+        );
       const cal = calibrationFromEntries(sorted);
       if (cal)
         parts.push(
@@ -1107,7 +1123,9 @@ export default function Calculator({
               {testedSummary.cleanCount > 1 && ` (${testedSummary.cleanCount} clean tests logged)`}.{" "}
               {provenUntrusted
                 ? "Re-test before you rely on it — see the note below."
-                : "Fly the charge you tested — the estimate below is only a starting point."}
+                : provenAmbiguous
+                  ? "With more than one compartment sized, this is the largest charge you've logged clean — match it to the right well before you fly it."
+                  : "Fly the charge you tested — the estimate below is only a starting point."}
             </p>
             {drift && (
               <p
