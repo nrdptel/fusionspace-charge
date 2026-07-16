@@ -33,6 +33,18 @@ describe("build & ground-test card HTML", () => {
     expect(html).toContain("Proven charge:");
   });
 
+  it("reframes the proven line as ambiguous for a multi-compartment build", () => {
+    // With more than one well sized, the log can't attribute a clean test to a compartment, so the
+    // card must NOT tell the builder to "fly the charge you tested" — it qualifies instead.
+    const html = buildCardHtml({ ...plan, provenAmbiguous: true }, "2026-06-27");
+    expect(html).toContain("Largest clean charge logged:");
+    expect(html).toContain("match it to the right well");
+    expect(html).not.toContain("Fly the charge you tested");
+    expect(html).not.toContain("Proven charge:");
+    // The tested charge value itself is still shown.
+    expect(html).toContain("1.50 g — Nike");
+  });
+
   it("omits the proven line when no tested charge is set", () => {
     // The calculator drops plan.tested when the setup has drifted from what was proven,
     // so the printed card must not assert a proven charge the on-screen guard is warning about.
