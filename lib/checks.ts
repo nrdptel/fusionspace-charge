@@ -10,7 +10,7 @@
  */
 
 import type { State, WellInput } from "./state";
-import { toInches, toPsi, fromPsi } from "./units";
+import { toInches, toPsi, fromPsi, pressureDecimals } from "./units";
 import { fmt } from "./format";
 
 export interface Caution {
@@ -74,12 +74,12 @@ export function wellCautions(
     if (tPsi < 6) {
       out.push({
         id: "p-low",
-        message: `A target of ${fmt(well.pressure, 1)} ${state.pressureUnit} is below the usual ~8–15 psi — too little pressure can fail to separate.`,
+        message: `A target of ${fmt(well.pressure, pressureDecimals(state.pressureUnit))} ${state.pressureUnit} is below the usual ~8–15 psi — too little pressure can fail to separate.`,
       });
     } else if (tPsi > 20) {
       out.push({
         id: "p-high",
-        message: `A target of ${fmt(well.pressure, 1)} ${state.pressureUnit} is above the usual ~8–15 psi — too much pressure can shred the chute, zipper the airframe, or break recovery hardware. Confirm that's intended.`,
+        message: `A target of ${fmt(well.pressure, pressureDecimals(state.pressureUnit))} ${state.pressureUnit} is above the usual ~8–15 psi — too much pressure can shred the chute, zipper the airframe, or break recovery hardware. Confirm that's intended.`,
       });
     }
   }
@@ -89,7 +89,7 @@ export function wellCautions(
   // the safety-relevant case the pressure-only check missed: an under-pressure force setup that
   // won't separate, or an absurd pressure from a mistyped diameter, otherwise drew no caution.
   if (state.mode === "force" && computed.pressurePsi !== undefined && computed.pressurePsi > 0) {
-    const shown = `${fmt(fromPsi(computed.pressurePsi, state.pressureUnit), 1)} ${state.pressureUnit}`;
+    const shown = `${fmt(fromPsi(computed.pressurePsi, state.pressureUnit), pressureDecimals(state.pressureUnit))} ${state.pressureUnit}`;
     if (computed.pressurePsi < 6) {
       out.push({
         id: "p-low",

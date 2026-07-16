@@ -967,8 +967,9 @@ test.describe("Charge calculator", () => {
     page,
   }) => {
     await page.goto("/?mode=p&dep=s&mg=1");
-    // Wait for the URL decode to settle into pressure mode before reading the charge.
-    await expect(page.getByLabel("Target pressure").first()).toBeVisible();
+    // Wait for the URL decode to settle into pressure mode before reading the charge. (Anchor the
+    // name to the field's start — the Safety-margin field's hint also mentions "target pressure".)
+    await expect(page.getByRole("spinbutton", { name: /^Target pressure/ })).toBeVisible();
     const mass = page.getByTestId("mass").first();
     const before = (await mass.textContent())!.trim();
     await page
@@ -978,6 +979,24 @@ test.describe("Charge calculator", () => {
     // The entered target is now shown in kPa, but the sized charge is unchanged.
     await expect(page.getByText(/kPa/).first()).toBeVisible();
     await expect(mass).toHaveText(before);
+  });
+
+  test("supports bar as a pressure unit, with finer 2-decimal precision", async ({ page }) => {
+    await page.goto("/?mode=p&dep=s&mg=1&dp=12"); // 12 psi target
+    const target = page.getByRole("spinbutton", { name: /^Target pressure/ });
+    await expect(target).toHaveValue("12");
+    await page
+      .getByRole("group", { name: "Pressure unit" })
+      .getByRole("button", { name: "bar" })
+      .click();
+    // 12 psi → 0.83 bar, shown to two decimals (psi/kPa show one) with a finer 0.05 step, and the
+    // charge is still sized (now for the 0.83-bar target). The lossless conversion is unit-tested.
+    await expect(target).toHaveValue("0.83");
+    await expect(target).toHaveAttribute("step", "0.05");
+    await expect(page.getByTestId("mass").first()).toHaveText(/^\d/);
+    // The bar unit round-trips through the URL too.
+    await page.reload();
+    await expect(target).toHaveValue("0.83");
   });
 
   test("choosing redundant altimeters reveals the backup charge and its controls", async ({

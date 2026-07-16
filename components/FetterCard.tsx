@@ -8,7 +8,7 @@ import {
   type FetterResult,
 } from "@/lib/fetter";
 import type { FetterInput, State } from "@/lib/state";
-import { fromLbf, fromPsi, in3ToCc, type LengthUnit } from "@/lib/units";
+import { fromLbf, fromPsi, in3ToCc, pressureDecimals, type LengthUnit } from "@/lib/units";
 import { fmt, fmtMass, round } from "@/lib/format";
 import { largeChargeCaution, wellCautions } from "@/lib/checks";
 import { NumberField, Select, Chip } from "./ui";
@@ -340,7 +340,7 @@ export default function FetterCard({
               />
               <Chip
                 label="Pressure"
-                value={`${fmt(fromPsi(result.pressurePsi, pu), 1)} ${pu}`}
+                value={`${fmt(fromPsi(result.pressurePsi, pu), pressureDecimals(pu))} ${pu}`}
               />
               <Chip label="Force" value={`${fmt(fromLbf(result.forceLbf, fu), 0)} ${fu}`} />
               <Chip label="Chute absorption" value={`${fmt(result.absorption * 100, 0)}%`} />

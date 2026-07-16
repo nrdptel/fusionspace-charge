@@ -168,7 +168,8 @@ export function normalizeState(raw: unknown): State {
         : DEFAULT_STATE.mode,
     deploy: o.deploy === "single" || o.deploy === "dual" ? o.deploy : DEFAULT_STATE.deploy,
     lengthUnit: o.lengthUnit === "mm" ? "mm" : "in",
-    pressureUnit: o.pressureUnit === "kPa" ? "kPa" : "psi",
+    pressureUnit:
+      o.pressureUnit === "kPa" ? "kPa" : o.pressureUnit === "bar" ? "bar" : "psi",
     forceUnit: o.forceUnit === "N" ? "N" : "lbf",
     margin: Math.max(1, num(o.margin, DEFAULT_STATE.margin)),
     redundant: o.redundant === true,
@@ -286,7 +287,7 @@ export function decodeState(query: string): State {
     mode: MODE_FROM[p.get("mode") ?? ""] ?? DEFAULT_STATE.mode,
     deploy: DEPLOY_FROM[p.get("dep") ?? ""] ?? DEFAULT_STATE.deploy,
     lengthUnit: lu === "mm" ? "mm" : "in",
-    pressureUnit: pu === "kPa" ? "kPa" : "psi",
+    pressureUnit: pu === "kPa" ? "kPa" : pu === "bar" ? "bar" : "psi",
     forceUnit: fu === "N" ? "N" : "lbf",
     // Floor the safety margin at 1: a value in (0,1) from a hand-edited or shared
     // link would otherwise under-size the charge.

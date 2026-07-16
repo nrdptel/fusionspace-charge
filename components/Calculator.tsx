@@ -18,6 +18,8 @@ import {
   fromLbf,
   fromPsi,
   in3ToCc,
+  pressureDecimals,
+  pressureStep,
   toInches,
   toLbf,
   toPsi,
@@ -663,7 +665,7 @@ export default function Calculator({
                 : []),
               ["Parachute packing factor", `${fmt(w.input.packing, 2)} (chute absorption ${fmt(r.absorption * 100, 0)}%)`],
               ["Safety factor", `${fmt(w.input.safety * 100, 0)}% (built into the charge)`],
-              ["Required pressure", `${fmt(fromPsi(r.pressurePsi, pu), 1)} ${pu}`],
+              ["Required pressure", `${fmt(fromPsi(r.pressurePsi, pu), pressureDecimals(pu))} ${pu}`],
               ["Required force", `${fmt(fromLbf(r.forceLbf, fu), 0)} ${fu}`],
               ["Charge (Fetter)", `${fmtMass(r.mass)} g`],
               ...(state.redundant
@@ -684,7 +686,7 @@ export default function Calculator({
             ["Inner diameter", `${fmt(w.diameter, 3)} ${lu}`],
             ["Pressurized length", `${fmt(w.length, 2)} ${lu}`],
           ];
-          if (state.mode === "pressure") rws.push(["Target pressure", `${fmt(w.pressure, 1)} ${pu}`]);
+          if (state.mode === "pressure") rws.push(["Target pressure", `${fmt(w.pressure, pressureDecimals(pu))} ${pu}`]);
           else {
             rws.push(["Shear pins", `${fmt(w.pinCount, 0)} × ${fmt(w.pinForce, 1)} ${fu}`]);
             if (w.friction > 0) rws.push(["Friction / extra hold", `${fmt(w.friction, 1)} ${fu}`]);
@@ -696,7 +698,7 @@ export default function Calculator({
           rws.push(["Charge (estimate)", `${fmtMass(res.mass)} g`]);
           if (state.redundant)
             rws.push(["Backup charge", `${fmtMass(backupMass(res.mass, state.backupPct))} g`]);
-          rws.push(["Sized pressure", `${fmt(fromPsi(res.pressure, pu), 1)} ${pu}`]);
+          rws.push(["Sized pressure", `${fmt(fromPsi(res.pressure, pu), pressureDecimals(pu))} ${pu}`]);
           rws.push(["Volume", `${fmt(res.volume, 1)} in³ · ${fmt(in3ToCc(res.volume), 0)} cc`]);
           return { title, rows: rws };
         });
@@ -944,6 +946,7 @@ export default function Calculator({
                 options={[
                   { value: "psi", label: "psi" },
                   { value: "kPa", label: "kPa" },
+                  { value: "bar", label: "bar" },
                 ]}
               />
             </ControlGroup>
@@ -1435,7 +1438,7 @@ function WellCard({
             value={well.pressure}
             onChange={(pressure) => onChange({ pressure })}
             unit={state.pressureUnit}
-            step={state.pressureUnit === "kPa" ? 5 : 1}
+            step={pressureStep(state.pressureUnit)}
             hint="Common rule of thumb is ~8–15 psi."
           />
         ) : (
@@ -1531,8 +1534,8 @@ function WellCard({
             label={state.mode === "pressure" && state.margin > 1 ? "Pressure (target → sized)" : "Pressure"}
             value={
               state.mode === "pressure" && state.margin > 1
-                ? `${fmt(well.pressure, 1)} → ${fmt(fromPsi(result.pressure, state.pressureUnit), 1)} ${state.pressureUnit}`
-                : `${fmt(fromPsi(result.pressure, state.pressureUnit), 1)} ${state.pressureUnit}`
+                ? `${fmt(well.pressure, pressureDecimals(state.pressureUnit))} → ${fmt(fromPsi(result.pressure, state.pressureUnit), pressureDecimals(state.pressureUnit))} ${state.pressureUnit}`
+                : `${fmt(fromPsi(result.pressure, state.pressureUnit), pressureDecimals(state.pressureUnit))} ${state.pressureUnit}`
             }
           />
           {state.mode === "force" && (

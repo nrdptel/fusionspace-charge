@@ -6,12 +6,13 @@
 
 export const MM_PER_IN = 25.4;
 export const KPA_PER_PSI = 6.894757;
+export const BAR_PER_PSI = KPA_PER_PSI / 100; // 1 bar = 100 kPa, so bar-per-psi = kPa-per-psi ÷ 100
 export const N_PER_LBF = 4.4482216;
 export const CC_PER_IN3 = 16.387064;
 export const GR_PER_G = 15.432358; // grains per gram
 
 export type LengthUnit = "in" | "mm";
-export type PressureUnit = "psi" | "kPa";
+export type PressureUnit = "psi" | "kPa" | "bar";
 export type ForceUnit = "lbf" | "N";
 
 // Length — canonical: inches
@@ -22,9 +23,16 @@ export const fromInches = (inches: number, unit: LengthUnit): number =>
 
 // Pressure — canonical: psi
 export const toPsi = (value: number, unit: PressureUnit): number =>
-  unit === "kPa" ? value / KPA_PER_PSI : value;
+  unit === "kPa" ? value / KPA_PER_PSI : unit === "bar" ? value / BAR_PER_PSI : value;
 export const fromPsi = (psi: number, unit: PressureUnit): number =>
-  unit === "kPa" ? psi * KPA_PER_PSI : psi;
+  unit === "kPa" ? psi * KPA_PER_PSI : unit === "bar" ? psi * BAR_PER_PSI : psi;
+
+/** Sensible display precision per pressure unit. A typical ejection target is ~8–15 psi, i.e.
+ *  ~55–105 kPa but only ~0.55–1.0 bar — so bar needs an extra decimal (and a finer input step)
+ *  to stay legible where psi and kPa read fine at one. */
+export const pressureDecimals = (unit: PressureUnit): number => (unit === "bar" ? 2 : 1);
+export const pressureStep = (unit: PressureUnit): number =>
+  unit === "kPa" ? 5 : unit === "bar" ? 0.05 : 1;
 
 // Force — canonical: lbf
 export const toLbf = (value: number, unit: ForceUnit): number =>
