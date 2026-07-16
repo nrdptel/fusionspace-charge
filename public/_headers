@@ -1,8 +1,13 @@
-# Cloudflare Pages response headers. Static export can't emit a next.config
-# headers() block, so the baseline security headers live here and apply to every
-# path: clickjacking, MIME sniffing, and referrer leakage. (No CSP — the inline
-# theme-init script would need a per-request nonce/hash, and a misconfigured CSP
-# failing closed is a worse risk than its marginal benefit on a static site.)
+# Cloudflare Pages response headers. Static export can't emit a next.config headers() block, so
+# the baseline security headers live here and apply to every path: clickjacking, MIME sniffing,
+# referrer leakage, and a hash-based Content-Security-Policy.
+#
+# The CSP is generated after the build by scripts/gen-csp.mjs, which replaces the CSP-PLACEHOLDER
+# line below with a policy whose script-src lists the SHA-256 of every inline script the static
+# export emits (the pre-paint theme-init script, the JSON-LD block, and Next's per-page hydration
+# scripts). Static export has no request-time nonce, and the hashes are computed from the exact
+# bytes served, so the policy always matches the page. connect-src 'self' also enforces the
+# "no third-party requests / nothing uploaded" property the app's privacy copy promises.
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
@@ -10,6 +15,7 @@
   # Lock down powerful APIs the calculator never uses, and isolate the browsing context.
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
   Cross-Origin-Opener-Policy: same-origin
+  # CSP-PLACEHOLDER
 
 # Ask caches to revalidate the service worker so a new deploy is detected promptly. NOTE:
 # Cloudflare Pages currently serves /sw.js with its own multi-hour max-age regardless of this
