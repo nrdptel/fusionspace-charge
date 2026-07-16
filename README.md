@@ -46,7 +46,7 @@ section, so the whole tool is discoverable at a glance.
 - **Altimeter vent holes**: size the static sampling ports for your electronics bay by the
   standard one-¼″-port-per-100-in³ rule, split across the ports you plan to drill.
 - Units that convert in place — diameter and length in **mm or in**, pressure in
-  **psi or kPa**, force in **lbf or N**. Black powder is always reported in grams.
+  **psi, kPa, or bar**, force in **lbf or N**. Black powder is always reported in grams.
 - The full formula, every constant, and a worked example using your own inputs, so the
   number is never a black box — with a **references** section citing where each value comes from.
 - **Sanity hints** that flag a likely input error — a unit mix-up, the outside diameter

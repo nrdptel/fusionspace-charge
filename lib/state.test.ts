@@ -157,6 +157,15 @@ describe("URL state", () => {
     expect(decodeState(encodeState(custom))).toEqual(custom);
   });
 
+  it("round-trips the bar pressure unit through the URL and normalize", () => {
+    const custom: State = { ...DEFAULT_STATE, pressureUnit: "bar" };
+    expect(decodeState(encodeState(custom))).toEqual(custom);
+    expect(decodeState("pu=bar").pressureUnit).toBe("bar");
+    expect(normalizeState({ ...DEFAULT_STATE, pressureUnit: "bar" }).pressureUnit).toBe("bar");
+    // An unknown unit still falls back to psi.
+    expect(decodeState("pu=atm").pressureUnit).toBe("psi");
+  });
+
   it("defaults to a single altimeter when the param is absent", () => {
     expect(decodeState("ddia=6").redundant).toBe(false);
     expect(decodeState("ddia=6").backupPct).toBe(DEFAULT_STATE.backupPct);
