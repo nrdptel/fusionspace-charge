@@ -318,6 +318,21 @@ export default function FetterCard({
               </div>
             )}
 
+            {/* The model normally sizes ABOVE traditional (the chute protector absorbs energy the
+                empty-tube estimate ignores). Below ~0.35 packing it inverts — the badge would read
+                "Fetter is 0.7×" next to the mode's "needs more powder" framing — so name why. The
+                methodology's own section spells this out; this is its one-line echo on the card. */}
+            {mass > 0 && result.traditionalMass > 0 && result.ratio < 1 && (
+              <p
+                data-testid="fetter-below-traditional"
+                className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400"
+              >
+                Below the traditional number here: at this low packing the protector absorbs
+                little, so the model sizes under the empty-tube estimate — expected for a sparse
+                bay, not the usual 1–4&times;. Double-check the packing factor, and ground-test.
+              </p>
+            )}
+
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Chip
                 label="Volume"

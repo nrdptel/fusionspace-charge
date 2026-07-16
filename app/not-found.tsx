@@ -9,6 +9,10 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-6 text-center">
+      {/* loading="lazy" keeps React from hoisting a `<link rel="preload" as="image">` for this
+          decorative mark into the <head> of EVERY prerendered route (not-found is part of every
+          page's tree). Without it, every page fetched this 36 KB SVG on load and Chrome warned
+          "preloaded but not used" — the image is only ever painted on this 404 page. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/brand/fusion-space-mark.svg"
@@ -16,6 +20,7 @@ export default function NotFound() {
         aria-hidden
         width={880}
         height={815}
+        loading="lazy"
         className="h-10 w-auto opacity-80"
       />
       <p className="mt-6 font-mono text-sm text-indigo-600 dark:text-indigo-400">404</p>
