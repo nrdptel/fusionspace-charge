@@ -20,7 +20,7 @@ Two sites to learn from: the hub (`fusionspace.co`) and the HPR Motor Finder
   link; it's part of the product.
 - **Plain voice.** Copy is direct and a little warm. "made to be genuinely useful at
   the bench." "Personal, non-commercial projects — not affiliated with any rocketry
-  vendor or manufacturer." Short sentences. No exclamation, no hype, no AI-boilerplate
+  vendor or manufacturer." Short sentences. No exclamation, no hype, no boilerplate
   cadence ("Let's dive in", "In today's fast-paced world"). Em dashes for asides.
 
 ### Visual system (measured from the shipped CSS, not guessed)
