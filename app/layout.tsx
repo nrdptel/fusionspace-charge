@@ -17,9 +17,8 @@ const DESCRIPTION =
 
 const TITLE = "Charge — HPR ejection-charge calculator";
 
-// Pre-generated at build by scripts/gen-og.mjs (a static export can't render the dynamic
-// next/og route at request time). Resolved absolutely against metadataBase. Uses the HPR
-// Motor Finder's exact card template so the family reads as one.
+// A static card committed in public/og/ (the FusionSpace brand kit's Rev C card for Charge,
+// projects/charge/og-image-dark.png). Resolved absolutely against metadataBase.
 const OG_IMAGE = "/og/default.png";
 
 export const metadata: Metadata = {

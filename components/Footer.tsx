@@ -45,17 +45,27 @@ export default function Footer() {
           href="https://fusionspace.co"
           target="_blank"
           rel="noopener noreferrer"
-          title="Fusion Space — free, polished tools for high-power rocketry"
+          title="FusionSpace — free, polished tools for high-power rocketry"
           className="group inline-flex items-center gap-1.5 transition hover:opacity-80"
         >
           <span>A</span>
+          {/* Rev C lockup at the brand's 24 px minimum: one-color Void on light (the
+              gradient is too faint there under 32 px), the gradient on dark. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/brand/fusion-space-wordmark.svg"
-            alt="Fusion Space"
-            width={1598}
-            height={281}
-            className="h-5 w-auto"
+            src="/brand/fusion-space-horizontal-void.svg"
+            alt="FusionSpace"
+            width={680}
+            height={115}
+            className="h-6 w-auto dark:hidden"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/fusion-space-horizontal-color.svg"
+            alt="FusionSpace"
+            width={680}
+            height={115}
+            className="hidden h-6 w-auto dark:block"
           />
           <span>
             project{" "}

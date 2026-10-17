@@ -110,15 +110,11 @@ full tool rather than just the base calculator.
 
 ### Social card & metadata
 
-The Open Graph / Twitter card is rendered to `public/og/default.png` by `scripts/gen-og.mjs` in
-`prebuild` (a static export can't render the dynamic `next/og` route at request time), so it's a
-gitignored build artifact. It uses the **HPR Motor Finder's exact card template** — the family
-standard — via the same `next/og`/Satori renderer, so the output matches pixel-for-pixel: the
-sparkle mark over the product name, a one-line tagline, and the domain, centered on `#09090b`
-with the soft indigo glow (`radial-gradient(56% 64% at 50% 31%, …)`). The mark is the shared
-asset in `lib/og-mark.ts`, identical to the sibling's. Only three strings differ between tools
-(name, tagline, domain); using the same renderer is what guarantees the format is truly identical
-rather than merely similar.
+The Open Graph / Twitter card is a static, committed PNG at `public/og/default.png`: the
+FusionSpace brand kit's Rev C card for Charge (`kit/projects/charge/og-image-dark.png`,
+1200×630). It replaced the earlier build-time card (`scripts/gen-og.mjs` rendering the old
+sparkle mark with `next/og`), so the build no longer generates or overwrites it. To change the
+card, regenerate it in the brand kit and copy it over.
 
 The metadata in `app/layout.tsx` mirrors the Motor Finder's conventions: a
 `NEXT_PUBLIC_SITE_URL`-overridable origin for fork deploys, `og:site_name` set to the tool's own
@@ -399,9 +395,9 @@ link. Theme and the ground-test log live in `localStorage` under a `charge.*` na
   disclosures; the ground-test log sits below the result. No routing to speak of.
 - **Pure functions for the physics**, unit-tested, kept separate from the UI so the math
   is auditable on its own — fitting for a tool whose credibility is the math.
-- **Brand reuse.** The mark, wordmark, and combined logo (vector, no raster) are vendored
-  under `public/brand/`; favicon under `public/icon.svg`. Header, footer, theme toggle,
-  and meta mirror the hub.
+- **Brand reuse.** The Rev C horizontal lockup (Void and gradient) and mark (vector, no
+  raster) are vendored from the brand kit under `public/brand/`; favicon under
+  `public/icon.svg`. Header, footer, theme toggle, and meta mirror the hub.
 - **Deploy:** Cloudflare Pages, project `fusionspace-charge`, static output, at
   `charge.fusionspace.co`. No Functions, no bindings.
 - **Footer** carries: link back to the hub, link to the Motor Finder, a GitHub link, the
