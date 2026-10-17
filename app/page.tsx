@@ -32,7 +32,7 @@ const JSON_LD = {
     "Works offline; installable",
   ],
   isAccessibleForFree: true,
-  publisher: { "@type": "Organization", name: "Fusion Space", url: "https://fusionspace.co" },
+  publisher: { "@type": "Organization", name: "FusionSpace", url: "https://fusionspace.co" },
 };
 
 // Shared centered-column classes. Header, main, and footer are siblings (not nested in <main>)

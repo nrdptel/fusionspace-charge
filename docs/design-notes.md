@@ -1,10 +1,10 @@
 # Charge — design notes
 
-This is my working read of how Fusion Space looks, reads, and is built, plus the plan
+This is my working read of how FusionSpace looks, reads, and is built, plus the plan
 for Charge. It's written down so it can be corrected early rather than late. It is not
 user-facing.
 
-## 1. What Fusion Space is, as a design
+## 1. What FusionSpace is, as a design
 
 Two sites to learn from: the hub (`fusionspace.co`) and the HPR Motor Finder
 (`motor.fusionspace.co`). They're unmistakably the same hand. The throughline:
@@ -50,7 +50,7 @@ Two sites to learn from: the hub (`fusionspace.co`) and the HPR Motor Finder
   Finder). A tiny inline script runs before paint to set the `dark`/`light` class on
   `<html>` and avoid a flash. `theme-color` meta is `#ffffff` light / `#09090b` dark.
 - **Footer:** thin top border, `text-xs text-zinc-500`. A row of links (GitHub, sibling
-  tools, data sources) separated by `·`, a "Built by [Fusion Space logo]" mark, and a
+  tools, data sources) separated by `·`, a "Built by [FusionSpace logo]" mark, and a
   plain non-affiliation + best-effort disclaimer paragraph.
 - **Transparency sections** are `<details>` disclosures: summary
   `cursor-pointer select-none font-medium text-zinc-700`, body

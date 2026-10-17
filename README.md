@@ -22,7 +22,7 @@ actually separated your airframe on the ground is the only number that counts.
 it.** Black powder is an explosive; sizing, handling, and flying ejection charges is
 your responsibility.
 
-Part of [Fusion Space](https://fusionspace.co) — free, polished tools for high-power
+Part of [FusionSpace](https://fusionspace.co) — free, polished tools for high-power
 rocketry. See also the [HPR Motor Finder](https://motor.fusionspace.co).
 
 ## What it does
