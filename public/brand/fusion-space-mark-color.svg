@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+     xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     width="199.422" height="200" viewBox="0 0 199.422 200" version="1.1">
+<title>FusionSpace mark (color)</title>
+<sodipodi:namedview id="namedview" pagecolor="#0B0F1C" bordercolor="#98A1B8" borderopacity="1"
+     inkscape:pageopacity="0" inkscape:pagecheckerboard="false" inkscape:deskcolor="#d6dae4"
+     inkscape:document-units="px" showgrid="false"/>
+<metadata><rdf:RDF><cc:Work rdf:about=""><dc:title>FusionSpace mark (color)</dc:title><dc:description></dc:description>
+<dc:creator><cc:Agent><dc:title>Neer Patel · FusionSpace</dc:title></cc:Agent></dc:creator></cc:Work></rdf:RDF></metadata>
+<defs id="defs"><linearGradient id="a-mg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="199.422" y2="0"><stop offset="0.0" stop-color="#DA7C30"/><stop offset="0.35" stop-color="#D07D7A"/><stop offset="0.65" stop-color="#A188CB"/><stop offset="1.0" stop-color="#768DF5"/></linearGradient></defs>
+<g inkscape:groupmode="layer" id="layer-logo" inkscape:label="Logo">
+<path fill="url(#a-mg)" d="M85.914,113.508 A159.848,159.848 0 0 1 48.869,184.382 L48.016,183.529 A24.128,24.128 0 0 0 15.893,151.406 L15.04,150.553 A159.848,159.848 0 0 1 85.914,113.508 Z"/><path fill="url(#a-mg)" d="M50.149,47.781 L22.289,97.93 L21.606,97.248 A19.302,19.302 0 0 0 0.682,76.324 L0,75.642 L50.149,47.781 Z"/><path fill="url(#a-mg)" d="M144.432,157.307 A14.477,50.669 45 0 1 122.124,200 L121.612,199.488 A14.477,14.477 0 0 0 102.251,180.127 L101.74,179.615 A14.477,50.669 45 0 1 144.432,157.307 Z"/><path fill="url(#a-mg)" d="M199.181,0.241 C199.298,0.359 199.385,0.959 199.41,1.426 C199.492,3.027 199.147,5.238 198.788,7.014 C197.757,12.117 195.885,17.78 193.745,23.469 C189.367,35.111 183.456,47.753 176.438,61.098 C160.383,91.625 140.597,121.106 126.198,139.461 L124.492,137.755 A48.256,48.256 0 0 0 61.667,74.93 L59.961,73.224 C78.316,58.825 107.797,39.039 138.324,22.984 C151.669,15.965 164.31,10.055 175.953,5.676 C181.642,3.537 187.305,1.665 192.407,0.634 C194.184,0.275 196.395,-0.07 197.996,0.012 C198.463,0.036 199.063,0.124 199.181,0.241 Z"/>
+</g>
+</svg>
