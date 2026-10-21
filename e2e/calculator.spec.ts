@@ -1185,14 +1185,16 @@ test.describe("Charge calculator", () => {
     expect(unsafe).toEqual([]);
   });
 
-  test("the Fetter model reproduces the reference charge and shows the traditional delta", async ({
+  test("the Fetter model sizes from the high-end pin force and shows the traditional delta", async ({
     page,
   }) => {
-    // Default Fetter compartment (3"×15", 2×2-56, full chute, 40% safety) → ~2.01 g, versus the
-    // traditional ideal-gas ~0.67 g at the same pressure — the delta the mode exists to show.
+    // Default Fetter compartment (3"×15", 2×2-56, full chute, 40% safety) → ~3.08 g, versus the
+    // traditional ideal-gas ~0.99 g at the same pressure — the delta the mode exists to show. The
+    // pins are at the high end of their strength (46 lbf each); at the paper's Table 6-1 force
+    // (31 lbf) the same compartment is the paper's 2.01 g, which lib/fetter.test.ts reproduces.
     await page.goto("/?mode=x&dep=s");
-    await expect(page.getByTestId("fetter-mass")).toHaveText("2.01");
-    await expect(page.getByTestId("fetter-traditional")).toContainText("0.67");
+    await expect(page.getByTestId("fetter-mass")).toHaveText("3.08");
+    await expect(page.getByTestId("fetter-traditional")).toContainText("0.99");
     await expect(page.getByTestId("fetter-ratio")).toContainText("×");
     // Charge's ×-multiplier "Safety margin" never applies in Fetter (the model has its own).
     await expect(page.getByLabel("Safety margin")).toHaveCount(0);
@@ -1238,14 +1240,14 @@ test.describe("Charge calculator", () => {
     await expect(page.getByRole("link", { name: /target-pressure or separation-force modes/i })).toBeVisible();
     // Bringing it back into the envelope restores the number.
     await page.getByLabel("Deployment altitude").fill("5000");
-    await expect(page.getByTestId("fetter-mass")).toHaveText("2.01");
+    await expect(page.getByTestId("fetter-mass")).toHaveText("3.08");
   });
 
   test("a Fetter charge is loggable from the ground-test ladder", async ({ page }) => {
     await page.goto("/?mode=x");
     // Tapping the Estimate step pre-fills the log's charge field, closing the loop.
     await page.getByRole("button", { name: /Estimate/ }).first().click();
-    await expect(page.getByLabel("Charge tested")).toHaveValue("2.01");
+    await expect(page.getByLabel("Charge tested")).toHaveValue("3.08");
   });
 
   test("switching to the Fetter model writes it to the shareable URL", async ({ page }) => {
@@ -1311,9 +1313,9 @@ test.describe("Charge calculator", () => {
   }) => {
     await page.goto("/?mode=x&dep=s");
     // Wait for hydration + the first compute before touching an input, so the clear isn't lost to
-    // a pre-hydration render (the default 3"×15" compartment sizes to 2.01 g).
+    // a pre-hydration render (the default 3"×15" compartment sizes to 3.08 g).
     const mass = page.getByTestId("fetter-mass");
-    await expect(mass).toHaveText("2.01");
+    await expect(mass).toHaveText("3.08");
     // Clear the geometry so nothing is sized — the report has no compartment to show. The headline
     // dropping to the empty-value dash confirms the recompute landed before we export.
     await page.getByRole("spinbutton", { name: /Inner diameter/ }).first().fill("0");
@@ -1357,10 +1359,10 @@ test.describe("Charge calculator", () => {
     await expect(page.getByText("Model envelope")).toBeVisible();
     await expect(page.getByText(/within envelope/i)).toBeVisible();
     const mass = page.getByTestId("fetter-mass");
-    await expect(mass).toHaveText("2.01");
+    await expect(mass).toHaveText("3.08");
     // Changing it below the limit does not change the charge — the model is fixed at sea level.
     await page.getByLabel("Deployment altitude").fill("10000");
-    await expect(mass).toHaveText("2.01");
+    await expect(mass).toHaveText("3.08");
     await expect(page.getByText(/within envelope/i)).toBeVisible();
     // At the limit the status flips and the number is withheld.
     await page.getByLabel("Deployment altitude").fill("25000");

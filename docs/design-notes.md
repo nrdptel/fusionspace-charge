@@ -409,7 +409,9 @@ link. Theme and the ground-test log live in `localStorage` under a `charge.*` na
 - **Scope of v1:** the full tool — both modes (pressure + force), dual-deploy, units,
   methodology disclosures, and the ground-test log.
 - **Shear-pin presets:** editable values (2-56 / 4-40 / 6-32 nylon) with a visible
-  "values vary — verify yours" note; nothing presented as authoritative.
+  "values vary — verify yours" note; nothing presented as authoritative. Since 2026-10-20 they
+  sit at the high end of each screw's break force (Feretich's upper bound, 46 / 76 / 114 lbf),
+  as does the Fetter mode's pin force, so a charge errs toward too much powder, never too little.
 - **Repo:** `nrdptel/fusionspace-charge`.
 - **License:** MIT — mirroring the Motor Finder.
 - **Deployment:** GitHub Actions → Cloudflare Pages (`cloudflare/wrangler-action`,

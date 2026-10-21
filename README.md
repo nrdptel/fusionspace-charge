@@ -100,6 +100,12 @@ that asserts the implementation reproduces Fetter's published numbers — the de
 results (paper Table 16-1), the shear-pin table (Table 17-2), and the reference
 spreadsheet's worked example — within a stated tolerance.
 
+Those reproductions use the paper's pin strength (Table 6-1: 9,600 psi on the screw's minor
+diameter). The calculator itself sizes shear pins at the high end of nylon's strength, B.
+Feretich's published upper bound of 10,500 psi on the pitch diameter (46, 76 and 114 lbf for
+2-56, 4-40 and 6-32), because a stronger pin needs more powder: the high end errs toward too
+much powder, never too little. Ground test first.
+
 ## The Fetter model — credit
 
 The parachute-deployment model is **Tom Fetter's** (NAR 15551). Only the math is

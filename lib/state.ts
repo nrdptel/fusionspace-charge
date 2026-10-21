@@ -97,8 +97,9 @@ export const DEFAULT_STATE: State = {
   drogue: { diameter: 4, length: 12, pressure: 12, pinCount: 2, pinForce: DEFAULT_PIN_FORCE_LBF, friction: 0 },
   main: { diameter: 4, length: 24, pressure: 12, pinCount: 4, pinForce: DEFAULT_PIN_FORCE_LBF, friction: 0 },
   // Fetter's own 3"×15" test-rocket geometry: a full chute (packing 1), two 2-56 screws, and
-  // the 40% safety factor his testing settled on. Sizes to ~2 g, versus ~0.7 g the traditional
-  // model would give — the delta the model exists to correct.
+  // the 40% safety factor his testing settled on. With the pins at the high end of their
+  // strength it sizes to ~3.1 g (the paper's own pin force gives ~2.0 g), versus ~1.0 g the
+  // traditional model would give at the same pressure — the delta the model exists to correct.
   fetter: {
     diameter: 3,
     length: 15,
