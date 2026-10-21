@@ -39,7 +39,7 @@ import {
 } from "@/lib/charge";
 import {
   fetterCharge,
-  screwMinorIn,
+  pinForceHighLbf,
   withinAltitudeEnvelope,
   FETTER_LINKS,
   type FetterResult,
@@ -191,7 +191,9 @@ function computeFetter(s: State, f: FetterInput): FetterResult {
   return fetterCharge({
     diameterIn: nn(toInches(f.diameter, s.lengthUnit)),
     lengthIn: nn(toInches(f.length, s.lengthUnit)),
-    screwMinorIn: screwMinorIn(f.screw),
+    // The high end of the pins' strength: a stronger pin needs more powder, so this errs toward
+    // too much, never too little (lib/fetter.ts, pinForceHighLbf).
+    pinForceLbf: pinForceHighLbf(f.screw),
     pinCount: f.pinCount,
     frictionLbf: nn(toLbf(f.friction, s.forceUnit)),
     packing: f.packing,
@@ -857,7 +859,8 @@ export default function Calculator({
         {
           label: "Shear-pin forces",
           detail:
-            "The nylon-screw presets are widely-cited single-shear approximations that vary by supplier and fit — starting points to verify, not authority.",
+            "The nylon-screw presets are the high end of each screw's break force: B. Feretich's upper bound, 10,500 psi on the thread's pitch-diameter area (46, 76 and 114 lbf for 2-56, 4-40 and 6-32). A stronger pin needs more powder, so they err toward too much. Real pins vary by supplier and fit, and most break below these. Ground test first.",
+          url: "https://web.archive.org/web/20260417090259/http://feretich.com/Rocketry/Resources/shearPins.html",
         },
       ],
     };

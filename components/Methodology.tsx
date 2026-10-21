@@ -280,8 +280,11 @@ export default function Methodology({
           <div>
             <dt className="font-medium text-zinc-700 dark:text-zinc-300">Shear-pin forces</dt>
             <dd>
-              The nylon-screw presets are widely-cited single-shear approximations that vary
-              by supplier and fit — starting points to verify, not authority.
+              The nylon-screw presets are the high end of each screw&apos;s break force: B.
+              Feretich&apos;s upper bound, 10,500 psi on the thread&apos;s pitch-diameter area (46,
+              76 and 114 lbf for 2-56, 4-40 and 6-32). A stronger pin needs more powder, so they
+              err toward too much. Real pins vary by supplier and fit, and most break below
+              these. Ground test first.
             </dd>
           </div>
         </dl>
@@ -375,7 +378,12 @@ function FetterMethodology({
           <Row term="ΔH_BP">Delta enthalpy of black powder, {FETTER.deltaHBP} (lb·ft²)/(s²·mol).</Row>
           <Row term={`T_amb = ${FETTER.Tamb}`}>Ambient temperature (70 °F), K.</Row>
           <Row term={`P_atm = ${FETTER.Patm}`}>Sea-level ambient pressure (14.7 psi), lb/(ft·s²).</Row>
-          <Row term="Nylon SS">Shear strength, {FETTER.nylonShearMinPsi} psi (min) — the shear force follows from this and the screw&apos;s minor diameter.</Row>
+          <Row term="Nylon SS">
+            Shear strength, {FETTER.nylonShearHighPsi} psi on the screw&apos;s pitch-diameter area: the
+            high end of the range (B. Feretich&apos;s upper bound), so the pin force and the powder err
+            high, never low. The paper uses {FETTER.nylonShearMinPsi} psi on the minor diameter, about
+            1.5× less force; this site still reproduces the paper&apos;s tables with it in its tests.
+          </Row>
         </dl>
       </Disclosure>
 
