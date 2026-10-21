@@ -5,11 +5,16 @@ import {
   absorptionHigh,
   fetterCharge,
   ejectionVelocity,
+  FETTER_SCREWS,
+  pinForceHighLbf,
+  pinForcePaperLbf,
   screwMinorIn,
   shearForceLbf,
   withinAltitudeEnvelope,
   type FetterArgs,
+  type ScrewSize,
 } from "./fetter";
+import { DEFAULT_STATE, SHEAR_PIN_PRESETS } from "./state";
 import { toInches, toPsi, gToGrains, grainsToG, MM_PER_IN, KPA_PER_PSI, GR_PER_G } from "./units";
 
 // The Fetter model is safety-critical: a charge that doesn't separate loses the rocket, one
@@ -20,9 +25,12 @@ import { toInches, toPsi, gToGrains, grainsToG, MM_PER_IN, KPA_PER_PSI, GR_PER_G
 // implementation no longer reproduces his work and must not ship.
 //
 // Sizing helper: every published case has friction 0 unless noted, and the paper's tables use
-// the high-absorption curve. `case` builds the canonical-unit args.
+// the high-absorption curve. `case` builds the canonical-unit args. The paper's tables use its
+// own pin force (Table 6-1, 9,600 psi on the minor area), so these reproductions do too; the
+// calculator sizes from the high end (see "the calculator sizes from the high end" below).
+const paper = (size: ScrewSize) => pinForcePaperLbf(screwMinorIn(size));
 const args = (o: Partial<FetterArgs> & Pick<FetterArgs, "diameterIn" | "lengthIn">): FetterArgs => ({
-  screwMinorIn: screwMinorIn("2-56"),
+  pinForceLbf: paper("2-56"),
   pinCount: 2,
   frictionLbf: 0,
   packing: 1,
@@ -62,10 +70,10 @@ describe("Fetter model — reproduces the shear-pin table (Table 17-2)", () => {
   // The paper rounds the charge to ~2 significant figures, so the tolerance is one rounding
   // step. This exercises every shear-screw preset and both pin counts.
   const rows: [string, FetterArgs, number][] = [
-    ["3 × 2-56", args({ diameterIn: 4, lengthIn: 20, screwMinorIn: screwMinorIn("2-56"), pinCount: 3, packing: 0.5 }), 2.1],
-    ["3 × 4-40", args({ diameterIn: 4, lengthIn: 20, screwMinorIn: screwMinorIn("4-40"), pinCount: 3, packing: 0.5 }), 3.5],
-    ["6 × 4-40", args({ diameterIn: 4, lengthIn: 20, screwMinorIn: screwMinorIn("4-40"), pinCount: 6, packing: 0.5 }), 7.8],
-    ["3 × 6-32", args({ diameterIn: 4, lengthIn: 20, screwMinorIn: screwMinorIn("6-32"), pinCount: 3, packing: 0.5 }), 5.6],
+    ["3 × 2-56", args({ diameterIn: 4, lengthIn: 20, pinForceLbf: paper("2-56"), pinCount: 3, packing: 0.5 }), 2.1],
+    ["3 × 4-40", args({ diameterIn: 4, lengthIn: 20, pinForceLbf: paper("4-40"), pinCount: 3, packing: 0.5 }), 3.5],
+    ["6 × 4-40", args({ diameterIn: 4, lengthIn: 20, pinForceLbf: paper("4-40"), pinCount: 6, packing: 0.5 }), 7.8],
+    ["3 × 6-32", args({ diameterIn: 4, lengthIn: 20, pinForceLbf: paper("6-32"), pinCount: 3, packing: 0.5 }), 5.6],
   ];
   for (const [note, a, expected] of rows) {
     it(`4"×20", ${note} → ${expected} g`, () => {
@@ -175,12 +183,46 @@ describe("traditional-vs-Fetter delta (the model's whole point)", () => {
 describe("shear force from the screw geometry", () => {
   it("a 2-56 nylon screw shears near the paper's ~31 lbf", () => {
     // §6: min nylon strength 9600 psi over the 2-56 minor area → ~31 lbf per screw.
-    expect(shearForceLbf(screwMinorIn("2-56"), 1)).toBeCloseTo(31, 0);
-    expect(shearForceLbf(screwMinorIn("2-56"), 2)).toBeCloseTo(62, 0);
+    expect(shearForceLbf(paper("2-56"), 1)).toBeCloseTo(31, 0);
+    expect(shearForceLbf(paper("2-56"), 2)).toBeCloseTo(62, 0);
   });
   it("is zero without screws (friction-only deployment)", () => {
-    expect(shearForceLbf(screwMinorIn("2-56"), 0)).toBe(0);
+    expect(shearForceLbf(paper("2-56"), 0)).toBe(0);
     expect(shearForceLbf(0, 3)).toBe(0);
+  });
+});
+
+describe("the calculator sizes from the high end of the pins' strength", () => {
+  // A pin that breaks harder than the model assumes needs more powder, so a low pin force is
+  // the flattering side: too little powder, a chute that stays in. The calculator therefore
+  // sizes from Feretich's published upper bound (10,500 psi on the pitch-diameter area), not
+  // the paper's Table 6-1 minimum (9,600 psi on the minor area). These tests pin that direction.
+  it("matches Feretich's published upper-bound forces (46 / 76 / 114 lbf)", () => {
+    expect(pinForceHighLbf("2-56")).toBeCloseTo(46, 0);
+    expect(pinForceHighLbf("4-40")).toBeCloseTo(76, 0);
+    expect(pinForceHighLbf("6-32")).toBeCloseTo(114, 0);
+  });
+  it("is at least 1.35x the paper's force for every screw", () => {
+    for (const s of FETTER_SCREWS) {
+      expect(pinForceHighLbf(s.label)).toBeGreaterThan(1.35 * paper(s.label));
+    }
+  });
+  it("sizes more powder than the paper's force would, for every screw", () => {
+    for (const s of FETTER_SCREWS) {
+      const base = { diameterIn: 3, lengthIn: 15, pinCount: 2, frictionLbf: 0, packing: 1, safety: 0.4 };
+      const high = fetterCharge({ ...base, pinForceLbf: pinForceHighLbf(s.label) }).mass;
+      const low = fetterCharge({ ...base, pinForceLbf: paper(s.label) }).mass;
+      expect(high).toBeGreaterThan(low);
+    }
+  });
+  it("gives the force-mode presets and default the same high end", () => {
+    const want: Record<string, ScrewSize> = { "2-56 nylon": "2-56", "4-40 nylon": "4-40", "6-32 nylon": "6-32" };
+    expect(SHEAR_PIN_PRESETS.map((p) => p.label)).toEqual(Object.keys(want));
+    for (const p of SHEAR_PIN_PRESETS) {
+      expect(p.lbf).toBeGreaterThanOrEqual(pinForceHighLbf(want[p.label]) - 0.5);
+    }
+    expect(DEFAULT_STATE.drogue.pinForce).toBe(SHEAR_PIN_PRESETS[0].lbf);
+    expect(DEFAULT_STATE.main.pinForce).toBe(SHEAR_PIN_PRESETS[0].lbf);
   });
 });
 
@@ -238,5 +280,6 @@ describe("constants match the paper's USCS-native values", () => {
     expect(FETTER.Ru).toBe(197.305);
     expect(FETTER.cvBPcp).toBe(7247);
     expect(FETTER.nylonShearMinPsi).toBe(9600);
+    expect(FETTER.nylonShearHighPsi).toBe(10500);
   });
 });

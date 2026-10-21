@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
-import { fetterCharge } from "./fetter";
+import { fetterCharge, pinForcePaperLbf } from "./fetter";
 
 // Golden regression fixture: 220 cases spanning the input domain — [diameterIn, lengthIn,
 // screwMinorIn, pinCount, frictionLbf, packing, safety, mass_g, pressure_psi, traditional_g] —
 // with the last three computed by an independent reference that reproduces the paper's Table
-// 16-1 bit-for-bit (see fetter.test.ts for the paper-anchored worked cases). This guards the
+// 16-1 bit-for-bit (see fetter.test.ts for the paper-anchored worked cases). The reference uses
+// the paper's pin strength, so each case's screwMinorIn goes through pinForcePaperLbf here; the
+// calculator itself sizes from the high end (pinForceHighLbf). This guards the
 // closed form, a large and easy-to-break expression, against a transcription drift that the
 // handful of worked examples wouldn't catch: any edit to fetterCharge that changes an output
 // off the fixture points fails here. Regenerate the JSON only from a paper-reproducing reference.
@@ -23,7 +25,7 @@ describe("Fetter closed form — golden cases across the input domain", () => {
     const fails: unknown[] = [];
     for (const [D, L, mi, n, fr, pk, sf, mass, psi, trad] of fixture.cases) {
       const r = fetterCharge({
-        diameterIn: D, lengthIn: L, screwMinorIn: mi, pinCount: n, frictionLbf: fr, packing: pk, safety: sf,
+        diameterIn: D, lengthIn: L, pinForceLbf: pinForcePaperLbf(mi), pinCount: n, frictionLbf: fr, packing: pk, safety: sf,
       });
       if (!Number.isFinite(r.mass) || r.mass < 0)
         fails.push({ in: [D, L, mi, n, fr, pk, sf], got: r.mass, why: "nan/negative" });

@@ -114,7 +114,7 @@ export default function FetterCard({
             value={input.screw}
             onChange={(screw) => onChange({ screw })}
             options={SCREW_OPTIONS}
-            hint={`Shear force follows from the nylon shear strength and the screw's minor diameter${
+            hint={`Shear force follows from the high end of nylon's shear strength on the screw's pitch diameter${
               input.pinCount === 0 ? " (ignored — no screws)" : ""
             }.`}
           />

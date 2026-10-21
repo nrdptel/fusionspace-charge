@@ -2,7 +2,7 @@
  *  calculation a shareable link — the same convention the Motor Finder uses. */
 
 import type { LengthUnit, PressureUnit, ForceUnit } from "./units";
-import { type ScrewSize, isScrewSize } from "./fetter";
+import { type ScrewSize, isScrewSize, pinForceHighLbf } from "./fetter";
 
 export type Mode = "pressure" | "force" | "fetter";
 export type Deploy = "single" | "dual";
@@ -71,13 +71,18 @@ export interface State {
   fetterMain: FetterInput;
 }
 
-/** Common nylon shear screws. Values are widely-cited single-shear approximations and
- *  vary by source and supplier — they are starting points to edit, not authority. */
+/** Common nylon shear screws, each at the high end of its single-shear break force: B.
+ *  Feretich's upper bound, 10,500 psi on the pitch-diameter area (46 / 76 / 114 lbf; see
+ *  pinForceHighLbf). A stronger pin needs more powder, so a preset errs toward more powder. Most
+ *  pins break below these, but not all: one 6-32 broke at 116 lbf. Ground test first. */
 export const SHEAR_PIN_PRESETS: { label: string; lbf: number }[] = [
-  { label: "2-56 nylon", lbf: 32 },
-  { label: "4-40 nylon", lbf: 50 },
-  { label: "6-32 nylon", lbf: 65 },
+  { label: "2-56 nylon", lbf: Math.round(pinForceHighLbf("2-56")) },
+  { label: "4-40 nylon", lbf: Math.round(pinForceHighLbf("4-40")) },
+  { label: "6-32 nylon", lbf: Math.round(pinForceHighLbf("6-32")) },
 ];
+
+/** The default force per pin: the 2-56 preset, the high end of a 2-56 pin's strength. */
+const DEFAULT_PIN_FORCE_LBF = Math.round(pinForceHighLbf("2-56"));
 
 export const DEFAULT_STATE: State = {
   mode: "force",
@@ -89,11 +94,12 @@ export const DEFAULT_STATE: State = {
   redundant: false,
   backupPct: 20,
   elevation: 0,
-  drogue: { diameter: 4, length: 12, pressure: 12, pinCount: 2, pinForce: 32, friction: 0 },
-  main: { diameter: 4, length: 24, pressure: 12, pinCount: 4, pinForce: 32, friction: 0 },
+  drogue: { diameter: 4, length: 12, pressure: 12, pinCount: 2, pinForce: DEFAULT_PIN_FORCE_LBF, friction: 0 },
+  main: { diameter: 4, length: 24, pressure: 12, pinCount: 4, pinForce: DEFAULT_PIN_FORCE_LBF, friction: 0 },
   // Fetter's own 3"×15" test-rocket geometry: a full chute (packing 1), two 2-56 screws, and
-  // the 40% safety factor his testing settled on. Sizes to ~2 g, versus ~0.7 g the traditional
-  // model would give — the delta the model exists to correct.
+  // the 40% safety factor his testing settled on. With the pins at the high end of their
+  // strength it sizes to ~3.1 g (the paper's own pin force gives ~2.0 g), versus ~1.0 g the
+  // traditional model would give at the same pressure — the delta the model exists to correct.
   fetter: {
     diameter: 3,
     length: 15,

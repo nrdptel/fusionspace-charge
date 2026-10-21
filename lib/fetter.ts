@@ -51,9 +51,16 @@ export const FETTER = {
   Tamb: 294.261,
   /** Ambient (sea-level) pressure, 14.7 psi expressed as lb/(ft·s²). §11. */
   Patm: 68110,
-  /** Nylon 6/6 minimum shear strength, psi. §6, Table 6-1. The min (not max) is used so the
-   *  shear force — and therefore the powder — is not under-estimated. */
+  /** Nylon 6/6 minimum shear strength, psi, on the thread's minor-diameter area. §6, Table 6-1.
+   *  Used only to reproduce the paper's tables (see pinForcePaperLbf). It is the low end of the
+   *  strength range, so it gives the least pin force and errs toward too little powder. */
   nylonShearMinPsi: 9600,
+  /** Nylon 6/6 shear strength at the high end, psi, on the thread's pitch-diameter area: the
+   *  only published upper bound, B. Feretich, "Shear Pin/Screw Calculations" (archived
+   *  2026-04-17, https://web.archive.org/web/20260417090259/http://feretich.com/Rocketry/Resources/shearPins.html).
+   *  It gives 46 / 76 / 114 lbf for 2-56 / 4-40 / 6-32, about 1.5× the paper's Table 6-1. A
+   *  stronger pin needs more powder, so the calculator sizes from this (pinForceHighLbf). */
+  nylonShearHighPsi: 10500,
 } as const;
 
 /**
@@ -75,22 +82,24 @@ const GC = 32.174;
 const LBM_TO_G = 453.592;
 /** psi → lb/(ft·s²): ×144 (in²→ft²) ×GC (lbf→poundal). */
 const PSI_TO_NATIVE = GC * 144;
-/** Nylon shear strength in native units, lb/(ft·s²). */
-const SS = FETTER.nylonShearMinPsi * PSI_TO_NATIVE;
-
 /**
- * Shear screws Fetter characterises, with the minor (root) diameter of the thread in inches —
- * the diameter that actually carries the shear load. Values from the paper's Table 6-1
- * (originally feretich.com). The shear force follows from the nylon shear strength and this
- * area, so unlike the traditional force mode the screw itself — not a looked-up per-pin force —
+ * Shear screws Fetter characterises, with two diameters of the thread, in inches:
+ * - `minorIn`, the minor (root) diameter, from the paper's Table 6-1 (originally feretich.com).
+ *   A loose fit breaks the pin along the root, so this area gives the least force.
+ * - `pitchIn`, the basic pitch diameter: the minimum for a class 2B internal thread (ASME
+ *   B1.1) for the inch sizes, and ISO 724's d2 = d − 0.6495·P for M2 × 0.4 (1.7402 mm) and
+ *   M3 × 0.5 (2.6753 mm), rounded up. A close fit forces the cut through part of the thread, so
+ *   this area gives the most force (Feretich's rule). Feretich published inch sizes only; the
+ *   M2 and M3 forces apply his rule to the ISO diameters.
+ * The shear force follows from the nylon strength and one of these areas, so the screw itself
  * drives the number.
  */
 export const FETTER_SCREWS = [
-  { label: "M2", minorIn: 0.05942 },
-  { label: "2-56", minorIn: 0.0641 },
-  { label: "4-40", minorIn: 0.0813 },
-  { label: "M3", minorIn: 0.09396 },
-  { label: "6-32", minorIn: 0.0997 },
+  { label: "M2", minorIn: 0.05942, pitchIn: 0.06852 },
+  { label: "2-56", minorIn: 0.0641, pitchIn: 0.0744 },
+  { label: "4-40", minorIn: 0.0813, pitchIn: 0.0958 },
+  { label: "M3", minorIn: 0.09396, pitchIn: 0.10533 },
+  { label: "6-32", minorIn: 0.0997, pitchIn: 0.1177 },
 ] as const;
 
 export type ScrewSize = (typeof FETTER_SCREWS)[number]["label"];
@@ -98,6 +107,33 @@ export type ScrewSize = (typeof FETTER_SCREWS)[number]["label"];
 /** The minor diameter (in) for a screw label, or 0 if unknown. */
 export function screwMinorIn(size: ScrewSize): number {
   return FETTER_SCREWS.find((s) => s.label === size)?.minorIn ?? 0;
+}
+
+/** The basic pitch diameter (in) for a screw label, or 0 if unknown. */
+export function screwPitchIn(size: ScrewSize): number {
+  return FETTER_SCREWS.find((s) => s.label === size)?.pitchIn ?? 0;
+}
+
+/**
+ * The force that breaks one nylon pin at the high end of its strength, lbf: Feretich's upper
+ * bound, 10,500 psi on the pitch-diameter area, π/4 · D_pitch² · 10,500. This is the force the
+ * calculator sizes from. A pin that breaks harder than the model assumes needs more powder, so
+ * the high end errs toward more powder than the paper's force. It is not a ceiling: one builder's
+ * 6-32 broke at 116 lbf, just above it, and a cold pin broken fast can go higher (resin data; no
+ * pin test). Measured breaks mostly fall below it. Ground test first.
+ */
+export function pinForceHighLbf(size: ScrewSize): number {
+  const d = screwPitchIn(size);
+  return d > 0 ? (Math.PI / 4) * d * d * FETTER.nylonShearHighPsi : 0;
+}
+
+/**
+ * The paper's force for one pin, lbf: Table 6-1's minimum, 9,600 psi on the minor-diameter
+ * area, π/4 · D_minor² · 9,600. Used to reproduce Fetter's published tables, never to size a
+ * charge: it is the low end of the range, about 1.5× below pinForceHighLbf.
+ */
+export function pinForcePaperLbf(minorIn: number): number {
+  return minorIn > 0 ? (Math.PI / 4) * minorIn * minorIn * FETTER.nylonShearMinPsi : 0;
 }
 
 /** Whether an arbitrary value is a known screw size — used to validate untrusted state. */
@@ -142,11 +178,10 @@ export function absorptionHigh(packing: number): number {
   return 0.951 * (1 - Math.exp(-4.491 * pf));
 }
 
-/** Shear force of the screws, in lbf, for display. π/4 · Dminor² · nylonStrength · count. */
-export function shearForceLbf(screwMinor: number, count: number): number {
-  if (screwMinor <= 0 || count <= 0) return 0;
-  const area = (Math.PI / 4) * screwMinor * screwMinor; // in²
-  return area * FETTER.nylonShearMinPsi * count;
+/** Shear force of the screws, in lbf, for display: one pin's break force × the count. */
+export function shearForceLbf(pinForceLbf: number, count: number): number {
+  if (!(pinForceLbf > 0) || !(count > 0)) return 0;
+  return pinForceLbf * count;
 }
 
 export interface FetterArgs {
@@ -154,8 +189,9 @@ export interface FetterArgs {
   diameterIn: number;
   /** Parachute compartment inner length, in. */
   lengthIn: number;
-  /** Minor diameter of the shear screws, in (0 if no screws are used). */
-  screwMinorIn: number;
+  /** Break force of one shear screw, lbf (0 if no screws are used). The calculator passes
+   *  pinForceHighLbf, the high end; the paper's tables are reproduced with pinForcePaperLbf. */
+  pinForceLbf: number;
   /** Number of shear screws across the joint. */
   pinCount: number;
   /** Nosecone / coupler friction beyond the pins, lbf. */
@@ -234,8 +270,7 @@ export function fetterCharge(args: FetterArgs): FetterResult {
   // Native-unit geometry (feet) and the two forces, in poundals (lb·ft/s²).
   const V = volumeIn3 / 1728; // ft³
   const Dr = args.diameterIn / 12; // ft
-  const Dminor = args.screwMinorIn > 0 ? args.screwMinorIn / 12 : 0; // ft
-  const Fshear = Dminor > 0 && pins > 0 ? (Math.PI / 4) * Dminor * Dminor * SS * pins : 0;
+  const Fshear = shearForceLbf(args.pinForceLbf, pins) * GC; // poundals
   const Ffrict = friction * GC;
 
   const AH = absorptionHigh(args.packing);
@@ -291,7 +326,7 @@ export function fetterCharge(args: FetterArgs): FetterResult {
     areaIn2,
     pressurePsi,
     forceLbf,
-    shearLbf: shearForceLbf(args.screwMinorIn, pins),
+    shearLbf: shearForceLbf(args.pinForceLbf, pins),
     absorption: AH,
     traditionalMass,
     ratio: traditionalMass > 0 ? mass / traditionalMass : 0,
