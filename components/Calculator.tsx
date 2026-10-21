@@ -192,7 +192,8 @@ function computeFetter(s: State, f: FetterInput): FetterResult {
     diameterIn: nn(toInches(f.diameter, s.lengthUnit)),
     lengthIn: nn(toInches(f.length, s.lengthUnit)),
     // The high end of the pins' strength: a stronger pin needs more powder, so this errs toward
-    // too much, never too little (lib/fetter.ts, pinForceHighLbf).
+    // more powder than the paper's force (lib/fetter.ts, pinForceHighLbf). Not a guarantee: a pin
+    // can break above it.
     pinForceLbf: pinForceHighLbf(f.screw),
     pinCount: f.pinCount,
     frictionLbf: nn(toLbf(f.friction, s.forceUnit)),
@@ -859,7 +860,7 @@ export default function Calculator({
         {
           label: "Shear-pin forces",
           detail:
-            "The nylon-screw presets are the high end of each screw's break force: B. Feretich's upper bound, 10,500 psi on the thread's pitch-diameter area (46, 76 and 114 lbf for 2-56, 4-40 and 6-32). A stronger pin needs more powder, so they err toward too much. Real pins vary by supplier and fit, and most break below these. Ground test first.",
+            "The nylon-screw presets are the high end of each screw's break force: B. Feretich's upper bound, 10,500 psi on the thread's pitch-diameter area (46, 76 and 114 lbf for 2-56, 4-40 and 6-32). A stronger pin needs more powder, so they err toward more. Most pins break below these, but one 6-32 broke at 116 lbf and a cold pin broken fast can go higher. Ground test first.",
           url: "https://web.archive.org/web/20260417090259/http://feretich.com/Rocketry/Resources/shearPins.html",
         },
       ],
@@ -1479,8 +1480,8 @@ function WellCard({
               ))}
             </div>
             <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-              Presets are approximate single-shear values that vary by source — verify
-              yours.
+              Presets are the high end of each screw&apos;s single-shear break force, so they
+              err toward more powder. Real pins vary — verify yours.
             </p>
           </div>
           <NumberField

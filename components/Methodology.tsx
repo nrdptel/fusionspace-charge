@@ -283,8 +283,8 @@ export default function Methodology({
               The nylon-screw presets are the high end of each screw&apos;s break force: B.
               Feretich&apos;s upper bound, 10,500 psi on the thread&apos;s pitch-diameter area (46,
               76 and 114 lbf for 2-56, 4-40 and 6-32). A stronger pin needs more powder, so they
-              err toward too much. Real pins vary by supplier and fit, and most break below
-              these. Ground test first.
+              err toward more. Most pins break below these, but one 6-32 broke at 116 lbf and a
+              cold pin broken fast can go higher. Ground test first.
             </dd>
           </div>
         </dl>
@@ -379,10 +379,13 @@ function FetterMethodology({
           <Row term={`T_amb = ${FETTER.Tamb}`}>Ambient temperature (70 °F), K.</Row>
           <Row term={`P_atm = ${FETTER.Patm}`}>Sea-level ambient pressure (14.7 psi), lb/(ft·s²).</Row>
           <Row term="Nylon SS">
-            Shear strength, {FETTER.nylonShearHighPsi} psi on the screw&apos;s pitch-diameter area: the
-            high end of the range (B. Feretich&apos;s upper bound), so the pin force and the powder err
-            high, never low. The paper uses {FETTER.nylonShearMinPsi} psi on the minor diameter, about
-            1.5× less force; this site still reproduces the paper&apos;s tables with it in its tests.
+            {`Shear strength, ${FETTER.nylonShearHighPsi.toLocaleString("en-US")} psi on the screw's `}
+            pitch-diameter area: the high end of the range (B. Feretich&apos;s upper bound for inch
+            screws; his rule applied to M2 and M3), so the pin force and the powder err high. A pin
+            can still break above it (one 6-32 broke at 116 lbf), so ground test first.
+            {` The paper uses ${FETTER.nylonShearMinPsi.toLocaleString("en-US")} psi on the minor `}
+            diameter, about 1.5× less force; this site still reproduces the paper&apos;s tables with it
+            in its tests.
           </Row>
         </dl>
       </Disclosure>

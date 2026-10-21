@@ -73,8 +73,8 @@ export interface State {
 
 /** Common nylon shear screws, each at the high end of its single-shear break force: B.
  *  Feretich's upper bound, 10,500 psi on the pitch-diameter area (46 / 76 / 114 lbf; see
- *  pinForceHighLbf). A stronger pin needs more powder, so a preset errs toward too much powder,
- *  never too little. Real pins vary by supplier and fit, and most break below these. */
+ *  pinForceHighLbf). A stronger pin needs more powder, so a preset errs toward more powder. Most
+ *  pins break below these, but not all: one 6-32 broke at 116 lbf. Ground test first. */
 export const SHEAR_PIN_PRESETS: { label: string; lbf: number }[] = [
   { label: "2-56 nylon", lbf: Math.round(pinForceHighLbf("2-56")) },
   { label: "4-40 nylon", lbf: Math.round(pinForceHighLbf("4-40")) },

@@ -87,17 +87,18 @@ const PSI_TO_NATIVE = GC * 144;
  * - `minorIn`, the minor (root) diameter, from the paper's Table 6-1 (originally feretich.com).
  *   A loose fit breaks the pin along the root, so this area gives the least force.
  * - `pitchIn`, the basic pitch diameter: the minimum for a class 2B internal thread (ASME
- *   B1.1) for the inch sizes, and ISO 724's d2 = d − 0.6495·P for M2 × 0.4 (1.740 mm) and
- *   M3 × 0.5 (2.675 mm). A close fit forces the cut through part of the thread, so this area
- *   gives the most force (Feretich's rule).
+ *   B1.1) for the inch sizes, and ISO 724's d2 = d − 0.6495·P for M2 × 0.4 (1.7402 mm) and
+ *   M3 × 0.5 (2.6753 mm), rounded up. A close fit forces the cut through part of the thread, so
+ *   this area gives the most force (Feretich's rule). Feretich published inch sizes only; the
+ *   M2 and M3 forces apply his rule to the ISO diameters.
  * The shear force follows from the nylon strength and one of these areas, so the screw itself
  * drives the number.
  */
 export const FETTER_SCREWS = [
-  { label: "M2", minorIn: 0.05942, pitchIn: 0.0685 },
+  { label: "M2", minorIn: 0.05942, pitchIn: 0.06852 },
   { label: "2-56", minorIn: 0.0641, pitchIn: 0.0744 },
   { label: "4-40", minorIn: 0.0813, pitchIn: 0.0958 },
-  { label: "M3", minorIn: 0.09396, pitchIn: 0.10531 },
+  { label: "M3", minorIn: 0.09396, pitchIn: 0.10533 },
   { label: "6-32", minorIn: 0.0997, pitchIn: 0.1177 },
 ] as const;
 
@@ -117,8 +118,9 @@ export function screwPitchIn(size: ScrewSize): number {
  * The force that breaks one nylon pin at the high end of its strength, lbf: Feretich's upper
  * bound, 10,500 psi on the pitch-diameter area, π/4 · D_pitch² · 10,500. This is the force the
  * calculator sizes from. A pin that breaks harder than the model assumes needs more powder, so
- * the high end errs toward too much powder, never too little. Measured breaks mostly fall below
- * it; one builder's 6-32 broke at 116 lbf, on the bound. Ground test first.
+ * the high end errs toward more powder than the paper's force. It is not a ceiling: one builder's
+ * 6-32 broke at 116 lbf, just above it, and a cold pin broken fast can go higher (resin data; no
+ * pin test). Measured breaks mostly fall below it. Ground test first.
  */
 export function pinForceHighLbf(size: ScrewSize): number {
   const d = screwPitchIn(size);
